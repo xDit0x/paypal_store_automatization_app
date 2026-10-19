@@ -1,0 +1,17 @@
+# Secretos: nunca deben entrar en la imagen ni en el contexto de build
+.env
+.env.*
+!.env.example
+
+# Git y artefactos
+.git
+.gitignore
+node_modules
+dist
+coverage
+tests
+test
+*.log
+npm-debug.log*
+.DS_Store
+README.md

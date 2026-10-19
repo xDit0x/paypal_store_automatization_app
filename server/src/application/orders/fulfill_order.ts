@@ -2,6 +2,7 @@ import { createAndSendInvoice } from '../paypal/invoices.js';
 import { paypalConfigured } from '../paypal/paypal_client.js';
 import { sendPayout } from '../paypal/payouts.js';
 import { supabaseAdmin } from '../../infrastructure/supabase/supabase_client.js';
+import { guardOrderAmount } from './guard_order_amount.js';
 
 interface OrderRow {
   id: string;
@@ -139,6 +140,27 @@ export async function sendInvoiceForOrder(
     throw new Error('El proveedor no tiene email de PayPal.');
   }
 
+  // Los precios de la factura salen del catálogo, no de las líneas del
+  // pedido (las puede escribir el cliente).
+  const items = order.order_items ?? [];
+  const uids = [...new Set(items.map((item) => item.product_uid))];
+  const { data: productsData, error: productsError } = await supabaseAdmin
+    .from('products')
+    .select('uid, price')
+    .in('uid', uids);
+
+  if (productsError) {
+    throw new Error(
+      `No se pudieron leer los precios del catálogo: ${productsError.message}`,
+    );
+  }
+
+  const prices = new Map(
+    ((productsData ?? []) as { uid: string; price: number | string }[]).map(
+      (product) => [product.uid, Number(product.price)],
+    ),
+  );
+
   const number = `RS-${order.id.slice(0, 8).toUpperCase()}-${Date.now()
     .toString()
     .slice(-6)}`;
@@ -149,10 +171,10 @@ export async function sendInvoiceForOrder(
     recipientEmail: supplier.paypal_email,
     merchantEmail: store.paypal_merchant_email,
     note: `Factura de reposición ${number}`,
-    lines: (order.order_items ?? []).map((item) => ({
+    lines: items.map((item) => ({
       name: item.name,
       qty: item.qty,
-      unitPrice: Number(item.unit_price),
+      unitPrice: prices.get(item.product_uid) ?? Number(item.unit_price),
     })),
   });
 
@@ -192,7 +214,9 @@ export async function fulfillOrder(
     throw new Error(`El pedido está en estado "${order.status}".`);
   }
 
-  const total = Number(order.total);
+  // El importe se recalcula desde el catálogo y se vuelven a comprobar las
+  // reglas: el valor guardado en orders.total no es de fiar.
+  const { total } = await guardOrderAmount(orderId);
   const warnings: string[] = [];
 
   let payment: FulfillmentResult['payment'] = null;

@@ -1,7 +1,16 @@
 import { supabaseAdmin } from '../infrastructure/supabase/supabase_client.js';
 
-const email = process.env.DEMO_EMAIL ?? 'demo@restock.dev';
-const password = process.env.DEMO_PASSWORD ?? 'Restock2026!';
+// Las credenciales de la cuenta demo vienen siempre del entorno: en un repo
+// público, una contraseña por defecto es una puerta abierta.
+const email = process.env.DEMO_EMAIL;
+const password = process.env.DEMO_PASSWORD;
+
+if (!email || !password) {
+  console.error(
+    'Define DEMO_EMAIL y DEMO_PASSWORD en el entorno (no hay valores por defecto).',
+  );
+  process.exit(1);
+}
 
 const { data, error } = await supabaseAdmin.auth.admin.createUser({
   email,
@@ -20,4 +29,3 @@ if (error) {
 }
 
 console.log(`Usuario demo creado: ${data.user?.email}`);
-console.log(`Contraseña: ${password}`);

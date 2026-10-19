@@ -1,5 +1,8 @@
-import { env } from './config/env.js';
+import { env, requireSupabaseEnv } from './config/env.js';
 import { buildServer } from './interfaces/http/server.js';
+
+// Falla al arrancar (y no en cada petición) si faltan las claves.
+requireSupabaseEnv();
 
 const app = buildServer();
 

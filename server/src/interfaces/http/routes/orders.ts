@@ -1,8 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 
 import { fulfillOrder } from '../../../application/orders/fulfill_order.js';
+import { guardOrderAmount } from '../../../application/orders/guard_order_amount.js';
 import { supabaseAdmin } from '../../../infrastructure/supabase/supabase_client.js';
 import { authenticate } from '../auth.js';
+import { createRateLimiter } from '../rate_limit.js';
 
 interface OrderRow {
   id: string;
@@ -56,6 +58,8 @@ interface OrderStatusRow {
 }
 
 export async function orderRoutes(app: FastifyInstance): Promise<void> {
+  // Aprobar mueve dinero: se limita por usuario.
+  const paymentLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
   app.get<{ Params: { id: string } }>(
     '/orders/:id/status',
     async (request, reply) => {
@@ -109,11 +113,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         });
       } catch (error) {
         request.log.error(error);
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Error al consultar el pedido.';
-        return reply.code(500).send({ error: message });
+        return reply.code(500).send({ error: 'No se pudo consultar el pedido.' });
       }
     },
   );
@@ -126,6 +126,14 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(401).send({ error: 'Sesión no válida.' });
       }
 
+      const { allowed, retryAfterSeconds } = paymentLimiter.check(user.id);
+      if (!allowed) {
+        reply.header('Retry-After', String(retryAfterSeconds));
+        return reply
+          .code(429)
+          .send({ error: 'Demasiadas aprobaciones seguidas. Espera un momento.' });
+      }
+
       try {
         const order = await loadOwnedOrder(request.params.id, user.id);
         if (!order) {
@@ -135,6 +143,19 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
           return reply
             .code(409)
             .send({ error: `El pedido está en estado "${order.status}".` });
+        }
+
+        // Antes de aprobar se comprueba el importe contra el catálogo y las
+        // reglas vigentes: si no cuadra, no se paga.
+        try {
+          await guardOrderAmount(order.id);
+        } catch (error) {
+          return reply.code(409).send({
+            error:
+              error instanceof Error
+                ? error.message
+                : 'El pedido no supera la comprobación de importe.',
+          });
         }
 
         const { error } = await supabaseAdmin
@@ -154,9 +175,9 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         return reply.send({ order_id: order.id, ...fulfillment });
       } catch (error) {
         request.log.error(error);
-        const message =
-          error instanceof Error ? error.message : 'Error al aprobar el pedido.';
-        return reply.code(502).send({ error: message });
+        return reply.code(502).send({
+          error: 'No se pudo completar el pago del pedido.',
+        });
       }
     },
   );
@@ -196,11 +217,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         return reply.send({ order_id: order.id, status: 'rejected' });
       } catch (error) {
         request.log.error(error);
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Error al rechazar el pedido.';
-        return reply.code(500).send({ error: message });
+        return reply.code(500).send({ error: 'No se pudo rechazar el pedido.' });
       }
     },
   );
