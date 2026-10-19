@@ -98,7 +98,7 @@ async function handleToolCall(
     return { ok: false, error: 'Faltan el proveedor o las líneas del pedido.' };
   }
 
-  const lowStock = await getLowStockProducts();
+  const lowStock = await getLowStockProducts({ storeId: store.id });
   const available = new Map(
     lowStock
       .filter((product) => product.supplierId === supplierId)
@@ -186,6 +186,7 @@ function buildSystemPrompt(
     'Tu objetivo es reponer los productos con stock bajo creando pedidos a proveedores con la herramienta create_restock_order.',
     'Reglas obligatorias:',
     '- Solo puedes reponer productos que aparezcan en la lista de stock bajo.',
+    '- No repitas productos que ya estén en un pedido abierto.',
     '- Crea como máximo un pedido por proveedor.',
     '- No inventes UIDs, proveedores ni precios.',
     '- Usa cantidades razonables basadas en suggestedQty; no pidas más de lo necesario.',
@@ -220,7 +221,7 @@ export async function runAgent(params: {
 
   const runId = runData.id as string;
 
-  const lowStock = await getLowStockProducts();
+  const lowStock = await getLowStockProducts({ storeId: params.store.id });
 
   if (lowStock.length === 0) {
     await supabaseAdmin

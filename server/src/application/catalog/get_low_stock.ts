@@ -29,7 +29,55 @@ export interface LowStockProduct {
   supplierPaypalEmail: string | null;
 }
 
-export async function getLowStockProducts(): Promise<LowStockProduct[]> {
+// Estados en los que el pedido sigue "abierto" y todavía no ha repuesto stock.
+// Se excluyen completed/rejected/payment_failed para permitir reintentos.
+const OPEN_ORDER_STATUSES = [
+  'draft',
+  'pending_approval',
+  'approved',
+  'paying',
+  'paid',
+];
+
+interface OrderItemsRow {
+  order_items: { product_uid: string }[] | null;
+}
+
+/** UIDs de productos que ya están en un pedido abierto de la tienda. */
+export async function getProductsInOpenOrders(
+  storeId: string,
+): Promise<Set<string>> {
+  const { data, error } = await supabaseAdmin
+    .from('orders')
+    .select('order_items(product_uid)')
+    .eq('store_id', storeId)
+    .in('status', OPEN_ORDER_STATUSES);
+
+  if (error) {
+    throw new Error(
+      `No se pudieron leer los pedidos abiertos: ${error.message}`,
+    );
+  }
+
+  const uids = new Set<string>();
+  for (const row of (data ?? []) as unknown as OrderItemsRow[]) {
+    for (const item of row.order_items ?? []) {
+      uids.add(item.product_uid);
+    }
+  }
+  return uids;
+}
+
+export async function getLowStockProducts(options?: {
+  storeId?: string;
+  excludeUids?: Set<string>;
+}): Promise<LowStockProduct[]> {
+  const excluded =
+    options?.excludeUids ??
+    (options?.storeId
+      ? await getProductsInOpenOrders(options.storeId)
+      : new Set<string>());
+
   const { data, error } = await supabaseAdmin
     .from('products')
     .select(
@@ -43,6 +91,7 @@ export async function getLowStockProducts(): Promise<LowStockProduct[]> {
 
   return ((data ?? []) as unknown as ProductRow[])
     .filter((row) => row.stock <= row.low_stock_threshold)
+    .filter((row) => !excluded.has(row.uid))
     .map((row) => {
       const supplier = Array.isArray(row.suppliers)
         ? row.suppliers[0]
