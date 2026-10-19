@@ -55,7 +55,7 @@ export async function getLowStockProducts(): Promise<LowStockProduct[]> {
         currency: row.currency,
         stock: row.stock,
         lowStockThreshold: row.low_stock_threshold,
-        suggestedQty: missing > 0 ? missing : 1,
+        suggestedQty: missing >= 0 ? missing + 1 : 1,
         unit: row.unit,
         supplierId: row.supplier_id,
         supplierName: supplier?.name ?? 'Proveedor',
