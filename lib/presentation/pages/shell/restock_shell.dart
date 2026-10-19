@@ -10,6 +10,7 @@ import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_us
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
@@ -27,6 +28,17 @@ import 'package:store_automatization_app/presentation/widgets/restock/carousel_n
 
 /// App principal tras iniciar sesión: 5 pestañas en un PageView con la
 /// barra en carrusel flotando encima.
+
+/// Recuerda la pestaña activa fuera del widget para que el dock no vuelva a
+/// "Inicio" si el shell se reconstruye (por ejemplo, al cambiar el tema o
+/// cuando la autenticación vuelve a emitir).
+class ShellTabStore {
+  ShellTabStore._();
+
+  static final ShellTabStore instance = ShellTabStore._();
+
+  int index = 0;
+}
 class RestockShell extends StatelessWidget {
   const RestockShell({super.key, this.createCubit});
 
@@ -42,6 +54,7 @@ class RestockShell extends StatelessWidget {
         getOrders: sl<GetOrdersUsecase>(),
         getSuppliers: sl<GetSuppliersUsecase>(),
         getSupplierCatalog: sl<GetSupplierCatalogUsecase>(),
+        updateProductStock: sl<UpdateProductStockUsecase>(),
         getAgentRuns: sl<GetAgentRunsUsecase>(),
         runAgentUsecase: sl<RunAgentUsecase>(),
         // Estos dos casos de uso son nuevos; se crean aquí para no tocar
@@ -67,8 +80,10 @@ class _ShellView extends StatefulWidget {
 }
 
 class _ShellViewState extends State<_ShellView> {
-  final _pages = PageController();
-  int _index = 0;
+  late final PageController _pages = PageController(
+    initialPage: ShellTabStore.instance.index,
+  );
+  late int _index = ShellTabStore.instance.index;
 
   static const _items = [
     NavItem('Inicio', CupertinoIcons.house),
@@ -86,6 +101,7 @@ class _ShellViewState extends State<_ShellView> {
 
   void _goTo(int index, {bool animate = true}) {
     if (index == _index) return;
+    ShellTabStore.instance.index = index;
     if (animate) {
       _pages.animateToPage(
         index,
@@ -99,6 +115,7 @@ class _ShellViewState extends State<_ShellView> {
 
   void _dragTo(int index) {
     if (index == _index) return;
+    ShellTabStore.instance.index = index;
     _pages.animateToPage(
       index,
       duration: const Duration(milliseconds: 260),
@@ -124,6 +141,7 @@ class _ShellViewState extends State<_ShellView> {
               onPageChanged: (i) {
                 HapticFeedback.selectionClick();
                 FocusScope.of(context).unfocus();
+                ShellTabStore.instance.index = i;
                 setState(() => _index = i);
               },
               children: const [

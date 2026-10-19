@@ -65,6 +65,11 @@ class SpendingRules {
     }
 
     if (orderTotal > requireApprovalAbove) {
+      if (requireApprovalAbove <= 0) {
+        return SpendingDecision.requiresApproval(
+          'Me preguntas por cualquier pedido.',
+        );
+      }
       return SpendingDecision.requiresApproval(
         'El pedido supera el umbral de aprobación automática '
         '(${requireApprovalAbove.toStringAsFixed(2)}).',

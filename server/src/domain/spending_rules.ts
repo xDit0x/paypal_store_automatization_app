@@ -51,7 +51,10 @@ export function evaluateSpendingRules(params: {
   if (orderTotal > rules.requireApprovalAbove) {
     return {
       status: 'requires_approval',
-      reason: `El pedido supera el umbral de aprobación automática (${rules.requireApprovalAbove.toFixed(2)}).`,
+      reason:
+        rules.requireApprovalAbove <= 0
+          ? 'Me preguntas por cualquier pedido.'
+          : `El pedido supera el umbral de aprobación automática (${rules.requireApprovalAbove.toFixed(2)}).`,
     };
   }
 

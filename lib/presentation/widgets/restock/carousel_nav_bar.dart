@@ -52,6 +52,7 @@ class _CarouselNavBarState extends State<CarouselNavBar>
 
   late final AnimationController _settle;
   double _slot = 0;
+  double _lastPage = 0;
   double? _dragPage;
   double? _settlePage;
   int _dragIndex = 0;
@@ -65,6 +66,7 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     super.initState();
     _settle = AnimationController.unbounded(vsync: this)
       ..addListener(_onSettleTick);
+    _lastPage = widget.controller.initialPage.toDouble();
     widget.controller.addListener(_handleController);
   }
 
@@ -92,18 +94,27 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   }
 
   void _handleController() {
+    final controller = widget.controller;
+    if (controller.hasClients && controller.position.haveDimensions) {
+      final page = controller.page;
+      if (page != null) _lastPage = page;
+    }
     if (!_traveling) return;
     if ((_page() - _travelTo).abs() < 0.001) {
       setState(() => _traveling = false);
     }
   }
 
+  /// Página actual del contenido. Si el visor pierde las dimensiones a
+  /// mitad de un rebuild (por ejemplo, al cambiar el tema) se devuelve la
+  /// última página conocida para que la píldora no salte a "Inicio".
   double _page() {
     final controller = widget.controller;
     if (controller.hasClients && controller.position.haveDimensions) {
-      return controller.page ?? controller.initialPage.toDouble();
+      final page = controller.page;
+      if (page != null) return page;
     }
-    return controller.initialPage.toDouble();
+    return _lastPage;
   }
 
   double _maxPage() => (widget.items.length - 1).toDouble();
@@ -328,6 +339,16 @@ class _CarouselNavBarState extends State<CarouselNavBar>
 
                       final lift = 1 - emphasis;
 
+                      // Durante el trayecto la píldora se aclara un poco (para
+                      // que se note que está "en camino"); al posarse sobre
+                      // una pestaña vuelve al azul de la app.
+                      final travelMix = transit.clamp(0.0, 1.0) * 0.75;
+                      final pillColor = Color.lerp(
+                        p.accent,
+                        p.accentLight,
+                        travelMix,
+                      )!;
+
                       return Stack(
                         children: [
                           Positioned(
@@ -339,13 +360,13 @@ class _CarouselNavBarState extends State<CarouselNavBar>
                             height: pillHeight,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: p.accent,
+                                color: pillColor,
                                 borderRadius: BorderRadius.circular(
                                   pillHeight / 2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: p.accent.withValues(
+                                    color: pillColor.withValues(
                                       alpha: ui.lerpDouble(
                                         0.16,
                                         0.22,

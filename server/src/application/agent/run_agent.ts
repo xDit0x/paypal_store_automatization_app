@@ -192,7 +192,9 @@ function buildSystemPrompt(
     '- Usa cantidades razonables basadas en suggestedQty; no pidas más de lo necesario.',
     `- Máximo por pedido: ${store.rules.maxPerOrder.toFixed(2)} ${store.currency}.`,
     `- Límite mensual: ${store.rules.monthlyLimit.toFixed(2)} ${store.currency}; gastado este mes: ${spentThisMonth.toFixed(2)} ${store.currency}.`,
-    `- Por encima de ${store.rules.requireApprovalAbove.toFixed(2)} ${store.currency} el pedido quedará pendiente de aprobación.`,
+    store.rules.requireApprovalAbove <= 0
+      ? '- Cualquier pedido queda pendiente de aprobación: pregunta siempre antes de comprar.'
+      : `- Por encima de ${store.rules.requireApprovalAbove.toFixed(2)} ${store.currency} el pedido quedará pendiente de aprobación.`,
     '- Si no hace falta reponer nada, no llames a la herramienta y explica por qué.',
     'Responde siempre en español, con una explicación breve de lo que hiciste.',
   ].join('\n');

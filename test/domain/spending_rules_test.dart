@@ -77,5 +77,19 @@ void main() {
 
       expect(decision.isBlocked, isTrue);
     });
+
+    test('con umbral 0 pide aprobación de cualquier pedido', () {
+      const always = SpendingRules(requireApprovalAbove: 0);
+
+      final decision = always.evaluate(
+        orderTotal: 10,
+        spentThisMonth: 0,
+        supplierId: 'sup-1',
+      );
+
+      expect(decision.status, SpendingDecisionStatus.requiresApproval);
+      expect(decision.needsApproval, isTrue);
+      expect(decision.reason, contains('cualquier pedido'));
+    });
   });
 }

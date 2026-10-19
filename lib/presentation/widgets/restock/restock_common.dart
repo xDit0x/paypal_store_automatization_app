@@ -47,6 +47,9 @@ String? shortDecisionReason(RestockState state, Order order) {
     return decision.reason;
   }
   if (decision.needsApproval) {
+    if (state.rules.requireApprovalAbove <= 0) {
+      return 'Me preguntas por cualquier pedido';
+    }
     return 'Supera ${eurosShort(state.rules.requireApprovalAbove, c)} sin aprobación';
   }
   return null;
