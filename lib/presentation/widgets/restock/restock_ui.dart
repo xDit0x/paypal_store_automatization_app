@@ -105,7 +105,7 @@ class RLargeTitle extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );
@@ -128,7 +128,7 @@ class RSectionTitle extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(child: Text(small ? text.toUpperCase() : text, style: small ? t.overline : t.title3)),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );

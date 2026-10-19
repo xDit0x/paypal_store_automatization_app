@@ -84,9 +84,26 @@ class _ShellViewState extends State<_ShellView> {
     super.dispose();
   }
 
-  void _goTo(int index) {
+  void _goTo(int index, {bool animate = true}) {
     if (index == _index) return;
-    _pages.animateToPage(index, duration: const Duration(milliseconds: 420), curve: Curves.easeOutCubic);
+    if (animate) {
+      _pages.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 480),
+        curve: Curves.easeInOutCubic,
+      );
+    } else {
+      _pages.jumpToPage(index);
+    }
+  }
+
+  void _dragTo(int index) {
+    if (index == _index) return;
+    _pages.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -125,7 +142,12 @@ class _ShellViewState extends State<_ShellView> {
                 child: ConstrainedBox(
                   // En tablet y web la barra no se estira de lado a lado.
                   constraints: const BoxConstraints(maxWidth: 420),
-                  child: CarouselNavBar(controller: _pages, items: _items, onSelect: _goTo),
+                  child: CarouselNavBar(
+                    controller: _pages,
+                    items: _items,
+                    onSelect: (i) => _goTo(i),
+                    onDragSelect: _dragTo,
+                  ),
                 ),
               ),
             ),

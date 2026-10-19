@@ -1,5 +1,7 @@
 {
   "SUPABASE_URL": "https://your-project.supabase.co",
   "SUPABASE_ANON_KEY": "your-anon-or-publishable-key",
-  "AGENT_API_URL": "http://localhost:3000"
+  "AGENT_API_URL": "http://localhost:3000",
+  "DEMO_EMAIL": "",
+  "DEMO_PASSWORD": ""
 }

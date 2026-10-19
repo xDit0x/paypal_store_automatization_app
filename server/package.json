@@ -20,7 +20,8 @@
     "store:paypal": "tsx src/scripts/configure-store.ts",
     "send:invoice": "tsx src/scripts/send-invoice.ts",
     "inspect:stock": "tsx src/scripts/inspect-stock.ts",
-    "approve:order": "tsx src/scripts/approve-order.ts"
+    "approve:order": "tsx src/scripts/approve-order.ts",
+    "reset:demo": "tsx src/scripts/reset-demo.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",

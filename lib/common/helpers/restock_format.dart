@@ -1,5 +1,6 @@
 /// Formato de importes y fechas en español, sin depender de la
 /// inicialización de locales de `intl`.
+library;
 
 /// 145.0 -> "145,00 €"
 String euros(double value, [String currency = 'EUR']) =>
