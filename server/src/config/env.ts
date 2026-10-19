@@ -14,7 +14,7 @@ export const env = {
 
   groqApiKey: process.env.GROQ_API_KEY ?? '',
   aiProvider: process.env.AI_PROVIDER ?? 'groq',
-  aiModel: process.env.AI_MODEL ?? 'llama-3.3-70b-versatile',
+  aiModel: process.env.AI_MODEL ?? 'openai/gpt-oss-120b',
 
   paypalClientId: process.env.PAYPAL_CLIENT_ID ?? '',
   paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET ?? '',

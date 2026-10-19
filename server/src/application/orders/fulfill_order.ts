@@ -130,55 +130,61 @@ export async function fulfillOrder(
 
   let invoice: FulfillmentResult['invoice'] = null;
 
-  const invoicerEmail =
-    store.paypal_merchant_email ?? store.notification_email ?? null;
+  const invoicerEmail = store.paypal_merchant_email;
 
   if (paypalConfigured() && supplier.paypal_email && invoicerEmail) {
-    const number = `RS-${order.id.slice(0, 8).toUpperCase()}-${Date.now()
-      .toString()
-      .slice(-6)}`;
+    try {
+      const number = `RS-${order.id.slice(0, 8).toUpperCase()}-${Date.now()
+        .toString()
+        .slice(-6)}`;
 
-    const result = await createAndSendInvoice({
-      invoiceNumber: number,
-      currency: store.currency,
-      recipientEmail: supplier.paypal_email,
-      merchantEmail: invoicerEmail,
-      note: `Factura de reposición ${number}`,
-      lines: (order.order_items ?? []).map((item) => ({
-        name: item.name,
-        qty: item.qty,
-        unitPrice: Number(item.unit_price),
-      })),
-    });
+      const result = await createAndSendInvoice({
+        invoiceNumber: number,
+        currency: store.currency,
+        recipientEmail: supplier.paypal_email,
+        merchantEmail: invoicerEmail,
+        note: `Factura de reposición ${number}`,
+        lines: (order.order_items ?? []).map((item) => ({
+          name: item.name,
+          qty: item.qty,
+          unitPrice: Number(item.unit_price),
+        })),
+      });
 
-    const { data: invoiceRow, error: invoiceError } = await supabaseAdmin
-      .from('invoices')
-      .upsert(
-        {
-          order_id: order.id,
-          number,
-          status: 'sent',
-          sent_to: supplier.paypal_email,
-          sent_at: new Date().toISOString(),
-        },
-        { onConflict: 'order_id' },
-      )
-      .select('id')
-      .single();
+      const { data: invoiceRow, error: invoiceError } = await supabaseAdmin
+        .from('invoices')
+        .upsert(
+          {
+            order_id: order.id,
+            number,
+            status: 'sent',
+            sent_to: supplier.paypal_email,
+            sent_at: new Date().toISOString(),
+          },
+          { onConflict: 'order_id' },
+        )
+        .select('id')
+        .single();
 
-    if (invoiceError) {
-      warnings.push(`Factura creada en PayPal pero no registrada: ${invoiceError.message}`);
+      if (invoiceError) {
+        warnings.push(
+          `Factura creada en PayPal pero no registrada: ${invoiceError.message}`,
+        );
+      }
+
+      await updateOrder(order.id, {
+        invoice_id: invoiceRow?.id ?? null,
+        status: 'completed',
+      });
+
+      invoice = { invoiceId: result.invoiceId, number };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      warnings.push(`No se pudo emitir la factura: ${message}`);
     }
-
-    await updateOrder(order.id, {
-      invoice_id: invoiceRow?.id ?? null,
-      status: 'completed',
-    });
-
-    invoice = { invoiceId: result.invoiceId, number };
   } else {
     warnings.push(
-      'Factura omitida: falta un email de facturación o PayPal no está configurado.',
+      'Factura omitida: configura paypal_merchant_email en la tienda o el proveedor no tiene email.',
     );
   }
 

@@ -12,7 +12,11 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "check:groq": "tsx src/scripts/check-groq.ts",
-    "check:supabase": "tsx src/scripts/check-supabase.ts"
+    "check:supabase": "tsx src/scripts/check-supabase.ts",
+    "check:paypal": "tsx src/scripts/check-paypal.ts",
+    "check:agent": "tsx src/scripts/check-agent.ts",
+    "demo:user": "tsx src/scripts/create-demo-user.ts",
+    "store:paypal": "tsx src/scripts/configure-store.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",

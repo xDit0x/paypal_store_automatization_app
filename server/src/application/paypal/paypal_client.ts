@@ -6,7 +6,7 @@ export function paypalConfigured(): boolean {
   return Boolean(env.paypalClientId && env.paypalClientSecret);
 }
 
-async function getAccessToken(): Promise<string> {
+export async function getPayPalAccessToken(): Promise<string> {
   if (!paypalConfigured()) {
     throw new Error('PayPal no está configurado.');
   }
@@ -49,7 +49,7 @@ export async function paypalRequest<T>(
   path: string,
   init: { method: string; body?: unknown; headers?: Record<string, string> },
 ): Promise<T> {
-  const token = await getAccessToken();
+  const token = await getPayPalAccessToken();
   const response = await fetch(`${env.paypalBaseUrl}${path}`, {
     method: init.method,
     headers: {
