@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/widgets/util_snackbar.dart';
+import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_state.dart';
+import 'package:store_automatization_app/presentation/pages/auth/auth_widgets.dart';
 import 'package:store_automatization_app/presentation/pages/auth/register_page.dart';
-import 'package:store_automatization_app/presentation/widgets/password_textfield.dart';
+import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
 
+/// Inicio de sesión con el estilo de la app: marca, tarjeta con los campos
+/// y los avisos flotantes nuevos.
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
 
@@ -28,7 +31,8 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final p = context.rp;
+    final t = context.rt;
     final isLoading =
         context.watch<AuthCubit>().state.status == AuthStatus.loading;
 
@@ -37,84 +41,99 @@ class _SignInPageState extends State<SignInPage> {
           current.error != null && current.error != previous.error,
       listener: (context, state) {
         if (state.error != null) {
-          UtilSnackbar.show(
+          showRestockSnack(
             context,
             state.error!,
-            selection: UtilSnackbarType.bad,
+            title: 'No se pudo iniciar sesión',
+            tone: RSnackTone.warning,
           );
         }
       },
       child: Scaffold(
+        backgroundColor: p.background,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      size: 56,
-                      color: scheme.primary,
-                    ),
-                    const SizedBox(height: 12),
+                    const Center(child: RBrandMark()),
+                    const SizedBox(height: 18),
                     Text(
                       'Restock',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: scheme.onSurface,
-                      ),
+                      style: t.largeTitle,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       'Pedidos automáticos con IA + PayPal',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: scheme.onSurfaceVariant),
+                      style: t.subhead,
                     ),
-                    const SizedBox(height: 32),
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      decoration: const InputDecoration(
-                        hintText: 'Correo',
-                        prefixIcon: Icon(Icons.mail_outline),
+                    const SizedBox(height: 30),
+                    RCard(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          RAuthField(
+                            label: 'Correo',
+                            controller: _emailController,
+                            hint: 'tu@tienda.com',
+                            autofocus: true,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 14),
+                          Divider(height: 1, color: p.separator),
+                          const SizedBox(height: 14),
+                          RAuthPasswordField(
+                            label: 'Contraseña',
+                            controller: _passwordController,
+                            hint: 'Mínimo 6 caracteres',
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _signIn(),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    PasswordTxtField(
-                      controller: _passwordController,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _signIn(),
-                    ),
-                    const SizedBox(height: 22),
-                    FilledButton(
+                    const SizedBox(height: 18),
+                    RPrimaryButton(
+                      'Iniciar sesión',
+                      loading: isLoading,
                       onPressed: isLoading ? null : _signIn,
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Iniciar sesión'),
                     ),
-                    const SizedBox(height: 10),
-                    TextButton(
-                      onPressed: isLoading ? null : _openRegister,
-                      child: const Text('Crear una cuenta'),
+                    const SizedBox(height: 6),
+                    RTextLink(
+                      '¿Olvidaste tu contraseña?',
+                      onTap: isLoading ? null : _forgotPassword,
                     ),
-                    TextButton(
-                      onPressed: isLoading ? null : _forgotPassword,
-                      child: const Text('¿Olvidaste tu contraseña?'),
+                    const SizedBox(height: 18),
+                    RCard(
+                      color: p.blueSoft,
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '¿Primera vez en Restock?',
+                            style: t.body.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Crea tu tienda y deja que el agente reponga el stock.',
+                            style: t.footnote,
+                          ),
+                          const SizedBox(height: 10),
+                          RTextLink(
+                            'Crear una cuenta',
+                            onTap: isLoading ? null : _openRegister,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -132,10 +151,11 @@ class _SignInPageState extends State<SignInPage> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      UtilSnackbar.show(
+      showRestockSnack(
         context,
-        'Completa todos los campos',
-        selection: UtilSnackbarType.warning,
+        'Completa el correo y la contraseña.',
+        title: 'Faltan datos',
+        tone: RSnackTone.warning,
       );
       return;
     }
@@ -145,29 +165,30 @@ class _SignInPageState extends State<SignInPage> {
 
   void _openRegister() {
     HapticFeedback.lightImpact();
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const RegisterPage()),
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const RegisterPage()),
     );
   }
 
   Future<void> _forgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      UtilSnackbar.show(
+      showRestockSnack(
         context,
-        'Escribe tu correo primero',
-        selection: UtilSnackbarType.warning,
+        'Escribe tu correo primero.',
+        title: 'Falta el correo',
+        tone: RSnackTone.warning,
       );
       return;
     }
 
     await context.read<AuthCubit>().sendResetPasswordEmail(email);
     if (!mounted) return;
-    UtilSnackbar.show(
+    showRestockSnack(
       context,
-      'Si el correo existe, te enviamos un enlace de recuperación',
-      selection: UtilSnackbarType.ok,
+      'Si el correo existe, te enviamos un enlace de recuperación.',
+      title: 'Correo enviado',
+      tone: RSnackTone.success,
     );
   }
 }

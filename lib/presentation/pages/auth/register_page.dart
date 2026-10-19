@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/widgets/util_snackbar.dart';
+import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_state.dart';
-import 'package:store_automatization_app/presentation/widgets/password_textfield.dart';
+import 'package:store_automatization_app/presentation/pages/auth/auth_widgets.dart';
+import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
 
+/// Alta de cuenta: nombre de la tienda, correo y contraseña.
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -31,7 +33,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final p = context.rp;
+    final t = context.rt;
     final isLoading =
         context.watch<AuthCubit>().state.status == AuthStatus.loading;
 
@@ -40,79 +43,94 @@ class _RegisterPageState extends State<RegisterPage> {
           current.error != null && current.error != previous.error,
       listener: (context, state) {
         if (state.error != null) {
-          UtilSnackbar.show(
+          showRestockSnack(
             context,
             state.error!,
-            selection: UtilSnackbarType.bad,
+            title: 'No se pudo crear la cuenta',
+            tone: RSnackTone.warning,
           );
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text('Crear cuenta', style: TextStyle(color: scheme.onSurface)),
-          backgroundColor: scheme.surface,
-        ),
+        backgroundColor: p.background,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
-                      controller: _storeController,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        hintText: 'Nombre de tu tienda',
-                        prefixIcon: Icon(Icons.storefront_outlined),
-                      ),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: RBackLink('Iniciar sesión'),
                     ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      decoration: const InputDecoration(
-                        hintText: 'Correo',
-                        prefixIcon: Icon(Icons.mail_outline),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    PasswordTxtField(
-                      controller: _passwordController,
-                      hint: 'Contraseña (mínimo 6 caracteres)',
-                    ),
-                    const SizedBox(height: 14),
-                    PasswordTxtField(
-                      controller: _confirmController,
-                      hint: 'Repite la contraseña',
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _register(),
+                    const SizedBox(height: 6),
+                    const RLargeTitle(
+                      'Crear cuenta',
+                      subtitle: 'Crea tu tienda y empieza a reponer en segundos',
                     ),
                     const SizedBox(height: 22),
-                    FilledButton(
+                    RCard(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          RAuthField(
+                            label: 'Nombre de tu tienda',
+                            controller: _storeController,
+                            hint: 'Tienda Lumbre',
+                            autofocus: true,
+                            textInputAction: TextInputAction.next,
+                          ),
+                          const SizedBox(height: 14),
+                          Divider(height: 1, color: p.separator),
+                          const SizedBox(height: 14),
+                          RAuthField(
+                            label: 'Correo',
+                            controller: _emailController,
+                            hint: 'tu@tienda.com',
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 14),
+                          Divider(height: 1, color: p.separator),
+                          const SizedBox(height: 14),
+                          RAuthPasswordField(
+                            label: 'Contraseña',
+                            controller: _passwordController,
+                            hint: 'Mínimo 6 caracteres',
+                          ),
+                          const SizedBox(height: 14),
+                          Divider(height: 1, color: p.separator),
+                          const SizedBox(height: 14),
+                          RAuthPasswordField(
+                            label: 'Repite la contraseña',
+                            controller: _confirmController,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _register(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    RPrimaryButton(
+                      'Crear mi tienda',
+                      loading: isLoading,
                       onPressed: isLoading ? null : _register,
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Registrarme'),
+                    ),
+                    const SizedBox(height: 6),
+                    RTextLink(
+                      'Ya tengo cuenta',
+                      onTap: isLoading ? null : () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(height: 10),
-                    TextButton(
-                      onPressed: isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Ya tengo cuenta'),
+                    Text(
+                      'Crear la tienda es gratis. Solo pagas los pedidos que el agente '
+                      'prepare y tú apruebes, dentro de tus reglas.',
+                      textAlign: TextAlign.center,
+                      style: t.caption,
                     ),
                   ],
                 ),
@@ -132,26 +150,29 @@ class _RegisterPageState extends State<RegisterPage> {
     final confirm = _confirmController.text;
 
     if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
-      UtilSnackbar.show(
+      showRestockSnack(
         context,
-        'Completa todos los campos',
-        selection: UtilSnackbarType.warning,
+        'Completa el correo y las dos contraseñas.',
+        title: 'Faltan datos',
+        tone: RSnackTone.warning,
       );
       return;
     }
     if (password.length < 6) {
-      UtilSnackbar.show(
+      showRestockSnack(
         context,
-        'La contraseña debe tener al menos 6 caracteres',
-        selection: UtilSnackbarType.warning,
+        'La contraseña debe tener al menos 6 caracteres.',
+        title: 'Contraseña corta',
+        tone: RSnackTone.warning,
       );
       return;
     }
     if (password != confirm) {
-      UtilSnackbar.show(
+      showRestockSnack(
         context,
-        'Las contraseñas no coinciden',
-        selection: UtilSnackbarType.bad,
+        'Las contraseñas no coinciden.',
+        title: 'No coinciden',
+        tone: RSnackTone.warning,
       );
       return;
     }
