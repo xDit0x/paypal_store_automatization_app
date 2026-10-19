@@ -33,4 +33,31 @@ class Product {
     final missing = lowStockThreshold - stock;
     return missing >= 0 ? missing + 1 : 1;
   }
+
+  Product copyWith({
+    String? name,
+    String? description,
+    double? price,
+    String? currency,
+    int? stock,
+    int? lowStockThreshold,
+    String? unit,
+    String? imageUrl,
+    bool? active,
+  }) {
+    return Product(
+      id: id,
+      uid: uid,
+      supplierId: supplierId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      stock: stock ?? this.stock,
+      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+      unit: unit ?? this.unit,
+      imageUrl: imageUrl ?? this.imageUrl,
+      active: active ?? this.active,
+    );
+  }
 }

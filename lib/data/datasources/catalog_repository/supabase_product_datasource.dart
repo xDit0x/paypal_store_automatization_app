@@ -1,8 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseProductDatasource {
   final SupabaseClient _client;
-  SupabaseProductDatasource(this._client);
+  final Dio _dio;
+
+  SupabaseProductDatasource(this._client, this._dio);
 
   Future<List<Map<String, dynamic>>> getBySupplier(String supplierId) async {
     final rows = await _client
@@ -37,5 +40,19 @@ class SupabaseProductDatasource {
           return stock <= threshold;
         })
         .toList();
+  }
+
+  /// El catálogo solo se escribe con service_role, así que pasa por la API.
+  Future<void> updateStock(String uid, int stock) async {
+    try {
+      await _dio.patch<Map<String, dynamic>>(
+        '/catalog/products/$uid/stock',
+        data: {'stock': stock},
+      );
+    } on DioException catch (error) {
+      final data = error.response?.data;
+      final message = data is Map<String, dynamic> ? data['error'] : null;
+      throw Exception(message ?? 'No se pudo actualizar el stock.');
+    }
   }
 }

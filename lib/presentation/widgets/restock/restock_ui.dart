@@ -76,7 +76,13 @@ class RInsetGroup extends StatelessWidget {
 }
 
 class RLargeTitle extends StatelessWidget {
-  const RLargeTitle(this.title, {super.key, this.overline, this.subtitle, this.trailing});
+  const RLargeTitle(
+    this.title, {
+    super.key,
+    this.overline,
+    this.subtitle,
+    this.trailing,
+  });
 
   final String title;
   final String? overline;
@@ -96,7 +102,12 @@ class RLargeTitle extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (overline != null)
-                  Text(overline!.toUpperCase(), style: t.overline, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    overline!.toUpperCase(),
+                    style: t.overline,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 Text(title, style: t.largeTitle),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
@@ -113,7 +124,12 @@ class RLargeTitle extends StatelessWidget {
 }
 
 class RSectionTitle extends StatelessWidget {
-  const RSectionTitle(this.text, {super.key, this.small = false, this.trailing});
+  const RSectionTitle(
+    this.text, {
+    super.key,
+    this.small = false,
+    this.trailing,
+  });
 
   final String text;
   final bool small;
@@ -127,7 +143,12 @@ class RSectionTitle extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Expanded(child: Text(small ? text.toUpperCase() : text, style: small ? t.overline : t.title3)),
+          Expanded(
+            child: Text(
+              small ? text.toUpperCase() : text,
+              style: small ? t.overline : t.title3,
+            ),
+          ),
           ?trailing,
         ],
       ),
@@ -155,8 +176,14 @@ class RPill extends StatelessWidget {
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg),
+      ),
     );
   }
 }
@@ -167,12 +194,20 @@ class RChevron extends StatelessWidget {
   final Color? color;
 
   @override
-  Widget build(BuildContext context) =>
-      Icon(CupertinoIcons.chevron_right, size: 16, color: color ?? context.rp.chevron);
+  Widget build(BuildContext context) => Icon(
+    CupertinoIcons.chevron_right,
+    size: 16,
+    color: color ?? context.rp.chevron,
+  );
 }
 
 class RLevelBar extends StatelessWidget {
-  const RLevelBar({super.key, required this.value, required this.color, this.height = 5});
+  const RLevelBar({
+    super.key,
+    required this.value,
+    required this.color,
+    this.height = 5,
+  });
 
   final double value;
   final Color color;
@@ -225,7 +260,12 @@ class RBackLink extends StatelessWidget {
 }
 
 class RPrimaryButton extends StatelessWidget {
-  const RPrimaryButton(this.label, {super.key, required this.onPressed, this.loading = false});
+  const RPrimaryButton(
+    this.label, {
+    super.key,
+    required this.onPressed,
+    this.loading = false,
+  });
 
   final String label;
   final VoidCallback? onPressed;
@@ -244,14 +284,19 @@ class RPrimaryButton extends StatelessWidget {
           foregroundColor: p.onAccent,
           disabledBackgroundColor: p.accent.withValues(alpha: 0.4),
           disabledForegroundColor: p.onAccent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         child: loading
             ? SizedBox(
                 width: 22,
                 height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5, color: p.onAccent),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: p.onAccent,
+                ),
               )
             : Text(label),
       ),
@@ -260,7 +305,12 @@ class RPrimaryButton extends StatelessWidget {
 }
 
 class RSecondaryButton extends StatelessWidget {
-  const RSecondaryButton(this.label, {super.key, required this.onPressed, this.color});
+  const RSecondaryButton(
+    this.label, {
+    super.key,
+    required this.onPressed,
+    this.color,
+  });
 
   final String label;
   final VoidCallback? onPressed;
@@ -277,7 +327,9 @@ class RSecondaryButton extends StatelessWidget {
         style: TextButton.styleFrom(
           backgroundColor: p.fill,
           foregroundColor: color ?? p.navy,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         child: Text(label),
@@ -326,7 +378,10 @@ class RListRow extends StatelessWidget {
     if (onTap == null) return row;
     return InkWell(
       onTap: onTap,
-      child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 44), child: row),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: row,
+      ),
     );
   }
 }
@@ -363,7 +418,11 @@ class RRoundIconButton extends StatelessWidget {
           child: SizedBox(
             width: size,
             height: size,
-            child: Icon(icon, size: size * 0.48, color: filled ? p.onAccent : p.accent),
+            child: Icon(
+              icon,
+              size: size * 0.48,
+              color: filled ? p.onAccent : p.accent,
+            ),
           ),
         ),
       ),
@@ -373,7 +432,13 @@ class RRoundIconButton extends StatelessWidget {
 
 /// Mensaje centrado para estados vacíos o de error.
 class REmptyState extends StatelessWidget {
-  const REmptyState({super.key, required this.icon, required this.title, this.message, this.action});
+  const REmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.action,
+  });
 
   final IconData icon;
   final String title;
@@ -402,17 +467,91 @@ class REmptyState extends StatelessWidget {
   }
 }
 
-void showRestockSnack(BuildContext context, String message) {
+enum RSnackTone { success, info, warning }
+
+/// Aviso flotante con icono y, opcionalmente, título. Sube por encima del dock.
+void showRestockSnack(
+  BuildContext context,
+  String message, {
+  String? title,
+  RSnackTone tone = RSnackTone.info,
+}) {
   final p = context.rp;
+  final t = context.rt;
+
+  final (Color foreground, Color background, IconData icon) = switch (tone) {
+    RSnackTone.success => (
+      p.success,
+      p.successSoft,
+      CupertinoIcons.checkmark_circle_fill,
+    ),
+    RSnackTone.warning => (
+      p.warning,
+      p.warningSoft,
+      CupertinoIcons.exclamationmark_triangle_fill,
+    ),
+    RSnackTone.info => (p.navy, p.blueSoft, CupertinoIcons.info_circle_fill),
+  };
+
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: p.background, fontSize: 15)),
-        backgroundColor: p.ink,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        padding: EdgeInsets.zero,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 110),
+        duration: const Duration(seconds: 3),
+        content: Container(
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: p.border),
+            boxShadow: [
+              BoxShadow(
+                color: p.shadow,
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 12, 16, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: background,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 19, color: foreground),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (title != null) ...[
+                      Text(title, style: t.headline.copyWith(color: p.ink)),
+                      const SizedBox(height: 2),
+                    ],
+                    Text(
+                      message,
+                      style: (title == null ? t.subhead : t.footnote).copyWith(
+                        color: title == null ? p.ink : p.inkSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
 }

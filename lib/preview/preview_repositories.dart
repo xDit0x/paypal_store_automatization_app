@@ -50,7 +50,7 @@ class PreviewDb {
     Supplier(id: 's4', name: 'Envases Martín', category: 'Envases'),
   ];
 
-  final products = const [
+  final products = <Product>[
     Product(id: 'p1', uid: 'CAF-001', supplierId: 's1', name: 'Café en grano 1 kg', price: 12.5, stock: 2, lowStockThreshold: 8, unit: 'kg'),
     Product(id: 'p2', uid: 'CAF-002', supplierId: 's1', name: 'Descafeinado 1 kg', price: 10, stock: 4, lowStockThreshold: 3, unit: 'kg'),
     Product(id: 'p3', uid: 'LAC-001', supplierId: 's2', name: 'Leche entera 1 L', price: 1.6, stock: 31, lowStockThreshold: 12, unit: 'L'),
@@ -268,6 +268,15 @@ class PreviewProductRepository implements ProductRepository {
   @override
   Future<Either<String, List<Product>>> getLowStock() async =>
       Right(db.products.where((p) => p.isLowStock).toList());
+
+  @override
+  Future<Either<String, Unit>> updateStock(String uid, int stock) async {
+    final index = db.products.indexWhere((p) => p.uid == uid);
+    if (index < 0) return const Left('El producto no existe.');
+    if (stock < 0) return const Left('El stock no puede ser negativo.');
+    db.products[index] = db.products[index].copyWith(stock: stock);
+    return const Right(unit);
+  }
 }
 
 class PreviewOrderRepository implements OrderRepository {

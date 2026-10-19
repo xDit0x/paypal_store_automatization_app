@@ -22,6 +22,7 @@ import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.da
 import 'package:store_automatization_app/domain/usecases/auth/watch_auth_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
@@ -66,6 +67,7 @@ class PreviewApp extends StatelessWidget {
       getOrders: GetOrdersUsecase(repository: orders),
       getSuppliers: GetSuppliersUsecase(repository: PreviewSupplierRepository(db)),
       getSupplierCatalog: GetSupplierCatalogUsecase(repository: products),
+      updateProductStock: UpdateProductStockUsecase(repository: products),
       getAgentRuns: GetAgentRunsUsecase(repository: agent),
       runAgentUsecase: RunAgentUsecase(repository: agent),
       approveOrder: ApproveOrderUsecase(repository: orders),

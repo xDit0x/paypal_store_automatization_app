@@ -48,4 +48,18 @@ class SupabaseProductRepository implements ProductRepository {
       return Left('No se pudo cargar el stock bajo: $error');
     }
   }
+
+  @override
+  Future<Either<String, Unit>> updateStock(String uid, int stock) async {
+    try {
+      await _datasource.updateStock(uid, stock);
+      return const Right(unit);
+    } catch (error) {
+      final message = error
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('Exception', '');
+      return Left('No se pudo actualizar el stock: $message');
+    }
+  }
 }

@@ -18,7 +18,11 @@ class OrderDetailPage extends StatelessWidget {
 
   final String orderId;
 
-  Future<void> _approve(BuildContext context, RestockState state, Order order) async {
+  Future<void> _approve(
+    BuildContext context,
+    RestockState state,
+    Order order,
+  ) async {
     final cubit = context.read<RestockCubit>();
     final supplier = state.supplierName(order.supplierId);
     final error = await cubit.approve(order.id);
@@ -30,18 +34,31 @@ class OrderDetailPage extends StatelessWidget {
           title: const Text('No se pudo pagar'),
           content: Text(error),
           actions: [
-            CupertinoDialogAction(isDefaultAction: true, onPressed: () => Navigator.pop(ctx), child: const Text('Vale')),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Vale'),
+            ),
           ],
         ),
       );
       return;
     }
     HapticFeedback.mediumImpact();
-    showRestockSnack(context, 'Pago de ${euros(order.total, state.currency)} enviado a $supplier con PayPal');
+    showRestockSnack(
+      context,
+      '${euros(order.total, state.currency)} enviados a $supplier con PayPal.',
+      title: 'Pago enviado',
+      tone: RSnackTone.success,
+    );
     Navigator.of(context).maybePop();
   }
 
-  Future<void> _reject(BuildContext context, RestockState state, Order order) async {
+  Future<void> _reject(
+    BuildContext context,
+    RestockState state,
+    Order order,
+  ) async {
     final supplier = state.supplierName(order.supplierId);
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
@@ -49,7 +66,10 @@ class OrderDetailPage extends StatelessWidget {
         title: const Text('¿Rechazar el pedido?'),
         content: Text('El agente no pagará a $supplier.'),
         actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           CupertinoDialogAction(
             isDestructiveAction: true,
             onPressed: () => Navigator.pop(ctx, true),
@@ -61,7 +81,21 @@ class OrderDetailPage extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     final error = await context.read<RestockCubit>().reject(order.id);
     if (!context.mounted) return;
-    showRestockSnack(context, error ?? 'Pedido rechazado');
+    if (error != null) {
+      showRestockSnack(
+        context,
+        error,
+        title: 'No se pudo rechazar',
+        tone: RSnackTone.warning,
+      );
+    } else {
+      showRestockSnack(
+        context,
+        'El agente no pagará a $supplier.',
+        title: 'Pedido rechazado',
+        tone: RSnackTone.success,
+      );
+    }
     if (error == null) Navigator.of(context).maybePop();
   }
 
@@ -80,10 +114,16 @@ class OrderDetailPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: RBackLink('Atrás')),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: RBackLink('Atrás'),
+              ),
               Expanded(
                 child: Center(
-                  child: REmptyState(icon: CupertinoIcons.doc_text, title: 'Este pedido ya no está disponible'),
+                  child: REmptyState(
+                    icon: CupertinoIcons.doc_text,
+                    title: 'Este pedido ya no está disponible',
+                  ),
                 ),
               ),
             ],
@@ -105,7 +145,12 @@ class OrderDetailPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: p.background,
       body: Padding(
-        padding: EdgeInsets.fromLTRB(16, media.padding.top + 4, 16, media.padding.bottom + 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          media.padding.top + 4,
+          16,
+          media.padding.bottom + 16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -128,22 +173,37 @@ class OrderDetailPage extends StatelessWidget {
                     style: t.footnote,
                   ),
                   const SizedBox(height: 16),
-                  RInsetGroup(children: [
-                    for (final item in order.items)
+                  RInsetGroup(
+                    children: [
+                      for (final item in order.items)
+                        RListRow(
+                          title: '${item.name}  × ${item.qty}',
+                          subtitle: Text(
+                            '${euros(item.unitPrice, c)} / ud · ${item.productUid}',
+                            style: t.footnote,
+                          ),
+                          trailing: Text(
+                            euros(item.lineTotal, c),
+                            style: t.amount.copyWith(
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
                       RListRow(
-                        title: '${item.name}  × ${item.qty}',
-                        subtitle: Text('${euros(item.unitPrice, c)} / ud · ${item.productUid}', style: t.footnote),
-                        trailing: Text(euros(item.lineTotal, c), style: t.amount.copyWith(fontWeight: FontWeight.w400)),
+                        title: 'Total',
+                        bold: true,
+                        trailing: Text(
+                          euros(order.total, c),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.4,
+                            color: p.ink,
+                          ),
+                        ),
                       ),
-                    RListRow(
-                      title: 'Total',
-                      bold: true,
-                      trailing: Text(
-                        euros(order.total, c),
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: p.ink),
-                      ),
-                    ),
-                  ]),
+                    ],
+                  ),
                   if (run != null) ...[
                     const SizedBox(height: 16),
                     RCard(
@@ -153,14 +213,29 @@ class OrderDetailPage extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(CupertinoIcons.sparkles, size: 16, color: p.navy),
+                              Icon(
+                                CupertinoIcons.sparkles,
+                                size: 16,
+                                color: p.navy,
+                              ),
                               const SizedBox(width: 6),
-                              Text('Qué decidió el agente',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: p.navy)),
+                              Text(
+                                'Qué decidió el agente',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: p.navy,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Text(RestockCubit.describeDecision(run.decision ?? 'unknown'), style: t.callout),
+                          Text(
+                            RestockCubit.describeDecision(
+                              run.decision ?? 'unknown',
+                            ),
+                            style: t.callout,
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             '${run.provider} · ${run.model}'
@@ -173,15 +248,29 @@ class OrderDetailPage extends StatelessWidget {
                   ],
                   if (order.paymentPayoutId != null) ...[
                     const SizedBox(height: 16),
-                    RInsetGroup(children: [
-                      RListRow(
-                        title: 'Pago PayPal',
-                        subtitle: Text(order.paymentPayoutId!, style: t.footnote),
-                        trailing: RPill(order.paymentStatus ?? 'enviado', tone: RPillTone.info),
-                      ),
-                      if (order.paymentAt != null)
-                        RListRow(title: 'Fecha de pago', trailing: Text(relativeDate(order.paymentAt), style: t.footnote)),
-                    ]),
+                    RInsetGroup(
+                      children: [
+                        RListRow(
+                          title: 'Pago PayPal',
+                          subtitle: Text(
+                            order.paymentPayoutId!,
+                            style: t.footnote,
+                          ),
+                          trailing: RPill(
+                            order.paymentStatus ?? 'enviado',
+                            tone: RPillTone.info,
+                          ),
+                        ),
+                        if (order.paymentAt != null)
+                          RListRow(
+                            title: 'Fecha de pago',
+                            trailing: Text(
+                              relativeDate(order.paymentAt),
+                              style: t.footnote,
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                   if (pending) ...[
                     const SizedBox(height: 16),
@@ -193,12 +282,20 @@ class OrderDetailPage extends StatelessWidget {
             if (pending) ...[
               const SizedBox(height: 12),
               RPrimaryButton(
-                decision.isBlocked ? 'Bloqueado por tus reglas' : 'Aprobar y pagar con PayPal',
+                decision.isBlocked
+                    ? 'Bloqueado por tus reglas'
+                    : 'Aprobar y pagar con PayPal',
                 loading: busy,
-                onPressed: decision.isBlocked ? null : () => _approve(context, state, order),
+                onPressed: decision.isBlocked
+                    ? null
+                    : () => _approve(context, state, order),
               ),
               const SizedBox(height: 10),
-              RSecondaryButton('Rechazar', color: p.warning, onPressed: busy ? null : () => _reject(context, state, order)),
+              RSecondaryButton(
+                'Rechazar',
+                color: p.warning,
+                onPressed: busy ? null : () => _reject(context, state, order),
+              ),
               const SizedBox(height: 10),
               Center(
                 child: Text(
@@ -232,8 +329,14 @@ class _BudgetImpact extends StatelessWidget {
     final after = state.spentThisMonth + order.total;
     final over = after > state.monthlyLimit;
 
-    final spentFlex = (state.spentThisMonth / cap * 1000).round().clamp(0, 1000);
-    final orderFlex = (order.total / cap * 1000).round().clamp(0, 1000 - spentFlex);
+    final spentFlex = (state.spentThisMonth / cap * 1000).round().clamp(
+      0,
+      1000,
+    );
+    final orderFlex = (order.total / cap * 1000).round().clamp(
+      0,
+      1000 - spentFlex,
+    );
     final restFlex = (1000 - spentFlex - orderFlex).clamp(0, 1000);
 
     return Padding(
@@ -243,10 +346,19 @@ class _BudgetImpact extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text('Gasto de ${currentMonthName()} tras el pago', style: t.footnote.copyWith(fontSize: 14))),
+              Expanded(
+                child: Text(
+                  'Gasto de ${currentMonthName()} tras el pago',
+                  style: t.footnote.copyWith(fontSize: 14),
+                ),
+              ),
               Text(
                 '${eurosShort(after.roundToDouble(), c)} de ${eurosShort(state.monthlyLimit, c)}',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: over ? p.warning : p.ink),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: over ? p.warning : p.ink,
+                ),
               ),
             ],
           ),
@@ -257,9 +369,21 @@ class _BudgetImpact extends StatelessWidget {
               height: 8,
               child: Row(
                 children: [
-                  if (spentFlex > 0) Expanded(flex: spentFlex, child: ColoredBox(color: p.navy)),
-                  if (orderFlex > 0) Expanded(flex: orderFlex, child: ColoredBox(color: p.blueLight)),
-                  if (restFlex > 0) Expanded(flex: restFlex, child: ColoredBox(color: p.separator)),
+                  if (spentFlex > 0)
+                    Expanded(
+                      flex: spentFlex,
+                      child: ColoredBox(color: p.navy),
+                    ),
+                  if (orderFlex > 0)
+                    Expanded(
+                      flex: orderFlex,
+                      child: ColoredBox(color: p.blueLight),
+                    ),
+                  if (restFlex > 0)
+                    Expanded(
+                      flex: restFlex,
+                      child: ColoredBox(color: p.separator),
+                    ),
                 ],
               ),
             ),
@@ -288,7 +412,14 @@ class _Legend extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
         const SizedBox(width: 6),
         Text(label, style: context.rt.caption),
       ],

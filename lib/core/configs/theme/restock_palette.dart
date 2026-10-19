@@ -17,6 +17,7 @@ class RestockPalette {
     required this.navIdle,
     required this.navGlass,
     required this.accent,
+    required this.accentLight,
     required this.onAccent,
     required this.navy,
     required this.blueSoft,
@@ -27,6 +28,8 @@ class RestockPalette {
     required this.warning,
     required this.warningSoft,
     required this.warningBar,
+    required this.success,
+    required this.successSoft,
     required this.transit,
     required this.transitSoft,
     required this.neutralBar,
@@ -46,6 +49,10 @@ class RestockPalette {
 
   /// Azul PayPal: botones, anillo, pestaña activa.
   final Color accent;
+
+  /// Versión un poco más clara del azul: se usa mientras la píldora del dock
+  /// va de camino a una pestaña.
+  final Color accentLight;
   final Color onAccent;
 
   /// Azul marino PayPal: textos destacados y "ya gastado".
@@ -61,6 +68,8 @@ class RestockPalette {
   final Color warning;
   final Color warningSoft;
   final Color warningBar;
+  final Color success;
+  final Color successSoft;
   final Color transit;
   final Color transitSoft;
   final Color neutralBar;
@@ -78,6 +87,7 @@ class RestockPalette {
     navIdle: Color(0xFF22304A),
     navGlass: Color(0xBFFFFFFF),
     accent: Color(0xFF0070E0),
+    accentLight: Color(0xFF3D8FE8),
     onAccent: Color(0xFFFFFFFF),
     navy: Color(0xFF003087),
     blueSoft: Color(0xFFE6F0FC),
@@ -88,6 +98,8 @@ class RestockPalette {
     warning: Color(0xFFB45309),
     warningSoft: Color(0xFFFDF0E1),
     warningBar: Color(0xFFD97706),
+    success: Color(0xFF15803D),
+    successSoft: Color(0xFFE7F5EC),
     transit: Color(0xFF0E7490),
     transitSoft: Color(0xFFE0F2F5),
     neutralBar: Color(0xFF8F98AA),
@@ -106,6 +118,7 @@ class RestockPalette {
     navIdle: Color(0xFFD1D1D6),
     navGlass: Color(0xB82C2C2E),
     accent: Color(0xFF2F8CFF),
+    accentLight: Color(0xFF5FA3FF),
     onAccent: Color(0xFFFFFFFF),
     navy: Color(0xFF9DC2FF),
     blueSoft: Color(0xFF10264A),
@@ -116,6 +129,8 @@ class RestockPalette {
     warning: Color(0xFFFFB35C),
     warningSoft: Color(0xFF3A2A12),
     warningBar: Color(0xFFFF9F0A),
+    success: Color(0xFF4ADE80),
+    successSoft: Color(0xFF12321F),
     transit: Color(0xFF5ED3E8),
     transitSoft: Color(0xFF0F2F36),
     neutralBar: Color(0xFF8E8E93),
@@ -130,23 +145,23 @@ class RestockText {
   final RestockPalette p;
 
   TextStyle get largeTitle => TextStyle(
-        fontSize: 34,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.6,
-        color: p.ink,
-      );
+    fontSize: 34,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.6,
+    color: p.ink,
+  );
   TextStyle get title2 => TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.5,
-        color: p.ink,
-      );
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.5,
+    color: p.ink,
+  );
   TextStyle get title3 => TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.3,
-        color: p.ink,
-      );
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.3,
+    color: p.ink,
+  );
   TextStyle get headline =>
       TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: p.ink);
   TextStyle get body => TextStyle(fontSize: 16, color: p.ink);
@@ -155,17 +170,17 @@ class RestockText {
   TextStyle get footnote => TextStyle(fontSize: 13, color: p.inkSecondary);
   TextStyle get caption => TextStyle(fontSize: 12, color: p.inkSecondary);
   TextStyle get overline => TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.4,
-        color: p.inkSecondary,
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.4,
+    color: p.inkSecondary,
+  );
   TextStyle get amount => TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: p.ink,
-        fontFeatures: const [FontFeature.tabularFigures()],
-      );
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: p.ink,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
 }
 
 extension RestockThemeX on BuildContext {

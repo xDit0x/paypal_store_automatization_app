@@ -2,6 +2,7 @@ import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import { agentRoutes } from './routes/agent.js';
+import { catalogRoutes } from './routes/catalog.js';
 import { healthRoutes } from './routes/health.js';
 import { orderRoutes } from './routes/orders.js';
 
@@ -17,6 +18,7 @@ export function buildServer(): FastifyInstance {
   app.register(healthRoutes);
   app.register(agentRoutes);
   app.register(orderRoutes);
+  app.register(catalogRoutes);
 
   return app;
 }

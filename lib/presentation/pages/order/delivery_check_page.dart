@@ -38,19 +38,29 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
     if (order == null) {
       return Scaffold(
         backgroundColor: p.background,
-        body: const SafeArea(child: Center(child: Text('Este pedido ya no está disponible'))),
+        body: const SafeArea(
+          child: Center(child: Text('Este pedido ya no está disponible')),
+        ),
       );
     }
 
     final c = state.currency;
     final missing = order.items.where((i) => _got(i) < i.qty).toList();
     final missingUnits = missing.fold<int>(0, (s, i) => s + (i.qty - _got(i)));
-    final missingValue = missing.fold<double>(0, (s, i) => s + (i.qty - _got(i)) * i.unitPrice);
+    final missingValue = missing.fold<double>(
+      0,
+      (s, i) => s + (i.qty - _got(i)) * i.unitPrice,
+    );
 
     return Scaffold(
       backgroundColor: p.background,
       body: Padding(
-        padding: EdgeInsets.fromLTRB(16, media.padding.top + 4, 16, media.padding.bottom + 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          media.padding.top + 4,
+          16,
+          media.padding.bottom + 16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -64,9 +74,15 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Entrega de ${state.supplierName(order.supplierId)}', style: t.title2),
+                        Text(
+                          'Entrega de ${state.supplierName(order.supplierId)}',
+                          style: t.title2,
+                        ),
                         const SizedBox(height: 4),
-                        Text('Ajusta lo que ha llegado. Lo que falte se puede reclamar.', style: t.subhead),
+                        Text(
+                          'Ajusta lo que ha llegado. Lo que falte se puede reclamar.',
+                          style: t.subhead,
+                        ),
                       ],
                     ),
                   ),
@@ -76,7 +92,11 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
                     borderRadius: BorderRadius.circular(18),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
-                      onTap: () => showRestockSnack(context, 'La lectura del albarán con IA llegará pronto'),
+                      onTap: () => showRestockSnack(
+                        context,
+                        'La lectura del albarán con IA llegará pronto.',
+                        title: 'Próximamente',
+                      ),
                       child: SizedBox(
                         height: 120,
                         child: Row(
@@ -84,34 +104,49 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
                           children: [
                             Icon(CupertinoIcons.camera, color: p.inkSecondary),
                             const SizedBox(width: 8),
-                            Text('Foto del albarán',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: p.inkSecondary)),
+                            Text(
+                              'Foto del albarán',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: p.inkSecondary,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  RInsetGroup(children: [
-                    for (final item in order.items)
-                      Container(
-                        color: _got(item) < item.qty ? p.warningSoft : null,
-                        child: RListRow(
-                          title: item.name,
-                          subtitle: Text(
-                            _got(item) < item.qty
-                                ? 'Pedido ${item.qty} · faltan ${item.qty - _got(item)}'
-                                : 'Pedido ${item.qty} · completo',
-                            style: TextStyle(fontSize: 13, color: _got(item) < item.qty ? p.warning : p.inkSecondary),
-                          ),
-                          trailing: _Stepper(
-                            value: _got(item),
-                            max: item.qty,
-                            onChanged: (v) => setState(() => _received[item.productUid] = v),
+                  RInsetGroup(
+                    children: [
+                      for (final item in order.items)
+                        Container(
+                          color: _got(item) < item.qty ? p.warningSoft : null,
+                          child: RListRow(
+                            title: item.name,
+                            subtitle: Text(
+                              _got(item) < item.qty
+                                  ? 'Pedido ${item.qty} · faltan ${item.qty - _got(item)}'
+                                  : 'Pedido ${item.qty} · completo',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _got(item) < item.qty
+                                    ? p.warning
+                                    : p.inkSecondary,
+                              ),
+                            ),
+                            trailing: _Stepper(
+                              value: _got(item),
+                              max: item.qty,
+                              onChanged: (v) => setState(
+                                () => _received[item.productUid] = v,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                  ]),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -120,7 +155,12 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
               'Confirmar entrega',
               onPressed: () {
                 HapticFeedback.mediumImpact();
-                showRestockSnack(context, 'Entrega registrada');
+                showRestockSnack(
+                  context,
+                  'Se ha guardado lo que llegó del pedido.',
+                  title: 'Entrega registrada',
+                  tone: RSnackTone.success,
+                );
                 Navigator.of(context).maybePop();
               },
             ),
@@ -129,7 +169,12 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
               RSecondaryButton(
                 'Reclamar $missingUnits uds · ${euros(missingValue, c)}',
                 color: p.warning,
-                onPressed: () => showRestockSnack(context, 'Reclamación preparada para revisar'),
+                onPressed: () => showRestockSnack(
+                  context,
+                  'Avísale de las unidades que faltan.',
+                  title: 'Reclamación preparada',
+                  tone: RSnackTone.warning,
+                ),
               ),
             ],
           ],
@@ -140,7 +185,11 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
 }
 
 class _Stepper extends StatelessWidget {
-  const _Stepper({required this.value, required this.max, required this.onChanged});
+  const _Stepper({
+    required this.value,
+    required this.max,
+    required this.onChanged,
+  });
 
   final int value;
   final int max;
@@ -150,7 +199,10 @@ class _Stepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.rp;
     return Container(
-      decoration: BoxDecoration(color: p.fill, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: p.fill,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -159,7 +211,14 @@ class _Stepper extends StatelessWidget {
             icon: Icon(CupertinoIcons.minus, size: 18, color: p.navy),
             onPressed: value > 0 ? () => onChanged(value - 1) : null,
           ),
-          SizedBox(width: 28, child: Text('$value', textAlign: TextAlign.center, style: context.rt.headline)),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$value',
+              textAlign: TextAlign.center,
+              style: context.rt.headline,
+            ),
+          ),
           IconButton(
             tooltip: 'Más',
             icon: Icon(CupertinoIcons.plus, size: 18, color: p.navy),

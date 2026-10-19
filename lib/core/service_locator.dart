@@ -39,6 +39,7 @@ import 'package:store_automatization_app/domain/usecases/catalog/get_low_stock_p
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/search_product_by_uid_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/evaluate_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_order_usecase.dart';
@@ -63,7 +64,7 @@ Future<void> initializeDependencies() async {
     () => SupabaseSupplierDatasource(sl<SupabaseClient>()),
   );
   sl.registerLazySingleton<SupabaseProductDatasource>(
-    () => SupabaseProductDatasource(sl<SupabaseClient>()),
+    () => SupabaseProductDatasource(sl<SupabaseClient>(), sl<Dio>()),
   );
   sl.registerLazySingleton<SupabaseOrderDatasource>(
     () => SupabaseOrderDatasource(sl<SupabaseClient>(), sl<Dio>()),
@@ -136,6 +137,9 @@ Future<void> initializeDependencies() async {
   );
   sl.registerLazySingleton(
     () => GetLowStockProductsUsecase(repository: sl<ProductRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => UpdateProductStockUsecase(repository: sl<ProductRepository>()),
   );
   sl.registerLazySingleton(() => const EvaluateSpendingRulesUsecase());
   sl.registerLazySingleton(

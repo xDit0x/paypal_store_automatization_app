@@ -10,6 +10,7 @@ import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_us
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
@@ -28,6 +29,7 @@ class RestockCubit extends Cubit<RestockState> {
   final GetOrdersUsecase getOrders;
   final GetSuppliersUsecase getSuppliers;
   final GetSupplierCatalogUsecase getSupplierCatalog;
+  final UpdateProductStockUsecase updateProductStock;
   final GetAgentRunsUsecase getAgentRuns;
   final RunAgentUsecase runAgentUsecase;
   final ApproveOrderUsecase approveOrder;
@@ -41,6 +43,7 @@ class RestockCubit extends Cubit<RestockState> {
     required this.getOrders,
     required this.getSuppliers,
     required this.getSupplierCatalog,
+    required this.updateProductStock,
     required this.getAgentRuns,
     required this.runAgentUsecase,
     required this.approveOrder,
@@ -185,6 +188,20 @@ class RestockCubit extends Cubit<RestockState> {
     final error = result.fold<String?>((e) => e, (_) => null);
     await load();
     return error;
+  }
+
+  /// Cambia el stock de un producto. Devuelve null si todo fue bien.
+  Future<String?> updateStock(String uid, int stock) async {
+    final result = await updateProductStock(uid, stock);
+    return result.fold<String?>((error) => error, (_) {
+      emit(state.copyWith(
+        products: [
+          for (final product in state.products)
+            product.uid == uid ? product.copyWith(stock: stock) : product,
+        ],
+      ));
+      return null;
+    });
   }
 
   Future<String?> saveRules(SpendingRules rules) async {

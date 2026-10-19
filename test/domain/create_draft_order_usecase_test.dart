@@ -36,6 +36,12 @@ class _FakeProductRepository implements ProductRepository {
   Future<Either<String, List<Product>>> getLowStock() async {
     return Right(products.where((product) => product.isLowStock).toList());
   }
+
+  @override
+  Future<Either<String, Unit>> updateStock(String uid, int stock) async {
+    final exists = products.any((product) => product.uid == uid);
+    return exists ? const Right(unit) : const Left('El producto no existe.');
+  }
 }
 
 class _FakeOrderRepository implements OrderRepository {
