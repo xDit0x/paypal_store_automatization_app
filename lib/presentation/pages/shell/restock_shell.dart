@@ -1,0 +1,137 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/service_locator.dart';
+import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
+import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/reject_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
+import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
+import 'package:store_automatization_app/presentation/pages/agent/assistant_page.dart';
+import 'package:store_automatization_app/presentation/pages/catalog/stock_page.dart';
+import 'package:store_automatization_app/presentation/pages/home/home_page.dart';
+import 'package:store_automatization_app/presentation/pages/orders/orders_page.dart';
+import 'package:store_automatization_app/presentation/pages/settings/rules_page.dart';
+import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
+
+/// App principal tras iniciar sesión: 5 pestañas en un PageView con la
+/// barra en carrusel flotando encima.
+class RestockShell extends StatelessWidget {
+  const RestockShell({super.key, this.createCubit});
+
+  /// Para la vista previa del diseño (lib/main_preview.dart): permite usar
+  /// datos de ejemplo en vez de Supabase. En la app real es null.
+  final RestockCubit Function()? createCubit;
+
+  RestockCubit _defaultCubit() => RestockCubit(
+        getCurrentStore: sl<GetCurrentStoreUsecase>(),
+        getSpendingRules: sl<GetSpendingRulesUsecase>(),
+        updateSpendingRules: sl<UpdateSpendingRulesUsecase>(),
+        getSpentThisMonth: sl<GetSpentThisMonthUsecase>(),
+        getOrders: sl<GetOrdersUsecase>(),
+        getSuppliers: sl<GetSuppliersUsecase>(),
+        getSupplierCatalog: sl<GetSupplierCatalogUsecase>(),
+        getAgentRuns: sl<GetAgentRunsUsecase>(),
+        runAgentUsecase: sl<RunAgentUsecase>(),
+        // Estos dos casos de uso son nuevos; se crean aquí para no tocar
+        // service_locator.dart. Se pueden registrar allí más adelante.
+        approveOrder: ApproveOrderUsecase(repository: sl<OrderRepository>()),
+        rejectOrder: RejectOrderUsecase(repository: sl<OrderRepository>()),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<RestockCubit>(
+      create: (_) => (createCubit?.call() ?? _defaultCubit())..load(),
+      child: const _ShellView(),
+    );
+  }
+}
+
+class _ShellView extends StatefulWidget {
+  const _ShellView();
+
+  @override
+  State<_ShellView> createState() => _ShellViewState();
+}
+
+class _ShellViewState extends State<_ShellView> {
+  final _pages = PageController();
+  int _index = 0;
+
+  static const _items = [
+    NavItem('Inicio', CupertinoIcons.house),
+    NavItem('Stock', CupertinoIcons.cube_box),
+    NavItem('Pedidos', CupertinoIcons.doc_text),
+    NavItem('Reglas', CupertinoIcons.slider_horizontal_3),
+    NavItem('Asistente', CupertinoIcons.chat_bubble),
+  ];
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  void _goTo(int index) {
+    if (index == _index) return;
+    _pages.animateToPage(index, duration: const Duration(milliseconds: 420), curve: Curves.easeOutCubic);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.rp;
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: p.background,
+        resizeToAvoidBottomInset: false,
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pages,
+              onPageChanged: (i) {
+                HapticFeedback.selectionClick();
+                FocusScope.of(context).unfocus();
+                setState(() => _index = i);
+              },
+              children: const [
+                HomePage(),
+                StockPage(),
+                OrdersPage(),
+                RulesPage(),
+                AssistantPage(),
+              ],
+            ),
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 22 + bottom,
+              child: Center(
+                child: ConstrainedBox(
+                  // En tablet y web la barra no se estira de lado a lado.
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: CarouselNavBar(controller: _pages, items: _items, onSelect: _goTo),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
