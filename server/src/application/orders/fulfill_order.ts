@@ -10,7 +10,7 @@ interface OrderRow {
   status: string;
   total: number | string;
   order_items:
-    | { name: string; qty: number; unit_price: number | string }[]
+    | { product_uid: string; name: string; qty: number; unit_price: number | string }[]
     | null;
 }
 
@@ -23,6 +23,12 @@ interface StoreRow {
 interface SupplierRow {
   name: string;
   paypal_email: string | null;
+}
+
+interface OrderContext {
+  order: OrderRow;
+  store: StoreRow;
+  supplier: SupplierRow;
 }
 
 export interface FulfillmentResult {
@@ -45,13 +51,11 @@ async function updateOrder(
   }
 }
 
-export async function fulfillOrder(
-  orderId: string,
-): Promise<FulfillmentResult> {
+async function loadOrderContext(orderId: string): Promise<OrderContext> {
   const { data: orderData, error } = await supabaseAdmin
     .from('orders')
     .select(
-      'id, store_id, supplier_id, status, total, order_items(name, qty, unit_price)',
+      'id, store_id, supplier_id, status, total, order_items(product_uid, name, qty, unit_price)',
     )
     .eq('id', orderId)
     .maybeSingle();
@@ -64,9 +68,6 @@ export async function fulfillOrder(
   }
 
   const order = orderData as unknown as OrderRow;
-  if (order.status !== 'approved') {
-    throw new Error(`El pedido está en estado "${order.status}".`);
-  }
 
   const [{ data: storeData }, { data: supplierData }] = await Promise.all([
     supabaseAdmin
@@ -88,8 +89,109 @@ export async function fulfillOrder(
     throw new Error('El proveedor del pedido no existe.');
   }
 
-  const store = storeData as StoreRow;
-  const supplier = supplierData as SupplierRow;
+  return {
+    order,
+    store: storeData as StoreRow,
+    supplier: supplierData as SupplierRow,
+  };
+}
+
+async function incrementStock(order: OrderRow): Promise<void> {
+  for (const item of order.order_items ?? []) {
+    const { data: product, error } = await supabaseAdmin
+      .from('products')
+      .select('stock')
+      .eq('uid', item.product_uid)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(
+        `No se pudo leer el stock de ${item.product_uid}: ${error.message}`,
+      );
+    }
+    if (!product) continue;
+
+    const { error: updateError } = await supabaseAdmin
+      .from('products')
+      .update({ stock: Number(product.stock) + item.qty })
+      .eq('uid', item.product_uid);
+
+    if (updateError) {
+      throw new Error(
+        `No se pudo actualizar el stock de ${item.product_uid}: ${updateError.message}`,
+      );
+    }
+  }
+}
+
+export async function sendInvoiceForOrder(
+  orderId: string,
+): Promise<{ invoiceId: string; number: string }> {
+  const { order, store, supplier } = await loadOrderContext(orderId);
+
+  if (!paypalConfigured()) {
+    throw new Error('PayPal no está configurado.');
+  }
+  if (!store.paypal_merchant_email) {
+    throw new Error('Falta paypal_merchant_email en la tienda.');
+  }
+  if (!supplier.paypal_email) {
+    throw new Error('El proveedor no tiene email de PayPal.');
+  }
+
+  const number = `RS-${order.id.slice(0, 8).toUpperCase()}-${Date.now()
+    .toString()
+    .slice(-6)}`;
+
+  const result = await createAndSendInvoice({
+    invoiceNumber: number,
+    currency: store.currency,
+    recipientEmail: supplier.paypal_email,
+    merchantEmail: store.paypal_merchant_email,
+    note: `Factura de reposición ${number}`,
+    lines: (order.order_items ?? []).map((item) => ({
+      name: item.name,
+      qty: item.qty,
+      unitPrice: Number(item.unit_price),
+    })),
+  });
+
+  const { data: invoiceRow, error: invoiceError } = await supabaseAdmin
+    .from('invoices')
+    .upsert(
+      {
+        order_id: order.id,
+        number,
+        status: 'sent',
+        sent_to: supplier.paypal_email,
+        sent_at: new Date().toISOString(),
+      },
+      { onConflict: 'order_id' },
+    )
+    .select('id')
+    .single();
+
+  if (invoiceError) {
+    throw new Error(`No se pudo registrar la factura: ${invoiceError.message}`);
+  }
+
+  await updateOrder(order.id, {
+    invoice_id: invoiceRow?.id ?? null,
+    status: 'completed',
+  });
+
+  return { invoiceId: result.invoiceId, number };
+}
+
+export async function fulfillOrder(
+  orderId: string,
+): Promise<FulfillmentResult> {
+  const { order, store, supplier } = await loadOrderContext(orderId);
+
+  if (order.status !== 'approved') {
+    throw new Error(`El pedido está en estado "${order.status}".`);
+  }
+
   const total = Number(order.total);
   const warnings: string[] = [];
 
@@ -114,6 +216,16 @@ export async function fulfillOrder(
       });
 
       payment = { payoutId: payout.batchId, status: payout.status };
+
+      try {
+        await incrementStock(order);
+      } catch (error) {
+        warnings.push(
+          `Pago realizado pero no se actualizó el stock: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await updateOrder(order.id, {
@@ -130,55 +242,13 @@ export async function fulfillOrder(
 
   let invoice: FulfillmentResult['invoice'] = null;
 
-  const invoicerEmail =
-    store.paypal_merchant_email ?? store.notification_email ?? null;
-
-  if (paypalConfigured() && supplier.paypal_email && invoicerEmail) {
-    const number = `RS-${order.id.slice(0, 8).toUpperCase()}-${Date.now()
-      .toString()
-      .slice(-6)}`;
-
-    const result = await createAndSendInvoice({
-      invoiceNumber: number,
-      currency: store.currency,
-      recipientEmail: supplier.paypal_email,
-      merchantEmail: invoicerEmail,
-      note: `Factura de reposición ${number}`,
-      lines: (order.order_items ?? []).map((item) => ({
-        name: item.name,
-        qty: item.qty,
-        unitPrice: Number(item.unit_price),
-      })),
-    });
-
-    const { data: invoiceRow, error: invoiceError } = await supabaseAdmin
-      .from('invoices')
-      .upsert(
-        {
-          order_id: order.id,
-          number,
-          status: 'sent',
-          sent_to: supplier.paypal_email,
-          sent_at: new Date().toISOString(),
-        },
-        { onConflict: 'order_id' },
-      )
-      .select('id')
-      .single();
-
-    if (invoiceError) {
-      warnings.push(`Factura creada en PayPal pero no registrada: ${invoiceError.message}`);
-    }
-
-    await updateOrder(order.id, {
-      invoice_id: invoiceRow?.id ?? null,
-      status: 'completed',
-    });
-
-    invoice = { invoiceId: result.invoiceId, number };
-  } else {
+  try {
+    invoice = await sendInvoiceForOrder(order.id);
+  } catch (error) {
     warnings.push(
-      'Factura omitida: falta un email de facturación o PayPal no está configurado.',
+      `No se pudo emitir la factura: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   }
 

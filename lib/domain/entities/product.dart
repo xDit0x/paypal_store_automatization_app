@@ -31,6 +31,6 @@ class Product {
 
   int get suggestedReorderQty {
     final missing = lowStockThreshold - stock;
-    return missing > 0 ? missing : 1;
+    return missing >= 0 ? missing + 1 : 1;
   }
 }

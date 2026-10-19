@@ -290,7 +290,7 @@ server/
 ### Proveedor de IA configurable
 ```env
 AI_PROVIDER=groq
-AI_MODEL=llama-3.3-70b-versatile
+AI_MODEL=openai/gpt-oss-120b
 GROQ_API_KEY=gsk_...
 ```
 Cambiar de modelo es cambiar esas variables. Las reglas críticas no dependen del modelo.

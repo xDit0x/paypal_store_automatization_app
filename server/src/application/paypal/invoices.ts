@@ -40,15 +40,21 @@ export async function createAndSendInvoice(params: {
     })),
   };
 
-  const created = await paypalRequest<{ id: string; status: string }>(
-    '/v2/invoicing/invoices',
-    { method: 'POST', body },
-  );
+  const created = await paypalRequest<{
+    id?: string;
+    status?: string;
+    href?: string;
+  }>('/v2/invoicing/invoices', { method: 'POST', body });
 
-  await paypalRequest(`/v2/invoicing/invoices/${created.id}/send`, {
+  const invoiceId = created.id ?? created.href?.split('/').pop();
+  if (!invoiceId) {
+    throw new Error('PayPal no devolvió el ID de la factura.');
+  }
+
+  await paypalRequest(`/v2/invoicing/invoices/${invoiceId}/send`, {
     method: 'POST',
-    body: { send_to_invoicer: false },
+    body: { send_to_recipient: true, send_to_invoicer: false },
   });
 
-  return { invoiceId: created.id, status: 'sent' };
+  return { invoiceId, status: 'sent' };
 }

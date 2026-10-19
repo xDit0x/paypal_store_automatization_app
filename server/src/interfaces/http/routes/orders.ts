@@ -36,7 +36,88 @@ async function loadOwnedOrder(
   return row;
 }
 
+interface OrderStatusRow {
+  id: string;
+  status: string;
+  total: number | string;
+  payment_provider: string | null;
+  payment_payout_id: string | null;
+  payment_status: string | null;
+  payment_at: string | null;
+  invoice_id: string | null;
+  invoices:
+    | {
+        number: string;
+        status: string;
+        sent_to: string | null;
+        sent_at: string | null;
+      }[]
+    | null;
+}
+
 export async function orderRoutes(app: FastifyInstance): Promise<void> {
+  app.get<{ Params: { id: string } }>(
+    '/orders/:id/status',
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) {
+        return reply.code(401).send({ error: 'Sesión no válida.' });
+      }
+
+      try {
+        const owned = await loadOwnedOrder(request.params.id, user.id);
+        if (!owned) {
+          return reply.code(404).send({ error: 'Pedido no encontrado.' });
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from('orders')
+          .select(
+            'id, status, total, payment_provider, payment_payout_id, payment_status, payment_at, invoice_id, invoices!invoices_order_id_fkey(number, status, sent_to, sent_at)',
+          )
+          .eq('id', owned.id)
+          .maybeSingle();
+
+        if (error) {
+          throw new Error(`No se pudo leer el pedido: ${error.message}`);
+        }
+
+        const order = data as unknown as OrderStatusRow;
+        const invoice = order.invoices?.[0] ?? null;
+
+        return reply.send({
+          order_id: order.id,
+          status: order.status,
+          total: Number(order.total),
+          payment: order.payment_payout_id
+            ? {
+                provider: order.payment_provider,
+                payout_id: order.payment_payout_id,
+                status: order.payment_status,
+                paid_at: order.payment_at,
+              }
+            : null,
+          invoice: invoice
+            ? {
+                id: order.invoice_id,
+                number: invoice.number,
+                status: invoice.status,
+                sent_to: invoice.sent_to,
+                sent_at: invoice.sent_at,
+              }
+            : null,
+        });
+      } catch (error) {
+        request.log.error(error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Error al consultar el pedido.';
+        return reply.code(500).send({ error: message });
+      }
+    },
+  );
+
   app.post<{ Params: { id: string } }>(
     '/orders/:id/approve',
     async (request, reply) => {
