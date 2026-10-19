@@ -197,6 +197,7 @@ function buildSystemPrompt(
       : `- Por encima de ${store.rules.requireApprovalAbove.toFixed(2)} ${store.currency} el pedido quedará pendiente de aprobación.`,
     '- Si no hace falta reponer nada, no llames a la herramienta y explica por qué.',
     'Responde siempre en español, con una explicación breve de lo que hiciste.',
+    '- Usa **negrita** (doble asterisco) para el nombre del proveedor, el nombre del producto y el importe total del pedido. No uses otros formatos.',
   ].join('\n');
 }
 

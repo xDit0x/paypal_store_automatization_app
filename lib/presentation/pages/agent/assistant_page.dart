@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
@@ -50,7 +51,7 @@ class _AssistantPageState extends State<AssistantPage> {
     final answer = pending.isEmpty
         ? 'No tienes pedidos esperando tu aprobación.'
         : 'Tienes ${pending.length} por aprobar: '
-            '${pending.map((o) => '${state.supplierName(o.supplierId)} (${euros(o.total, state.currency)})').join(', ')}. '
+            '${pending.map((o) => '**${state.supplierName(o.supplierId)}** (**${euros(o.total, state.currency)}**)').join(', ')}. '
             'Los encuentras en Inicio.';
     context.read<RestockCubit>().addExchange('¿Qué tengo por aprobar?', answer);
     _scrollToEnd();
@@ -58,8 +59,9 @@ class _AssistantPageState extends State<AssistantPage> {
 
   void _askSpent(RestockState state) {
     final c = state.currency;
-    final answer = 'Llevas ${euros(state.spentThisMonth, c)} gastados en ${currentMonthName()} '
-        'de un tope de ${eurosShort(state.monthlyLimit, c)}. Te quedan ${euros(state.remaining, c)}.';
+    final answer = 'Llevas **${euros(state.spentThisMonth, c)}** gastados en ${currentMonthName()} '
+        'de un tope de **${eurosShort(state.monthlyLimit, c)}**. '
+        'Te quedan **${euros(state.remaining, c)}**.';
     context.read<RestockCubit>().addExchange('¿Cuánto llevo gastado?', answer);
     _scrollToEnd();
   }
@@ -194,7 +196,18 @@ class _Bubble extends StatelessWidget {
               bottomRight: fromUser ? small : big,
             ),
           ),
-          child: Text(text, style: TextStyle(fontSize: 16, color: fromUser ? p.onAccent : p.ink, height: 1.35)),
+          child: Text.rich(
+            TextSpan(
+              children: buildInlineMarkdown(
+                text,
+                TextStyle(
+                  fontSize: 16,
+                  color: fromUser ? p.onAccent : p.ink,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ),
         ),
         if (time != null)
           Padding(

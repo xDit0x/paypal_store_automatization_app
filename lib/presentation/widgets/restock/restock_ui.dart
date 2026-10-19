@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 
 /// Tarjeta con borde fino y sombra suave (o color de relleno si se indica).
@@ -469,6 +470,17 @@ class REmptyState extends StatelessWidget {
 
 enum RSnackTone { success, info, warning }
 
+/// Tiempo en pantalla del aviso: 5 s de base y algo más si el texto es
+/// largo, para que se pueda leer sin prisa (tope de 12 s).
+Duration _snackDuration(String message) {
+  const base = Duration(seconds: 5);
+  const extraPerBlock = Duration(milliseconds: 1200);
+  const max = Duration(seconds: 12);
+  final blocks = (message.length / 90).ceil();
+  final total = base + extraPerBlock * (blocks > 1 ? blocks - 1 : 0);
+  return total > max ? max : total;
+}
+
 /// Aviso flotante con icono y, opcionalmente, título. Sube por encima del dock.
 void showRestockSnack(
   BuildContext context,
@@ -502,7 +514,8 @@ void showRestockSnack(
         elevation: 0,
         padding: EdgeInsets.zero,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 110),
-        duration: const Duration(seconds: 3),
+        // Los mensajes largos del agente necesitan más tiempo para leerse.
+        duration: _snackDuration(message),
         content: Container(
           decoration: BoxDecoration(
             color: p.surface,
@@ -539,11 +552,15 @@ void showRestockSnack(
                       Text(title, style: t.headline.copyWith(color: p.ink)),
                       const SizedBox(height: 2),
                     ],
-                    Text(
-                      message,
-                      style: (title == null ? t.subhead : t.footnote).copyWith(
-                        color: title == null ? p.ink : p.inkSecondary,
-                        height: 1.35,
+                    Text.rich(
+                      TextSpan(
+                        children: buildInlineMarkdown(
+                          message,
+                          (title == null ? t.subhead : t.footnote).copyWith(
+                            color: title == null ? p.ink : p.inkSecondary,
+                            height: 1.35,
+                          ),
+                        ),
                       ),
                     ),
                   ],
