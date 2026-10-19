@@ -46,3 +46,16 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Environment
+.env
+.env.*
+!.env.example
+dart_defines.json
+
+# Node / backend
+server/node_modules/
+server/dist/
+server/coverage/
+npm-debug.log*
+

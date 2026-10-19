@@ -10,7 +10,7 @@
 
 - **Requisito principal:** uso significativo de **PayPal** y de **IA**. Si se quita cualquiera de los dos, el proyecto no debe funcionar igual.
 - **PayPal:** APIs en **Sandbox** (sin dinero real).
-- **IA:** cualquier proveedor. Empezamos con **Groq/Gemini** (nivel gratuito) y dejamos el proveedor configurable para pasar a **Claude/GPT** solo si hace falta.
+- **IA:** **Groq API** (nivel gratuito) para el agente, detrás de una interfaz configurable por si hace falta Claude/GPT más adelante.
 - **Entrega:** repo público con licencia **MIT**, README, vídeo demo de 2–3 minutos, URL web funcional y APK como release de GitHub.
 - **APIMatic:** plugin de contexto para la API de PayPal. Lo usaremos durante el desarrollo y lo documentaremos en el README.
 
@@ -83,20 +83,20 @@ Una plataforma B2B donde:
 | Diseño | `flutter_screenutil` + tema claro/oscuro | Igual que `test_flutter` |
 | Tema persistido | `hydrated_bloc` | Igual que `test_flutter` |
 | Navegación | `go_router` | URLs reales en web y deep links; `AuthGate` sigue el patrón de `test_flutter` |
-| Datos | **Firebase Auth + Cloud Firestore** | Rápido, tiempo real y ya conocido en `test_flutter` |
+| Datos + Auth | **Supabase** (Postgres + Auth + Realtime + Storage) | Auth lista, SQL con RLS y realtime para el estado de pedidos |
 | Backend | **TypeScript + Fastify** en Render | PayPal, IA, facturas y webhooks con secretos del lado servidor |
-| IA | Adaptador configurable (`groq`, `gemini`, `anthropic`, `openai`) | Empezar gratis y cambiar sin tocar el resto |
+| IA | **Groq API** (`groq-sdk`) con adaptador intercambiable | Nivel gratuito, muy rápido, buen tool calling |
 | Pagos | **PayPal Payouts** (principal) + **Invoicing** | Pago servidor-a-servidor automatizable; factura oficial |
-| Factura PDF | `pdfkit` + almacenamiento temporal | Respaldo y descarga desde la app |
+| Factura PDF | `pdfkit` + Supabase Storage | Respaldo y descarga desde la app |
 | Email | Resend o SendGrid | Envío de factura y avisos |
-| Deploy | Render (backend) + Firebase Hosting (web) | URL pública para el jurado |
+| Deploy | Render (backend + web estática) + Supabase (datos) | URL pública para el jurado |
 | API docs | OpenAPI + APIMatic | Contexto de PayPal y premio de sponsor |
 
-### Por qué Firebase + backend TypeScript
-- La app usa Firebase directamente para auth y datos: menos CRUD que programar y coincide con `test_flutter`.
-- El backend TypeScript concentra lo sensible: `PAYPAL_CLIENT_SECRET`, claves de IA, firma de webhooks, generación de facturas y ejecución de pagos.
+### Por qué Supabase + Groq + backend TypeScript
+- Supabase da Auth, PostgreSQL con RLS, Realtime y Storage en un solo servicio; la app Flutter usa `supabase_flutter` directamente para login, catálogo y suscripciones al estado de pedidos.
+- Groq es gratis para desarrollar y responde rápido; el agente vive detrás de una interfaz para poder cambiar de modelo.
+- El backend TypeScript concentra lo sensible: `PAYPAL_CLIENT_SECRET`, clave de Groq, firma de webhooks, generación de facturas y ejecución de pagos.
 - El agente nunca vive en el cliente: el jurado no puede manipular precios ni reglas desde el navegador.
-- Si más adelante se quiere un backend único con Postgres, las interfaces de repositorio de Flutter permiten cambiar la implementación sin rehacer la app.
 
 ---
 
@@ -105,17 +105,18 @@ Una plataforma B2B donde:
 ```
 lib/
   main.dart
-  firebase_options.dart
   core/
     configs/
       assets/app_images.dart
+      supabase/supabase_config.dart
       theme/app_colors.dart
       theme/app_theme.dart
+      usecases/use_case.dart
     constants/
     errors/failures.dart
+    network/
     router/app_router.dart
     service_locator.dart
-    usecases/use_case.dart
   domain/
     entities/
       store.dart
@@ -127,13 +128,13 @@ lib/
       spending_rules.dart
       agent_run.dart
     repositories/
-      auth_repository.dart
-      supplier_repository.dart
-      product_repository.dart
-      order_repository.dart
-      invoice_repository.dart
-      settings_repository.dart
-      agent_repository.dart
+      auth_repository/
+      supplier_repository/
+      product_repository/
+      order_repository/
+      invoice_repository/
+      settings_repository/
+      agent_repository/
     usecases/
       auth/
       catalog/
@@ -141,10 +142,23 @@ lib/
       agent/
       settings/
   data/
-    models/            # fromJson/toJson de cada entidad
+    models/
     datasources/
-      remote/          # Firestore, backend del agente
-    repositories/      # implementaciones de los repositorios
+      auth_repository/
+      supplier_repository/
+      product_repository/
+      order_repository/
+      invoice_repository/
+      settings_repository/
+      agent_repository/
+    repositories/
+      auth_repository/
+      supplier_repository/
+      product_repository/
+      order_repository/
+      invoice_repository/
+      settings_repository/
+      agent_repository/
   presentation/
     blocs/
       auth/
@@ -152,7 +166,7 @@ lib/
       orders/
       agent/
       settings/
-      theme/           # ThemeCubit hidratado
+      theme/
     pages/
       splash/
       auth/
@@ -164,14 +178,6 @@ lib/
       invoices/
       settings/
     widgets/
-      app_shell.dart   # navegación responsive
-      app_button.dart
-      app_text_field.dart
-      money_text.dart
-      status_chip.dart
-      empty_state.dart
-      error_view.dart
-      loading_view.dart
   common/
     helpers/is_dark_mode.dart
     widgets/util_snackbar.dart
@@ -179,7 +185,7 @@ lib/
 
 ### Patrones que se copian de `test_flutter`
 - Separación `domain` / `data` / `presentation` / `core` / `common`.
-- `UseCase<T, Params>` y `NoParams`.
+- `UseCase<T, Params>` y `NoParams` en `core/configs/usecases/`.
 - Repositorios abstractos en `domain`, implementaciones en `data`.
 - `Either` para errores de negocio, sin lanzar excepciones hacia la UI.
 - `GetIt` (`sl`) para registrar repositorios, casos de uso y cubits.
@@ -190,16 +196,16 @@ lib/
 
 ### Diferencias justificadas
 - **`go_router`** en lugar de `Navigator.push`: la app se entrega en web y necesita URLs/deep links.
-- **Dio/HTTP** para el backend del agente, además de Firestore.
+- **`supabase_flutter`** como datasource principal en vez de Firebase.
+- **`core/network/`** para el cliente HTTP del backend del agente.
 - **`AppShell` responsive**: sidebar en escritorio, bottom navigation en móvil.
 - **Modelos con `fromJson`/`toJson` manuales** para mantener el estilo simple de `test_flutter` (sin `freezed` al inicio).
 
 ### Paquetes Flutter iniciales
 ```yaml
 flutter_bloc, get_it, dartz, hydrated_bloc, flutter_screenutil,
-firebase_core, firebase_auth, cloud_firestore, go_router, dio,
-intl, url_launcher, mobile_scanner, pdf, printing, path_provider,
-flutter_secure_storage
+supabase_flutter, go_router, dio, intl, url_launcher,
+mobile_scanner, pdf, printing, path_provider, flutter_secure_storage
 ```
 
 ---
@@ -220,10 +226,7 @@ server/
         tools/
         prompts/
       orders/
-        approve_order.ts
-        execute_payment.ts
-        generate_invoice.ts
-      auth/verify_firebase_token.ts
+      auth/verify_supabase_token.ts
     infrastructure/
       paypal/
         paypal_client.ts
@@ -233,11 +236,8 @@ server/
       ai/
         provider.ts
         groq_provider.ts
-        gemini_provider.ts
-        anthropic_provider.ts
-        openai_provider.ts
-      firebase/
-        firestore_repository.ts
+      supabase/
+        supabase_client.ts
       email/
       invoice/pdf_generator.ts
     interfaces/http/
@@ -264,8 +264,8 @@ server/
 | `POST` | `/webhooks/paypal` | Confirmación de PayPal (firma verificada) |
 | `GET` | `/health` | Health check de Render |
 
-> Los pedidos en estado `draft` y la lectura de catálogo se hacen contra Firestore.
-> Las acciones que mueven dinero pasan siempre por el backend.
+> Lectura de catálogo y pedidos en `draft` van directas a Supabase (RLS).
+> Las acciones que mueven dinero pasan siempre por el backend con `service_role`.
 
 ### Herramientas del agente
 1. `get_low_stock_products`
@@ -280,7 +280,7 @@ server/
 
 ### Guardrails
 - La IA **propone**, el código **valida**.
-- Precios y stock salen de Firestore, nunca del modelo.
+- Precios y stock salen de Supabase, nunca del modelo.
 - Límite por pedido, límite mensual y lista de proveedores permitidos.
 - Aprobación obligatoria por encima del umbral configurado.
 - `idempotencyKey` en cada pago para no pagar dos veces.
@@ -291,92 +291,45 @@ server/
 ```env
 AI_PROVIDER=groq
 AI_MODEL=llama-3.3-70b-versatile
+GROQ_API_KEY=gsk_...
 ```
-Cambiar a Claude u OpenAI es cambiar esas dos variables. Las reglas críticas no dependen del modelo.
+Cambiar de modelo es cambiar esas variables. Las reglas críticas no dependen del modelo.
 
 ---
 
-## 6. Modelo de datos (Firestore)
+## 6. Modelo de datos (Supabase / PostgreSQL)
 
-### `stores/{storeId}`
-```json
-{
-  "name": "Bodega Centro",
-  "ownerUid": "firebase-uid",
-  "currency": "EUR",
-  "paypalMerchantEmail": "seller@example.com",
-  "notificationEmail": "owner@example.com",
-  "spendingRules": {
-    "maxPerOrder": 200,
-    "monthlyLimit": 800,
-    "requireApprovalAbove": 50,
-    "allowedSupplierIds": ["sup_1", "sup_2"]
-  }
-}
-```
+### `stores`
+| Columna | Tipo | Nota |
+|---|---|---|
+| `id` | uuid pk | `gen_random_uuid()` |
+| `owner_id` | uuid | referencia `auth.users(id)` |
+| `name` | text | |
+| `currency` | text | por defecto `EUR` |
+| `paypal_merchant_email` | text | |
+| `notification_email` | text | |
+| `created_at` / `updated_at` | timestamptz | |
 
-### `suppliers/{supplierId}`
-```json
-{
-  "name": "Distribuidora Andina",
-  "paypalEmail": "pagos@andina.example",
-  "category": "Abarrotes",
-  "logoUrl": "...",
-  "active": true
-}
-```
+### `spending_rules`
+`store_id` (pk, fk), `max_per_order`, `monthly_limit`, `require_approval_above`, `allowed_supplier_ids uuid[]`.
 
-### `products/{productId}`
-```json
-{
-  "uid": "PRD-000123",
-  "supplierId": "sup_1",
-  "name": "Leche entera 1L",
-  "description": "...",
-  "price": 1.15,
-  "currency": "EUR",
-  "stock": 6,
-  "lowStockThreshold": 10,
-  "unit": "unidad",
-  "imageUrl": "...",
-  "active": true
-}
-```
+### `suppliers`
+`id` (pk), `name`, `paypal_email`, `category`, `logo_url`, `active`.
 
-### `orders/{orderId}`
-```json
-{
-  "storeId": "store_1",
-  "supplierId": "sup_1",
-  "createdBy": { "type": "agent", "uid": null },
-  "items": [
-    { "productUid": "PRD-000123", "name": "Leche entera 1L", "qty": 24, "unitPrice": 1.15 }
-  ],
-  "subtotal": 27.6,
-  "total": 27.6,
-  "status": "pending_approval",
-  "approval": { "by": "firebase-uid", "at": "timestamp" },
-  "payment": { "provider": "paypal", "payoutId": "...", "status": "paid", "at": "timestamp" },
-  "invoice": { "id": "...", "number": "INV-2026-001", "pdfUrl": "...", "sentAt": "timestamp" },
-  "agentRunId": "run_1",
-  "createdAt": "timestamp",
-  "updatedAt": "timestamp"
-}
-```
+### `products`
+`id` (pk), `uid` (text único), `supplier_id` (fk), `name`, `description`, `price`, `currency`, `stock`, `low_stock_threshold`, `unit`, `image_url`, `active`.
 
-### `agent_runs/{runId}`
-```json
-{
-  "storeId": "store_1",
-  "orderId": "order_1",
-  "provider": "groq",
-  "model": "llama-3.3-70b-versatile",
-  "toolCalls": [],
-  "decision": "propose_order",
-  "confidence": 0.92,
-  "createdAt": "timestamp"
-}
-```
+### `orders`
+`id` (pk), `store_id` (fk), `supplier_id` (fk), `created_by_type` (`user`/`agent`), `created_by_id` (uuid), `subtotal`, `total`, `status` (enum), `approval_by`, `approval_at`, `payment_provider`, `payment_payout_id`, `payment_status`, `payment_at`, `invoice_id`, `agent_run_id`, `created_at`, `updated_at`.
+
+### `order_items`
+`id` (pk), `order_id` (fk), `product_uid`, `name`, `qty`, `unit_price`, `line_total`.
+
+### `invoices`
+`id` (pk), `order_id` (fk), `number`, `pdf_url`, `status`, `sent_to`, `sent_at`, `created_at`.
+
+### `agent_runs`
+`id` (pk), `store_id` (fk), `order_id` (fk), `provider`, `model`, `tool_calls jsonb`, `decision`, `confidence`, `created_at`.
 
 ### Máquina de estados
 ```
@@ -401,11 +354,12 @@ draft
 
 ## 8. Seguridad
 
-- Secretos solo en el backend (`PAYPAL_CLIENT_SECRET`, claves de IA, email). Nunca en Flutter ni en el repo.
+- Secretos solo en el backend (`PAYPAL_CLIENT_SECRET`, `GROQ_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, email). Nunca en Flutter ni en el repo.
 - `.env` ignorado por git; `.env.example` documentado.
-- Firebase Auth con email/contraseña + cuenta demo para el jurado.
-- Verificación del **ID token de Firebase** en cada endpoint protegido.
-- Firestore Rules: cada tienda solo accede a sus documentos; catálogo de solo lectura para autenticados.
+- Supabase Auth con email/contraseña + cuenta demo para el jurado.
+- La app usa la `anon key` (pública) y **RLS**; el backend usa `service_role` (nunca en el cliente).
+- Políticas RLS: cada tienda solo accede a sus pedidos; catálogo de solo lectura para autenticados.
+- Verificación del **JWT de Supabase** en cada endpoint protegido.
 - Verificación de la firma de los webhooks de PayPal.
 - Idempotencia en pagos y facturas.
 - Rate limiting en `/agent/run` y endpoints de pago.
@@ -417,30 +371,31 @@ draft
 ## 9. Plan por fases
 
 ### Fase 0 — Decisiones y cuentas (19–20 oct)
-- [ ] Confirmar las decisiones pendientes de la sección 13.
-- [ ] Crear proyecto Firebase (Auth + Firestore) y cuenta demo.
+- [x] Decidir backend de datos y IA: **Supabase + Groq**.
+- [ ] Crear proyecto Supabase (Auth + Postgres) y cuenta demo.
 - [ ] Comprobar PayPal Sandbox: Payouts e Invoicing.
 - [ ] Instalar el plugin de APIMatic y reclamar el mes gratuito.
+- [ ] Comprobar la API de Groq con una llamada de prueba.
 - [ ] Crear `.env.example` y configurar Render.
 - [ ] Publicar datos seed (proveedores, productos con UID, stock bajo).
 
 ### Semana 1 — Base de la app (21–25 oct)
 - [ ] Scaffold Flutter con la estructura de la sección 4.
 - [ ] Tema claro/oscuro, `ScreenUtil`, `ThemeCubit`, `AppShell` responsive.
-- [ ] `AuthGate`, splash, login, registro y cuenta demo.
+- [ ] `AuthGate`, splash, login, registro y cuenta demo con Supabase Auth.
 - [ ] DI con `get_it`, router con `go_router`.
 - [ ] Modelos y repositorios de proveedores/productos.
 - [ ] Dashboard inicial + catálogo + búsqueda/escaneo por UID.
-- [ ] Backend: esqueleto Fastify, health check, verificación de token.
+- [ ] Backend: esqueleto Fastify, health check, verificación de JWT de Supabase.
 - [ ] Smoke test de PayPal (crear pago sandbox y ver webhook).
 
 ### Semana 2 — Pedido, agente y pago (26 oct–1 nov)
 - [ ] Creación de pedido manual (carrito + validación de precios).
 - [ ] Reglas de gasto y pantalla de aprobación.
-- [ ] Agente con herramientas y proveedor configurable.
+- [ ] Agente con herramientas y Groq.
 - [ ] Pago con PayPal Payouts + idempotencia.
 - [ ] Factura con PayPal Invoicing + PDF de respaldo.
-- [ ] Webhook de PayPal y actualización de estado en tiempo real.
+- [ ] Webhook de PayPal y actualización de estado en tiempo real (Supabase Realtime).
 - [ ] Historial, detalle y auditoría de pedidos.
 - [ ] Pruebas de casos felices y fallos (sin saldo, pago duplicado, webhook inválido).
 - [ ] Comparativa de modelos con 10 conversaciones (Groq vs Claude/GPT).
@@ -448,7 +403,7 @@ draft
 ### Semana 3 — Pulido y entrega (2–8 nov)
 - [ ] Responsive final (web, tablet, móvil).
 - [ ] Estados vacíos, errores, loaders y accesibilidad.
-- [ ] Deploy del backend en Render y de la web en Firebase Hosting.
+- [ ] Deploy del backend y de la web en Render.
 - [ ] Build de APK y release en GitHub.
 - [ ] README completo: arquitectura, setup, demo, PayPal, IA, APIMatic.
 - [ ] Guion y grabación del vídeo (2–3 min).
@@ -484,8 +439,8 @@ La demo se considera terminada cuando un jurado puede:
 | Riesgo | Mitigación |
 |---|---|
 | Payouts no disponible en el sandbox/país | Plan B: Invoicing + Orders; dejar el proveedor de pago abstraído |
-| El modelo gratuito falla con tool calling | Validación determinista + fallback; cambiar a Claude/GPT solo para la demo |
-| Firebase tarda en configurarse | Datasource mock en Flutter; backend con datos en memoria |
+| Groq falla con tool calling | Validación determinista + fallback; cambiar de modelo solo para la demo |
+| Supabase tarda en configurarse | Datasource mock en Flutter; backend con datos en memoria |
 | Web Flutter pesa mucho | Assets ligeros, tree-shaking, evitar paquetes innecesarios |
 | Falta de tiempo | Recortar escaneo QR, panel de proveedor, chat libre y notificaciones |
 | El jurado no puede probar | Cuenta demo, datos seed, web pública, APK y README paso a paso |
@@ -494,21 +449,22 @@ La demo se considera terminada cuando un jurado puede:
 
 ---
 
-## 12. Decisiones pendientes de confirmar
+## 12. Decisiones
 
-1. **Perspectiva del producto:** tienda que compra a proveedores (recomendado, alineado con Restock) o clientes que compran a empresas.
-2. **Datos:** Firebase Auth + Firestore (recomendado) o backend único TypeScript + Postgres.
-3. **Pago:** PayPal Payouts (recomendado para automatización) o Orders API (requiere aprobación del comprador).
-4. **Nombre:** mantener `store_automatization_app` en el paquete y usar **Restock** como marca, o renombrar todo a `restock`.
-5. **Cuenta demo:** email y contraseña que se publicarán en el README.
+1. **Perspectiva del producto:** tienda que compra a proveedores (Restock).
+2. **Datos:** **Supabase** (Postgres + Auth + Realtime). *(decidido)*
+3. **IA:** **Groq** con adaptador intercambiable. *(decidido)*
+4. **Pago:** PayPal Payouts (principal) o Orders API (requiere aprobación del comprador).
+5. **Nombre:** mantener `store_automatization_app` en el paquete y usar **Restock** como marca.
+6. **Cuenta demo:** email y contraseña que se publicarán en el README.
 
 ---
 
 ## 13. Primeros pasos inmediatos
 
-1. Confirmar las 5 decisiones de la sección 12.
-2. Crear el proyecto Firebase y pegar `google-services.json` / `GoogleService-Info.plist` (sin subir secretos).
-3. Implementar la estructura Flutter y el tema.
-4. Crear el esqueleto del backend y el `.env.example`.
+1. Crear el proyecto Supabase y copiar `SUPABASE_URL` y `SUPABASE_ANON_KEY`.
+2. Ejecutar `supabase/migrations` y `supabase/seed.sql`.
+3. Configurar `.env` del backend (`SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, PayPal sandbox).
+4. Implementar la estructura Flutter y el tema.
 5. Cargar datos seed y hacer el primer pedido de prueba.
 6. Probar un pago sandbox de extremo a extremo antes de construir la UI completa.

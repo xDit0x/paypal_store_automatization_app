@@ -1,0 +1,29 @@
+{
+  "name": "restock-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "check:groq": "tsx src/scripts/check-groq.ts",
+    "check:supabase": "tsx src/scripts/check-supabase.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "@supabase/supabase-js": "^2.118.0",
+    "dotenv": "^18.0.8",
+    "fastify": "^5.12.7",
+    "groq-sdk": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}
