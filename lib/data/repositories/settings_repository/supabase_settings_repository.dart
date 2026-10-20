@@ -2,6 +2,8 @@ import 'package:dartz/dartz.dart';
 
 import 'package:store_automatization_app/data/datasources/settings_repository/supabase_settings_datasource.dart';
 import 'package:store_automatization_app/data/models/spending_rules_model.dart';
+import 'package:store_automatization_app/data/support/app_error_log.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
 import 'package:store_automatization_app/domain/repositories/settings_repository/settings_repository.dart';
 
@@ -10,20 +12,20 @@ class SupabaseSettingsRepository implements SettingsRepository {
   SupabaseSettingsRepository(this._datasource);
 
   @override
-  Future<Either<String, SpendingRules>> getSpendingRules(String storeId) async {
+  Future<Either<AppError, SpendingRules>> getSpendingRules(String storeId) async {
     try {
       final row = await _datasource.getSpendingRules(storeId);
       if (row == null) {
-        return const Left('No se encontraron las reglas de gasto.');
+        return const Left(AppError(AppErrorCode.rulesNotFound));
       }
       return Right(SpendingRulesModel.fromMap(row));
     } catch (error) {
-      return Left('No se pudieron cargar las reglas de gasto: $error');
+      return Left(logError(AppErrorCode.rulesLoadFailed, error));
     }
   }
 
   @override
-  Future<Either<String, Unit>> updateSpendingRules(
+  Future<Either<AppError, Unit>> updateSpendingRules(
     String storeId,
     SpendingRules rules,
   ) async {
@@ -34,7 +36,13 @@ class SupabaseSettingsRepository implements SettingsRepository {
       );
       return Right(unit);
     } catch (error) {
-      return Left('No se pudieron guardar las reglas de gasto: $error');
+      return Left(
+        logError(
+          AppErrorCode.rulesSaveFailed,
+          error,
+          detail: serverMessage(error),
+        ),
+      );
     }
   }
 }

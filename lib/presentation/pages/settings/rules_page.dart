@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
@@ -167,8 +168,7 @@ class RulesPage extends StatelessWidget {
     if (error != null) {
       showRestockSnack(
         context,
-        error,
-        title: l10n.rulesSaveFailed,
+        l10n.describeDetail(error),
         tone: RSnackTone.warning,
       );
     } else {

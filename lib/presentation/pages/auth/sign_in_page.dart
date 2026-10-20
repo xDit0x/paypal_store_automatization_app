@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
@@ -45,8 +46,7 @@ class _SignInPageState extends State<SignInPage> {
         if (state.error != null) {
           showRestockSnack(
             context,
-            state.error!,
-            title: l10n.authSignInFailed,
+            l10n.describeDetail(state.error!),
             tone: RSnackTone.warning,
           );
         }

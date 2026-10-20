@@ -2,6 +2,8 @@ import 'package:dartz/dartz.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:store_automatization_app/data/datasources/auth_repository/supabase_auth_datasource.dart';
+import 'package:store_automatization_app/data/support/app_error_log.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/app_user.dart';
 import 'package:store_automatization_app/domain/repositories/auth_repository/auth_repository.dart';
 
@@ -10,21 +12,23 @@ class SupabaseAuthRepository implements AuthRepository {
   SupabaseAuthRepository(this._datasource);
 
   @override
-  Future<Either<String, AppUser>> signIn(String email, String password) async {
+  Future<Either<AppError, AppUser>> signIn(String email, String password) async {
     try {
       final response = await _datasource.signIn(email, password);
       final user = response.user;
-      if (user == null) return const Left('No se pudo obtener el usuario');
+      if (user == null) {
+        return const Left(AppError(AppErrorCode.authUserMissing));
+      }
       return Right(_toAppUser(user));
     } on AuthException catch (error) {
-      return Left(_mapError(error));
+      return Left(_mapError(error, AppErrorCode.authSignInFailed));
     } catch (error) {
-      return Left('No se pudo iniciar sesión: $error');
+      return Left(logError(AppErrorCode.authSignInFailed, error));
     }
   }
 
   @override
-  Future<Either<String, AppUser>> signUp(
+  Future<Either<AppError, AppUser>> signUp(
     String email,
     String password, {
     String? storeName,
@@ -40,37 +44,35 @@ class SupabaseAuthRepository implements AuthRepository {
       );
       final user = response.user;
       if (user == null) {
-        return const Left(
-          'Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.',
-        );
+        return const Left(AppError(AppErrorCode.authConfirmEmail));
       }
       return Right(_toAppUser(user));
     } on AuthException catch (error) {
-      return Left(_mapError(error));
+      return Left(_mapError(error, AppErrorCode.authSignUpFailed));
     } catch (error) {
-      return Left('No se pudo registrar: $error');
+      return Left(logError(AppErrorCode.authSignUpFailed, error));
     }
   }
 
   @override
-  Future<Either<String, Unit>> signOut() async {
+  Future<Either<AppError, Unit>> signOut() async {
     try {
       await _datasource.signOut();
       return Right(unit);
     } catch (_) {
-      return const Left('No se pudo cerrar sesión. Inténtalo de nuevo.');
+      return const Left(AppError(AppErrorCode.authSignOutFailed));
     }
   }
 
   @override
-  Future<Either<String, Unit>> sendResetPasswordEmail(String email) async {
+  Future<Either<AppError, Unit>> sendResetPasswordEmail(String email) async {
     try {
       await _datasource.sendResetPasswordEmail(email);
       return Right(unit);
     } on AuthException catch (error) {
-      return Left(_mapError(error));
+      return Left(_mapError(error, AppErrorCode.authResetEmailFailed));
     } catch (_) {
-      return const Left('No se pudo enviar el correo de recuperación.');
+      return const Left(AppError(AppErrorCode.authResetEmailFailed));
     }
   }
 
@@ -96,24 +98,24 @@ class SupabaseAuthRepository implements AuthRepository {
     );
   }
 
-  String _mapError(AuthException error) {
+  AppError _mapError(AuthException error, AppErrorCode fallback) {
     switch (error.code) {
       case 'invalid_credentials':
-        return 'Correo o contraseña incorrectos';
+        return const AppError(AppErrorCode.authInvalidCredentials);
       case 'email_exists':
       case 'user_already_exists':
-        return 'Ese correo ya está registrado';
+        return const AppError(AppErrorCode.authEmailTaken);
       case 'weak_password':
-        return 'La contraseña debe tener al menos 6 caracteres';
+        return const AppError(AppErrorCode.authWeakPassword);
       case 'email_not_confirmed':
-        return 'Confirma tu correo antes de entrar';
+        return const AppError(AppErrorCode.authEmailNotConfirmed);
       case 'over_email_send_rate_limit':
       case 'over_request_rate_limit':
-        return 'Demasiados intentos. Espera un momento.';
+        return const AppError(AppErrorCode.authTooManyAttempts);
       case 'validation_failed':
-        return 'Revisa el correo y la contraseña';
+        return const AppError(AppErrorCode.authValidationFailed);
       default:
-        return error.message;
+        return logError(fallback, error);
     }
   }
 }

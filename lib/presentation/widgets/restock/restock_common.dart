@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
+import 'package:store_automatization_app/domain/entities/spending_rules.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
@@ -50,7 +52,11 @@ String? shortDecisionReason(
     if (state.spentThisMonth + order.total > state.rules.monthlyLimit) {
       return l10n.reasonOverMonthlyLimit(l10n.eurosShort(state.rules.monthlyLimit, c));
     }
-    return decision.reason;
+    return switch (decision.reason) {
+      SpendingReason.noAmount => l10n.reasonNoAmount,
+      SpendingReason.supplierNotAllowed => l10n.reasonSupplierNotAllowed,
+      _ => null,
+    };
   }
   if (decision.needsApproval) {
     if (state.rules.requireApprovalAbove <= 0) {
@@ -97,7 +103,9 @@ class RTabPage extends StatelessWidget {
         child: REmptyState(
           icon: CupertinoIcons.wifi_exclamationmark,
           title: context.l10n.errorLoadData,
-          message: state.error,
+          message: state.error == null
+              ? null
+              : context.l10n.describe(state.error!),
           action: SizedBox(
             width: 200,
             child: RPrimaryButton(
@@ -118,7 +126,7 @@ class RTabPage extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(16, top + 16, 16, navBarClearance(context)),
         children: [
           if (state.error != null) ...[
-            _ErrorBanner(message: state.error!),
+            _ErrorBanner(message: context.l10n.describe(state.error!)),
             const SizedBox(height: 16),
           ],
           ...builder(context, state),

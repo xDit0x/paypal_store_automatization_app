@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
@@ -34,7 +35,7 @@ class OrderDetailPage extends StatelessWidget {
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
           title: Text(l10n.orderPaymentFailed),
-          content: Text(error),
+          content: Text(l10n.describeDetail(error)),
           actions: [
             CupertinoDialogAction(
               isDefaultAction: true,
@@ -87,8 +88,7 @@ class OrderDetailPage extends StatelessWidget {
     if (error != null) {
       showRestockSnack(
         context,
-        error,
-        title: l10n.orderRejectFailed,
+        l10n.describeDetail(error),
         tone: RSnackTone.warning,
       );
     } else {

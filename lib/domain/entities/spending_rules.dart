@@ -1,18 +1,29 @@
 enum SpendingDecisionStatus { autoApproved, requiresApproval, blocked }
 
+/// Motivo de la decisión, sin texto: la frase se compone en presentación con
+/// el importe del idioma activo.
+enum SpendingReason {
+  noAmount,
+  supplierNotAllowed,
+  overMaxPerOrder,
+  overMonthlyLimit,
+  anyOrderNeedsApproval,
+  overApprovalThreshold,
+}
+
 class SpendingDecision {
   final SpendingDecisionStatus status;
-  final String? reason;
+  final SpendingReason? reason;
 
   const SpendingDecision._(this.status, [this.reason]);
 
   factory SpendingDecision.autoApproved() =>
       const SpendingDecision._(SpendingDecisionStatus.autoApproved);
 
-  factory SpendingDecision.requiresApproval(String reason) =>
+  factory SpendingDecision.requiresApproval(SpendingReason reason) =>
       SpendingDecision._(SpendingDecisionStatus.requiresApproval, reason);
 
-  factory SpendingDecision.blocked(String reason) =>
+  factory SpendingDecision.blocked(SpendingReason reason) =>
       SpendingDecision._(SpendingDecisionStatus.blocked, reason);
 
   bool get isBlocked => status == SpendingDecisionStatus.blocked;
@@ -40,39 +51,30 @@ class SpendingRules {
     required String supplierId,
   }) {
     if (orderTotal <= 0) {
-      return SpendingDecision.blocked('El pedido no tiene importe.');
+      return SpendingDecision.blocked(SpendingReason.noAmount);
     }
 
     if (allowedSupplierIds.isNotEmpty &&
         !allowedSupplierIds.contains(supplierId)) {
-      return SpendingDecision.blocked(
-        'El proveedor no está en la lista de proveedores permitidos.',
-      );
+      return SpendingDecision.blocked(SpendingReason.supplierNotAllowed);
     }
 
     if (orderTotal > maxPerOrder) {
-      return SpendingDecision.blocked(
-        'El pedido supera el máximo por pedido '
-        '(${maxPerOrder.toStringAsFixed(2)}).',
-      );
+      return SpendingDecision.blocked(SpendingReason.overMaxPerOrder);
     }
 
     if (spentThisMonth + orderTotal > monthlyLimit) {
-      return SpendingDecision.blocked(
-        'El pedido supera el límite mensual '
-        '(${monthlyLimit.toStringAsFixed(2)}).',
-      );
+      return SpendingDecision.blocked(SpendingReason.overMonthlyLimit);
     }
 
     if (orderTotal > requireApprovalAbove) {
       if (requireApprovalAbove <= 0) {
         return SpendingDecision.requiresApproval(
-          'Me preguntas por cualquier pedido.',
+          SpendingReason.anyOrderNeedsApproval,
         );
       }
       return SpendingDecision.requiresApproval(
-        'El pedido supera el umbral de aprobación automática '
-        '(${requireApprovalAbove.toStringAsFixed(2)}).',
+        SpendingReason.overApprovalThreshold,
       );
     }
 

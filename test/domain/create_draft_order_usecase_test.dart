@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart' hide Order;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:store_automatization_app/domain/entities/order.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
@@ -15,32 +16,32 @@ class _FakeProductRepository implements ProductRepository {
   _FakeProductRepository(this.products);
 
   @override
-  Future<Either<String, List<Product>>> getBySupplier(String supplierId) async {
+  Future<Either<AppError, List<Product>>> getBySupplier(String supplierId) async {
     return Right(products);
   }
 
   @override
-  Future<Either<String, Product?>> getByUid(String uid) async {
+  Future<Either<AppError, Product?>> getByUid(String uid) async {
     final matches = products.where((product) => product.uid == uid);
     return Right(matches.isEmpty ? null : matches.first);
   }
 
   @override
-  Future<Either<String, List<Product>>> getByUids(List<String> uids) async {
+  Future<Either<AppError, List<Product>>> getByUids(List<String> uids) async {
     return Right(
       products.where((product) => uids.contains(product.uid)).toList(),
     );
   }
 
   @override
-  Future<Either<String, List<Product>>> getLowStock() async {
+  Future<Either<AppError, List<Product>>> getLowStock() async {
     return Right(products.where((product) => product.isLowStock).toList());
   }
 
   @override
-  Future<Either<String, Unit>> updateStock(String uid, int stock) async {
+  Future<Either<AppError, Unit>> updateStock(String uid, int stock) async {
     final exists = products.any((product) => product.uid == uid);
-    return exists ? const Right(unit) : const Left('El producto no existe.');
+    return exists ? const Right(unit) : const Left(AppError(AppErrorCode.productMissing));
   }
 }
 
@@ -49,7 +50,7 @@ class _FakeOrderRepository implements OrderRepository {
   List<OrderItem>? lastItems;
 
   @override
-  Future<Either<String, Order>> create({
+  Future<Either<AppError, Order>> create({
     required String storeId,
     required String supplierId,
     required List<OrderItem> items,
@@ -78,28 +79,28 @@ class _FakeOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<Either<String, List<Order>>> getByStore(String storeId) async {
-    return const Left('not implemented');
+  Future<Either<AppError, List<Order>>> getByStore(String storeId) async {
+    return const Left(AppError(AppErrorCode.orderCreateFailed));
   }
 
   @override
-  Future<Either<String, Order?>> getById(String id) async {
-    return const Left('not implemented');
+  Future<Either<AppError, Order?>> getById(String id) async {
+    return const Left(AppError(AppErrorCode.orderCreateFailed));
   }
 
   @override
-  Future<Either<String, double>> getSpentThisMonth(String storeId) async {
+  Future<Either<AppError, double>> getSpentThisMonth(String storeId) async {
     return const Right(0);
   }
 
   @override
-  Future<Either<String, Unit>> approve(String orderId) async {
-    return const Left('not implemented');
+  Future<Either<AppError, Unit>> approve(String orderId) async {
+    return const Left(AppError(AppErrorCode.orderCreateFailed));
   }
 
   @override
-  Future<Either<String, Unit>> reject(String orderId) async {
-    return const Left('not implemented');
+  Future<Either<AppError, Unit>> reject(String orderId) async {
+    return const Left(AppError(AppErrorCode.orderCreateFailed));
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 
@@ -13,12 +14,12 @@ class DraftOrderLine {
 class OrderBuilder {
   const OrderBuilder._();
 
-  static Either<String, List<OrderItem>> buildItems({
+  static Either<AppError, List<OrderItem>> buildItems({
     required List<DraftOrderLine> lines,
     required List<Product> products,
   }) {
     if (lines.isEmpty) {
-      return const Left('El pedido no tiene líneas.');
+      return const Left(AppError(AppErrorCode.orderEmpty));
     }
 
     final productsByUid = {for (final product in products) product.uid: product};
@@ -26,16 +27,25 @@ class OrderBuilder {
 
     for (final line in lines) {
       if (line.qty <= 0) {
-        return Left('Cantidad inválida para ${line.productUid}.');
+        return Left(
+          AppError(AppErrorCode.orderItemInvalidQty, subject: line.productUid),
+        );
       }
 
       final product = productsByUid[line.productUid];
       if (product == null) {
-        return Left('Producto no encontrado: ${line.productUid}.');
+        return Left(
+          AppError(AppErrorCode.orderProductMissing, subject: line.productUid),
+        );
       }
 
       if (!product.active) {
-        return Left('El producto ${product.name} no está activo.');
+        return Left(
+          AppError(
+            AppErrorCode.orderProductInactive,
+            subject: product.name,
+          ),
+        );
       }
 
       items.add(

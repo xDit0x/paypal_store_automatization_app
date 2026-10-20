@@ -614,6 +614,18 @@ abstract class AppLocalizations {
   /// **'Supera {amount} sin aprobación'**
   String reasonOverApprovalThreshold(String amount);
 
+  /// No description provided for @reasonNoAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'El pedido no tiene importe'**
+  String get reasonNoAmount;
+
+  /// No description provided for @reasonSupplierNotAllowed.
+  ///
+  /// In es, this message translates to:
+  /// **'El proveedor no está en tu lista de permitidos'**
+  String get reasonSupplierNotAllowed;
+
   /// No description provided for @orderUnavailable.
   ///
   /// In es, this message translates to:
@@ -1303,23 +1315,11 @@ abstract class AppLocalizations {
   /// **'No se pudieron cargar tus datos'**
   String get errorLoadData;
 
-  /// No description provided for @errorStoreNotFound.
-  ///
-  /// In es, this message translates to:
-  /// **'No se encontró la tienda.'**
-  String get errorStoreNotFound;
-
   /// No description provided for @errorAgentBusy.
   ///
   /// In es, this message translates to:
   /// **'El agente ya está trabajando.'**
   String get errorAgentBusy;
-
-  /// No description provided for @errorNoStoreLoaded.
-  ///
-  /// In es, this message translates to:
-  /// **'No hay tienda cargada.'**
-  String get errorNoStoreLoaded;
 
   /// No description provided for @decisionOrderCreated.
   ///
@@ -1410,6 +1410,324 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Siguiente paso: catálogo, pedidos y agente.'**
   String get dashboardNextStep;
+
+  /// No description provided for @errorAuthUserMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo obtener el usuario'**
+  String get errorAuthUserMissing;
+
+  /// No description provided for @errorAuthSignInFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo iniciar sesión'**
+  String get errorAuthSignInFailed;
+
+  /// No description provided for @errorAuthSignUpFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo registrar'**
+  String get errorAuthSignUpFailed;
+
+  /// No description provided for @errorAuthConfirmEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.'**
+  String get errorAuthConfirmEmail;
+
+  /// No description provided for @errorAuthSignOutFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cerrar sesión. Inténtalo de nuevo.'**
+  String get errorAuthSignOutFailed;
+
+  /// No description provided for @errorAuthResetEmailFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo enviar el correo de recuperación.'**
+  String get errorAuthResetEmailFailed;
+
+  /// No description provided for @errorAuthInvalidCredentials.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo o contraseña incorrectos'**
+  String get errorAuthInvalidCredentials;
+
+  /// No description provided for @errorAuthEmailTaken.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese correo ya está registrado'**
+  String get errorAuthEmailTaken;
+
+  /// No description provided for @errorAuthWeakPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'La contraseña debe tener al menos 6 caracteres'**
+  String get errorAuthWeakPassword;
+
+  /// No description provided for @errorAuthEmailNotConfirmed.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirma tu correo antes de entrar'**
+  String get errorAuthEmailNotConfirmed;
+
+  /// No description provided for @errorAuthTooManyAttempts.
+  ///
+  /// In es, this message translates to:
+  /// **'Demasiados intentos. Espera un momento.'**
+  String get errorAuthTooManyAttempts;
+
+  /// No description provided for @errorAuthValidationFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa el correo y la contraseña'**
+  String get errorAuthValidationFailed;
+
+  /// No description provided for @errorSessionExpired.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión caducada. Vuelve a iniciar sesión.'**
+  String get errorSessionExpired;
+
+  /// No description provided for @errorStoreLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar la tienda'**
+  String get errorStoreLoadFailed;
+
+  /// No description provided for @errorStoreUpdateFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo actualizar la tienda'**
+  String get errorStoreUpdateFailed;
+
+  /// No description provided for @errorStoreNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontró la tienda del usuario.'**
+  String get errorStoreNotFound;
+
+  /// No description provided for @errorStoreNameEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'El nombre de la tienda no puede estar vacío.'**
+  String get errorStoreNameEmpty;
+
+  /// No description provided for @errorRulesNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontraron las reglas de gasto.'**
+  String get errorRulesNotFound;
+
+  /// No description provided for @errorRulesLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar las reglas de gasto'**
+  String get errorRulesLoadFailed;
+
+  /// No description provided for @errorRulesSaveFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron guardar las reglas de gasto'**
+  String get errorRulesSaveFailed;
+
+  /// No description provided for @errorRuleMaxPerOrderInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'El máximo por pedido debe ser mayor que 0.'**
+  String get errorRuleMaxPerOrderInvalid;
+
+  /// No description provided for @errorRuleMonthlyBelowMax.
+  ///
+  /// In es, this message translates to:
+  /// **'El límite mensual no puede ser menor que el máximo por pedido.'**
+  String get errorRuleMonthlyBelowMax;
+
+  /// No description provided for @errorRuleApprovalAboveMax.
+  ///
+  /// In es, this message translates to:
+  /// **'El umbral de aprobación no puede superar el máximo por pedido.'**
+  String get errorRuleApprovalAboveMax;
+
+  /// No description provided for @errorOrdersLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar los pedidos'**
+  String get errorOrdersLoadFailed;
+
+  /// No description provided for @errorOrderLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el pedido'**
+  String get errorOrderLoadFailed;
+
+  /// No description provided for @errorOrderCreateFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo crear el pedido'**
+  String get errorOrderCreateFailed;
+
+  /// No description provided for @errorOrderSpentFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo calcular el gasto mensual'**
+  String get errorOrderSpentFailed;
+
+  /// No description provided for @errorOrderApproveFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo aprobar el pedido'**
+  String get errorOrderApproveFailed;
+
+  /// No description provided for @errorOrderRejectFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo rechazar el pedido'**
+  String get errorOrderRejectFailed;
+
+  /// No description provided for @errorOrderMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Falta el pedido.'**
+  String get errorOrderMissing;
+
+  /// No description provided for @errorOrderNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese pedido ya no existe.'**
+  String get errorOrderNotFound;
+
+  /// No description provided for @errorOrderEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'El pedido no tiene líneas.'**
+  String get errorOrderEmpty;
+
+  /// No description provided for @errorOrderBlocked.
+  ///
+  /// In es, this message translates to:
+  /// **'El pedido está bloqueado por tus reglas.'**
+  String get errorOrderBlocked;
+
+  /// No description provided for @errorOrderItemInvalidQty.
+  ///
+  /// In es, this message translates to:
+  /// **'Cantidad no válida para {uid}.'**
+  String errorOrderItemInvalidQty(String uid);
+
+  /// No description provided for @errorOrderProductMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'No encuentro el producto {uid} en el catálogo.'**
+  String errorOrderProductMissing(String uid);
+
+  /// No description provided for @errorOrderProductInactive.
+  ///
+  /// In es, this message translates to:
+  /// **'El producto {name} ya no está activo.'**
+  String errorOrderProductInactive(String name);
+
+  /// No description provided for @errorInvoiceLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar la factura'**
+  String get errorInvoiceLoadFailed;
+
+  /// No description provided for @errorSuppliersLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar los proveedores'**
+  String get errorSuppliersLoadFailed;
+
+  /// No description provided for @errorSupplierLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el proveedor'**
+  String get errorSupplierLoadFailed;
+
+  /// No description provided for @errorCatalogLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el catálogo'**
+  String get errorCatalogLoadFailed;
+
+  /// No description provided for @errorProductSearchFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo buscar el producto'**
+  String get errorProductSearchFailed;
+
+  /// No description provided for @errorProductsLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar los productos'**
+  String get errorProductsLoadFailed;
+
+  /// No description provided for @errorLowStockLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el stock bajo'**
+  String get errorLowStockLoadFailed;
+
+  /// No description provided for @errorStockUpdateFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo actualizar el stock'**
+  String get errorStockUpdateFailed;
+
+  /// No description provided for @errorProductMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Falta el producto.'**
+  String get errorProductMissing;
+
+  /// No description provided for @errorProductNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'No existe ningún producto con UID {uid}.'**
+  String errorProductNotFound(String uid);
+
+  /// No description provided for @errorProductUidMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce un UID.'**
+  String get errorProductUidMissing;
+
+  /// No description provided for @errorStockNegative.
+  ///
+  /// In es, this message translates to:
+  /// **'El stock no puede ser negativo.'**
+  String get errorStockNegative;
+
+  /// No description provided for @errorAgentUnreachable.
+  ///
+  /// In es, this message translates to:
+  /// **'El agente no respondió'**
+  String get errorAgentUnreachable;
+
+  /// No description provided for @errorAgentFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'Error del agente'**
+  String get errorAgentFailed;
+
+  /// No description provided for @errorAgentRunsLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar las ejecuciones'**
+  String get errorAgentRunsLoadFailed;
+
+  /// No description provided for @errorAgentStoreMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Falta la tienda.'**
+  String get errorAgentStoreMissing;
+
+  /// No description provided for @errorPreviewNoSignOut.
+  ///
+  /// In es, this message translates to:
+  /// **'En la vista previa no se cierra sesión.'**
+  String get errorPreviewNoSignOut;
 }
 
 class _AppLocalizationsDelegate

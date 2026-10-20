@@ -52,7 +52,7 @@ class SupabaseProductDatasource {
     } on DioException catch (error) {
       final data = error.response?.data;
       final message = data is Map<String, dynamic> ? data['error'] : null;
-      throw Exception(message ?? 'No se pudo actualizar el stock.');
+      throw Exception(message ?? '');
     }
   }
 }

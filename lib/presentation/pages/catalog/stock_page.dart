@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
@@ -247,7 +249,7 @@ class _StockEditorSheet extends StatefulWidget {
   final Product product;
 
   /// Devuelve null si se guardó bien, o el error.
-  final Future<String?> Function(int stock) onSave;
+  final Future<AppError?> Function(int stock) onSave;
 
   @override
   State<_StockEditorSheet> createState() => _StockEditorSheetState();
@@ -259,7 +261,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
     text: '${widget.product.stock}',
   );
   bool _saving = false;
-  String? _error;
+  AppError? _error;
 
   @override
   void dispose() {
@@ -398,7 +400,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Text(
-                  _error!,
+                  l10n.describeDetail(_error!),
                   style: t.footnote.copyWith(color: p.warning),
                   textAlign: TextAlign.center,
                 ),

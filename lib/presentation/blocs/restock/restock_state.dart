@@ -1,4 +1,5 @@
 import 'package:store_automatization_app/domain/entities/agent_run.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
@@ -20,7 +21,7 @@ class ChatEntry {
 /// Reglas y Asistente). Se carga una vez y se refresca tras cada acción.
 class RestockState {
   final RestockStatus status;
-  final String? error;
+  final AppError? error;
   final Store? store;
   final SpendingRules rules;
   final double spentThisMonth;
@@ -120,7 +121,7 @@ class RestockState {
 
   RestockState copyWith({
     RestockStatus? status,
-    String? error,
+    AppError? error,
     bool clearError = false,
     Store? store,
     SpendingRules? rules,

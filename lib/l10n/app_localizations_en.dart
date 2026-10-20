@@ -304,6 +304,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get reasonNoAmount => 'The order has no amount';
+
+  @override
+  String get reasonSupplierNotAllowed =>
+      'The supplier is not on your allowed list';
+
+  @override
   String get orderUnavailable => 'This order is no longer available';
 
   @override
@@ -705,13 +712,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadData => 'We could not load your data';
 
   @override
-  String get errorStoreNotFound => 'The store was not found.';
-
-  @override
   String get errorAgentBusy => 'The agent is already working.';
-
-  @override
-  String get errorNoStoreLoaded => 'No store loaded.';
 
   @override
   String get decisionOrderCreated =>
@@ -771,4 +772,178 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardNextStep => 'Next step: catalogue, orders and agent.';
+
+  @override
+  String get errorAuthUserMissing => 'Could not get the user';
+
+  @override
+  String get errorAuthSignInFailed => 'Could not sign in';
+
+  @override
+  String get errorAuthSignUpFailed => 'Could not create the account';
+
+  @override
+  String get errorAuthConfirmEmail =>
+      'Account created. Check your email to confirm it, then sign in.';
+
+  @override
+  String get errorAuthSignOutFailed => 'Could not sign out. Try again.';
+
+  @override
+  String get errorAuthResetEmailFailed => 'Could not send the recovery email.';
+
+  @override
+  String get errorAuthInvalidCredentials => 'Wrong email or password';
+
+  @override
+  String get errorAuthEmailTaken => 'That email is already registered';
+
+  @override
+  String get errorAuthWeakPassword =>
+      'The password must be at least 6 characters long';
+
+  @override
+  String get errorAuthEmailNotConfirmed =>
+      'Confirm your email before signing in';
+
+  @override
+  String get errorAuthTooManyAttempts => 'Too many attempts. Wait a moment.';
+
+  @override
+  String get errorAuthValidationFailed => 'Check the email and the password';
+
+  @override
+  String get errorSessionExpired => 'Session expired. Sign in again.';
+
+  @override
+  String get errorStoreLoadFailed => 'Could not load the store';
+
+  @override
+  String get errorStoreUpdateFailed => 'Could not update the store';
+
+  @override
+  String get errorStoreNotFound => 'The user\'s store was not found.';
+
+  @override
+  String get errorStoreNameEmpty => 'The store name cannot be empty.';
+
+  @override
+  String get errorRulesNotFound => 'Spending rules were not found.';
+
+  @override
+  String get errorRulesLoadFailed => 'Could not load the spending rules';
+
+  @override
+  String get errorRulesSaveFailed => 'Could not save the spending rules';
+
+  @override
+  String get errorRuleMaxPerOrderInvalid =>
+      'The maximum per order must be greater than 0.';
+
+  @override
+  String get errorRuleMonthlyBelowMax =>
+      'The monthly limit cannot be lower than the maximum per order.';
+
+  @override
+  String get errorRuleApprovalAboveMax =>
+      'The approval threshold cannot exceed the maximum per order.';
+
+  @override
+  String get errorOrdersLoadFailed => 'Could not load the orders';
+
+  @override
+  String get errorOrderLoadFailed => 'Could not load the order';
+
+  @override
+  String get errorOrderCreateFailed => 'Could not create the order';
+
+  @override
+  String get errorOrderSpentFailed =>
+      'Could not work out this month\'s spending';
+
+  @override
+  String get errorOrderApproveFailed => 'Could not approve the order';
+
+  @override
+  String get errorOrderRejectFailed => 'Could not reject the order';
+
+  @override
+  String get errorOrderMissing => 'The order is missing.';
+
+  @override
+  String get errorOrderNotFound => 'That order no longer exists.';
+
+  @override
+  String get errorOrderEmpty => 'The order has no lines.';
+
+  @override
+  String get errorOrderBlocked => 'The order is blocked by your rules.';
+
+  @override
+  String errorOrderItemInvalidQty(String uid) {
+    return 'Invalid quantity for $uid.';
+  }
+
+  @override
+  String errorOrderProductMissing(String uid) {
+    return 'Cannot find product $uid in the catalog.';
+  }
+
+  @override
+  String errorOrderProductInactive(String name) {
+    return '$name is no longer active.';
+  }
+
+  @override
+  String get errorInvoiceLoadFailed => 'Could not load the invoice';
+
+  @override
+  String get errorSuppliersLoadFailed => 'Could not load the suppliers';
+
+  @override
+  String get errorSupplierLoadFailed => 'Could not load the supplier';
+
+  @override
+  String get errorCatalogLoadFailed => 'Could not load the catalog';
+
+  @override
+  String get errorProductSearchFailed => 'Could not search for the product';
+
+  @override
+  String get errorProductsLoadFailed => 'Could not load the products';
+
+  @override
+  String get errorLowStockLoadFailed => 'Could not load the low stock';
+
+  @override
+  String get errorStockUpdateFailed => 'Could not update the stock';
+
+  @override
+  String get errorProductMissing => 'The product is missing.';
+
+  @override
+  String errorProductNotFound(String uid) {
+    return 'There is no product with UID $uid.';
+  }
+
+  @override
+  String get errorProductUidMissing => 'Enter a UID.';
+
+  @override
+  String get errorStockNegative => 'Stock cannot be negative.';
+
+  @override
+  String get errorAgentUnreachable => 'The agent did not respond';
+
+  @override
+  String get errorAgentFailed => 'Agent error';
+
+  @override
+  String get errorAgentRunsLoadFailed => 'Could not load the runs';
+
+  @override
+  String get errorAgentStoreMissing => 'The store is missing.';
+
+  @override
+  String get errorPreviewNoSignOut => 'The preview does not sign out.';
 }

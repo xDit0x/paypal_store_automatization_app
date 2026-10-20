@@ -4,6 +4,7 @@
 import 'package:dartz/dartz.dart' hide Order;
 
 import 'package:store_automatization_app/domain/entities/agent_run.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/app_user.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
@@ -179,17 +180,17 @@ class PreviewAuthRepository implements AuthRepository {
   Stream<AppUser?> authStateChanges() => const Stream.empty();
 
   @override
-  Future<Either<String, AppUser>> signIn(String email, String password) async => const Right(_user);
+  Future<Either<AppError, AppUser>> signIn(String email, String password) async => const Right(_user);
 
   @override
-  Future<Either<String, AppUser>> signUp(String email, String password, {String? storeName}) async =>
+  Future<Either<AppError, AppUser>> signUp(String email, String password, {String? storeName}) async =>
       const Right(_user);
 
   @override
-  Future<Either<String, Unit>> signOut() async => const Left('En la vista previa no se cierra sesión.');
+  Future<Either<AppError, Unit>> signOut() async => const Left(AppError(AppErrorCode.previewNoSignOut));
 
   @override
-  Future<Either<String, Unit>> sendResetPasswordEmail(String email) async => const Right(unit);
+  Future<Either<AppError, Unit>> sendResetPasswordEmail(String email) async => const Right(unit);
 }
 
 class PreviewStoreRepository implements StoreRepository {
@@ -197,10 +198,10 @@ class PreviewStoreRepository implements StoreRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<String, Store?>> getOwn() async => Right(db.store);
+  Future<Either<AppError, Store?>> getOwn() async => Right(db.store);
 
   @override
-  Future<Either<String, Unit>> update(String storeId,
+  Future<Either<AppError, Unit>> update(String storeId,
       {String? name, String? paypalMerchantEmail, String? notificationEmail}) async {
     final s = db.store;
     db.store = Store(
@@ -220,10 +221,10 @@ class PreviewSettingsRepository implements SettingsRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<String, SpendingRules>> getSpendingRules(String storeId) async => Right(db.rules);
+  Future<Either<AppError, SpendingRules>> getSpendingRules(String storeId) async => Right(db.rules);
 
   @override
-  Future<Either<String, Unit>> updateSpendingRules(String storeId, SpendingRules rules) async {
+  Future<Either<AppError, Unit>> updateSpendingRules(String storeId, SpendingRules rules) async {
     db.rules = rules;
     return const Right(unit);
   }
@@ -234,10 +235,10 @@ class PreviewSupplierRepository implements SupplierRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<String, List<Supplier>>> getAll() async => Right(db.suppliers);
+  Future<Either<AppError, List<Supplier>>> getAll() async => Right(db.suppliers);
 
   @override
-  Future<Either<String, Supplier?>> getById(String id) async {
+  Future<Either<AppError, Supplier?>> getById(String id) async {
     for (final s in db.suppliers) {
       if (s.id == id) return Right(s);
     }
@@ -250,11 +251,11 @@ class PreviewProductRepository implements ProductRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<String, List<Product>>> getBySupplier(String supplierId) async =>
+  Future<Either<AppError, List<Product>>> getBySupplier(String supplierId) async =>
       Right(db.products.where((p) => p.supplierId == supplierId).toList());
 
   @override
-  Future<Either<String, Product?>> getByUid(String uid) async {
+  Future<Either<AppError, Product?>> getByUid(String uid) async {
     for (final p in db.products) {
       if (p.uid == uid) return Right(p);
     }
@@ -262,18 +263,18 @@ class PreviewProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<String, List<Product>>> getByUids(List<String> uids) async =>
+  Future<Either<AppError, List<Product>>> getByUids(List<String> uids) async =>
       Right(db.products.where((p) => uids.contains(p.uid)).toList());
 
   @override
-  Future<Either<String, List<Product>>> getLowStock() async =>
+  Future<Either<AppError, List<Product>>> getLowStock() async =>
       Right(db.products.where((p) => p.isLowStock).toList());
 
   @override
-  Future<Either<String, Unit>> updateStock(String uid, int stock) async {
+  Future<Either<AppError, Unit>> updateStock(String uid, int stock) async {
     final index = db.products.indexWhere((p) => p.uid == uid);
-    if (index < 0) return const Left('El producto no existe.');
-    if (stock < 0) return const Left('El stock no puede ser negativo.');
+    if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
+    if (stock < 0) return const Left(AppError(AppErrorCode.stockNegative));
     db.products[index] = db.products[index].copyWith(stock: stock);
     return const Right(unit);
   }
@@ -286,14 +287,14 @@ class PreviewOrderRepository implements OrderRepository {
   static const _spentStatuses = {OrderStatus.paid, OrderStatus.invoiced, OrderStatus.completed};
 
   @override
-  Future<Either<String, List<Order>>> getByStore(String storeId) async {
+  Future<Either<AppError, List<Order>>> getByStore(String storeId) async {
     final list = [...db.orders]
       ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
     return Right(list);
   }
 
   @override
-  Future<Either<String, Order?>> getById(String id) async {
+  Future<Either<AppError, Order?>> getById(String id) async {
     for (final o in db.orders) {
       if (o.id == id) return Right(o);
     }
@@ -301,7 +302,7 @@ class PreviewOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<Either<String, Order>> create({
+  Future<Either<AppError, Order>> create({
     required String storeId,
     required String supplierId,
     required List<OrderItem> items,
@@ -331,15 +332,15 @@ class PreviewOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<Either<String, double>> getSpentThisMonth(String storeId) async => Right(
+  Future<Either<AppError, double>> getSpentThisMonth(String storeId) async => Right(
         db.orders.where((o) => _spentStatuses.contains(o.status)).fold<double>(0, (s, o) => s + o.total),
       );
 
   @override
-  Future<Either<String, Unit>> approve(String orderId) async {
+  Future<Either<AppError, Unit>> approve(String orderId) async {
     await Future<void>.delayed(const Duration(milliseconds: 900));
     final i = db.orders.indexWhere((o) => o.id == orderId);
-    if (i < 0) return const Left('El pedido no existe.');
+    if (i < 0) return const Left(AppError(AppErrorCode.orderNotFound));
     db.orders[i] = db.orders[i].copyWith(
       status: OrderStatus.paid,
       paymentProvider: 'paypal',
@@ -351,9 +352,9 @@ class PreviewOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<Either<String, Unit>> reject(String orderId) async {
+  Future<Either<AppError, Unit>> reject(String orderId) async {
     final i = db.orders.indexWhere((o) => o.id == orderId);
-    if (i < 0) return const Left('El pedido no existe.');
+    if (i < 0) return const Left(AppError(AppErrorCode.orderNotFound));
     db.orders[i] = db.orders[i].copyWith(status: OrderStatus.rejected);
     return const Right(unit);
   }
@@ -366,7 +367,7 @@ class PreviewAgentRepository implements AgentRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<String, AgentRunResult>> run(String storeId) async {
+  Future<Either<AppError, AgentRunResult>> run(String storeId) async {
     await Future<void>.delayed(const Duration(milliseconds: 1600));
 
     final pending = db.orders.where((o) => o.status == OrderStatus.pendingApproval).toList();
@@ -442,5 +443,5 @@ class PreviewAgentRepository implements AgentRepository {
   }
 
   @override
-  Future<Either<String, List<AgentRun>>> getRuns(String storeId) async => Right([...db.runs]);
+  Future<Either<AppError, List<AgentRun>>> getRuns(String storeId) async => Right([...db.runs]);
 }

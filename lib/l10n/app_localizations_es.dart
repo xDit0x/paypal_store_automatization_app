@@ -305,6 +305,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get reasonNoAmount => 'El pedido no tiene importe';
+
+  @override
+  String get reasonSupplierNotAllowed =>
+      'El proveedor no está en tu lista de permitidos';
+
+  @override
   String get orderUnavailable => 'Este pedido ya no está disponible';
 
   @override
@@ -707,13 +714,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get errorLoadData => 'No se pudieron cargar tus datos';
 
   @override
-  String get errorStoreNotFound => 'No se encontró la tienda.';
-
-  @override
   String get errorAgentBusy => 'El agente ya está trabajando.';
-
-  @override
-  String get errorNoStoreLoaded => 'No hay tienda cargada.';
 
   @override
   String get decisionOrderCreated =>
@@ -773,4 +774,184 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardNextStep => 'Siguiente paso: catálogo, pedidos y agente.';
+
+  @override
+  String get errorAuthUserMissing => 'No se pudo obtener el usuario';
+
+  @override
+  String get errorAuthSignInFailed => 'No se pudo iniciar sesión';
+
+  @override
+  String get errorAuthSignUpFailed => 'No se pudo registrar';
+
+  @override
+  String get errorAuthConfirmEmail =>
+      'Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.';
+
+  @override
+  String get errorAuthSignOutFailed =>
+      'No se pudo cerrar sesión. Inténtalo de nuevo.';
+
+  @override
+  String get errorAuthResetEmailFailed =>
+      'No se pudo enviar el correo de recuperación.';
+
+  @override
+  String get errorAuthInvalidCredentials => 'Correo o contraseña incorrectos';
+
+  @override
+  String get errorAuthEmailTaken => 'Ese correo ya está registrado';
+
+  @override
+  String get errorAuthWeakPassword =>
+      'La contraseña debe tener al menos 6 caracteres';
+
+  @override
+  String get errorAuthEmailNotConfirmed => 'Confirma tu correo antes de entrar';
+
+  @override
+  String get errorAuthTooManyAttempts =>
+      'Demasiados intentos. Espera un momento.';
+
+  @override
+  String get errorAuthValidationFailed => 'Revisa el correo y la contraseña';
+
+  @override
+  String get errorSessionExpired => 'Sesión caducada. Vuelve a iniciar sesión.';
+
+  @override
+  String get errorStoreLoadFailed => 'No se pudo cargar la tienda';
+
+  @override
+  String get errorStoreUpdateFailed => 'No se pudo actualizar la tienda';
+
+  @override
+  String get errorStoreNotFound => 'No se encontró la tienda del usuario.';
+
+  @override
+  String get errorStoreNameEmpty =>
+      'El nombre de la tienda no puede estar vacío.';
+
+  @override
+  String get errorRulesNotFound => 'No se encontraron las reglas de gasto.';
+
+  @override
+  String get errorRulesLoadFailed =>
+      'No se pudieron cargar las reglas de gasto';
+
+  @override
+  String get errorRulesSaveFailed =>
+      'No se pudieron guardar las reglas de gasto';
+
+  @override
+  String get errorRuleMaxPerOrderInvalid =>
+      'El máximo por pedido debe ser mayor que 0.';
+
+  @override
+  String get errorRuleMonthlyBelowMax =>
+      'El límite mensual no puede ser menor que el máximo por pedido.';
+
+  @override
+  String get errorRuleApprovalAboveMax =>
+      'El umbral de aprobación no puede superar el máximo por pedido.';
+
+  @override
+  String get errorOrdersLoadFailed => 'No se pudieron cargar los pedidos';
+
+  @override
+  String get errorOrderLoadFailed => 'No se pudo cargar el pedido';
+
+  @override
+  String get errorOrderCreateFailed => 'No se pudo crear el pedido';
+
+  @override
+  String get errorOrderSpentFailed => 'No se pudo calcular el gasto mensual';
+
+  @override
+  String get errorOrderApproveFailed => 'No se pudo aprobar el pedido';
+
+  @override
+  String get errorOrderRejectFailed => 'No se pudo rechazar el pedido';
+
+  @override
+  String get errorOrderMissing => 'Falta el pedido.';
+
+  @override
+  String get errorOrderNotFound => 'Ese pedido ya no existe.';
+
+  @override
+  String get errorOrderEmpty => 'El pedido no tiene líneas.';
+
+  @override
+  String get errorOrderBlocked => 'El pedido está bloqueado por tus reglas.';
+
+  @override
+  String errorOrderItemInvalidQty(String uid) {
+    return 'Cantidad no válida para $uid.';
+  }
+
+  @override
+  String errorOrderProductMissing(String uid) {
+    return 'No encuentro el producto $uid en el catálogo.';
+  }
+
+  @override
+  String errorOrderProductInactive(String name) {
+    return 'El producto $name ya no está activo.';
+  }
+
+  @override
+  String get errorInvoiceLoadFailed => 'No se pudo cargar la factura';
+
+  @override
+  String get errorSuppliersLoadFailed =>
+      'No se pudieron cargar los proveedores';
+
+  @override
+  String get errorSupplierLoadFailed => 'No se pudo cargar el proveedor';
+
+  @override
+  String get errorCatalogLoadFailed => 'No se pudo cargar el catálogo';
+
+  @override
+  String get errorProductSearchFailed => 'No se pudo buscar el producto';
+
+  @override
+  String get errorProductsLoadFailed => 'No se pudieron cargar los productos';
+
+  @override
+  String get errorLowStockLoadFailed => 'No se pudo cargar el stock bajo';
+
+  @override
+  String get errorStockUpdateFailed => 'No se pudo actualizar el stock';
+
+  @override
+  String get errorProductMissing => 'Falta el producto.';
+
+  @override
+  String errorProductNotFound(String uid) {
+    return 'No existe ningún producto con UID $uid.';
+  }
+
+  @override
+  String get errorProductUidMissing => 'Introduce un UID.';
+
+  @override
+  String get errorStockNegative => 'El stock no puede ser negativo.';
+
+  @override
+  String get errorAgentUnreachable => 'El agente no respondió';
+
+  @override
+  String get errorAgentFailed => 'Error del agente';
+
+  @override
+  String get errorAgentRunsLoadFailed =>
+      'No se pudieron cargar las ejecuciones';
+
+  @override
+  String get errorAgentStoreMissing => 'Falta la tienda.';
+
+  @override
+  String get errorPreviewNoSignOut => 'En la vista previa no se cierra sesión.';
 }

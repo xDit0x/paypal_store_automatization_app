@@ -1,7 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/domain/entities/agent_run.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
@@ -72,12 +74,15 @@ class RestockCubit extends Cubit<RestockState> {
     final storeResult = await getCurrentStore();
     final store = storeResult.fold<Store?>((_) => null, (s) => s);
     if (store == null) {
-      final message = storeResult.fold<String>((e) => e, (_) => l10n.errorStoreNotFound);
+      final message = storeResult.fold<AppError>(
+        (error) => error,
+        (_) => const AppError(AppErrorCode.storeNotFound),
+      );
       emit(state.copyWith(status: RestockStatus.failure, error: message));
       return;
     }
 
-    final errors = <String>[];
+    final errors = <AppError>[];
 
     final rulesF = getSpendingRules(store.id);
     final spentF = getSpentThisMonth(store.id);
@@ -147,7 +152,7 @@ class RestockCubit extends Cubit<RestockState> {
     final message = result.fold<String>(
       (error) {
         failed = true;
-        return error;
+        return l10n.describeDetail(error);
       },
       (r) => r.message.isNotEmpty ? r.message : describeAgentDecision(l10n, r.decision),
     );
@@ -189,28 +194,28 @@ class RestockCubit extends Cubit<RestockState> {
   }
 
   /// Devuelve null si todo fue bien, o el error.
-  Future<String?> approve(String orderId) async {
+  Future<AppError?> approve(String orderId) async {
     emit(state.copyWith(busyOrderId: orderId));
     final result = await approveOrder(orderId);
     emit(state.copyWith(clearBusyOrder: true));
-    final error = result.fold<String?>((e) => e, (_) => null);
+    final error = result.fold<AppError?>((e) => e, (_) => null);
     await load();
     return error;
   }
 
-  Future<String?> reject(String orderId) async {
+  Future<AppError?> reject(String orderId) async {
     emit(state.copyWith(busyOrderId: orderId));
     final result = await rejectOrder(orderId);
     emit(state.copyWith(clearBusyOrder: true));
-    final error = result.fold<String?>((e) => e, (_) => null);
+    final error = result.fold<AppError?>((e) => e, (_) => null);
     await load();
     return error;
   }
 
   /// Cambia el stock de un producto. Devuelve null si todo fue bien.
-  Future<String?> updateStock(String uid, int stock) async {
+  Future<AppError?> updateStock(String uid, int stock) async {
     final result = await updateProductStock(uid, stock);
-    return result.fold<String?>((error) => error, (_) {
+    return result.fold<AppError?>((error) => error, (_) {
       emit(state.copyWith(
         products: [
           for (final product in state.products)
@@ -221,11 +226,11 @@ class RestockCubit extends Cubit<RestockState> {
     });
   }
 
-  Future<String?> saveRules(SpendingRules rules) async {
+  Future<AppError?> saveRules(SpendingRules rules) async {
     final store = state.store;
-    if (store == null) return l10n.errorNoStoreLoaded;
+    if (store == null) return const AppError(AppErrorCode.storeNotFound);
     final result = await updateSpendingRules(store.id, rules);
-    return result.fold<String?>((e) => e, (_) {
+    return result.fold<AppError?>((e) => e, (_) {
       emit(state.copyWith(rules: rules));
       return null;
     });

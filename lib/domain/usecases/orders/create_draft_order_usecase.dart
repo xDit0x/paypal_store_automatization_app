@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:dartz/dartz.dart' hide Order;
 
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
@@ -29,7 +30,7 @@ class CreateDraftOrderUsecase {
     required this.evaluateSpendingRules,
   });
 
-  Future<Either<String, CreateOrderResult>> call({
+  Future<Either<AppError, CreateOrderResult>> call({
     required String storeId,
     required String supplierId,
     required List<DraftOrderLine> lines,
@@ -40,14 +41,17 @@ class CreateDraftOrderUsecase {
     String? agentRunId,
   }) async {
     if (lines.isEmpty) {
-      return const Left('El pedido no tiene líneas.');
+      return const Left(AppError(AppErrorCode.orderEmpty));
     }
 
     final uids = {for (final line in lines) line.productUid}.toList();
     final productsResult = await productRepository.getByUids(uids);
     if (productsResult.isLeft()) {
       return Left(
-        productsResult.fold((error) => error, (_) => 'Error desconocido'),
+        productsResult.fold(
+          (error) => error,
+          (_) => const AppError(AppErrorCode.orderCreateFailed),
+        ),
       );
     }
     final products = productsResult.getOrElse(() => const <Product>[]);
@@ -55,7 +59,10 @@ class CreateDraftOrderUsecase {
     final itemsResult = OrderBuilder.buildItems(lines: lines, products: products);
     if (itemsResult.isLeft()) {
       return Left(
-        itemsResult.fold((error) => error, (_) => 'Pedido inválido'),
+        itemsResult.fold(
+          (error) => error,
+          (_) => const AppError(AppErrorCode.orderCreateFailed),
+        ),
       );
     }
     final items = itemsResult.getOrElse(() => const <OrderItem>[]);
@@ -67,7 +74,7 @@ class CreateDraftOrderUsecase {
         return Left(
           spentResult.fold(
             (error) => error,
-            (_) => 'No se pudo calcular el gasto mensual',
+            (_) => const AppError(AppErrorCode.orderSpentFailed),
           ),
         );
       }
@@ -83,7 +90,7 @@ class CreateDraftOrderUsecase {
     );
 
     if (decision.isBlocked) {
-      return Left(decision.reason ?? 'El pedido está bloqueado.');
+      return const Left(AppError(AppErrorCode.orderBlocked));
     }
 
     final status = decision.needsApproval

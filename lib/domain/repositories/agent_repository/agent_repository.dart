@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import 'package:store_automatization_app/domain/entities/agent_run.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 
 class AgentRunResult {
   final String? orderId;
@@ -15,6 +16,6 @@ class AgentRunResult {
 }
 
 abstract class AgentRepository {
-  Future<Either<String, AgentRunResult>> run(String storeId);
-  Future<Either<String, List<AgentRun>>> getRuns(String storeId);
+  Future<Either<AppError, AgentRunResult>> run(String storeId);
+  Future<Either<AppError, List<AgentRun>>> getRuns(String storeId);
 }

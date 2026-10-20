@@ -89,7 +89,7 @@ void main() {
 
       expect(decision.status, SpendingDecisionStatus.requiresApproval);
       expect(decision.needsApproval, isTrue);
-      expect(decision.reason, contains('cualquier pedido'));
+      expect(decision.reason, SpendingReason.anyOrderNeedsApproval);
     });
   });
 }

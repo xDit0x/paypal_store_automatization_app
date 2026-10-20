@@ -3,6 +3,8 @@ import 'package:dartz/dartz.dart' hide Order;
 import 'package:store_automatization_app/data/datasources/orders_repository/supabase_order_datasource.dart';
 import 'package:store_automatization_app/data/models/order_item_model.dart';
 import 'package:store_automatization_app/data/models/order_model.dart';
+import 'package:store_automatization_app/data/support/app_error_log.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
@@ -12,27 +14,27 @@ class SupabaseOrderRepository implements OrderRepository {
   SupabaseOrderRepository(this._datasource);
 
   @override
-  Future<Either<String, List<Order>>> getByStore(String storeId) async {
+  Future<Either<AppError, List<Order>>> getByStore(String storeId) async {
     try {
       final rows = await _datasource.getByStore(storeId);
       return Right(rows.map(OrderModel.fromMap).toList());
     } catch (error) {
-      return Left('No se pudieron cargar los pedidos: $error');
+      return Left(logError(AppErrorCode.ordersLoadFailed, error));
     }
   }
 
   @override
-  Future<Either<String, Order?>> getById(String id) async {
+  Future<Either<AppError, Order?>> getById(String id) async {
     try {
       final row = await _datasource.getById(id);
       return Right(row == null ? null : OrderModel.fromMap(row));
     } catch (error) {
-      return Left('No se pudo cargar el pedido: $error');
+      return Left(logError(AppErrorCode.orderLoadFailed, error));
     }
   }
 
   @override
-  Future<Either<String, Order>> create({
+  Future<Either<AppError, Order>> create({
     required String storeId,
     required String supplierId,
     required List<OrderItem> items,
@@ -67,39 +69,51 @@ class SupabaseOrderRepository implements OrderRepository {
       final saved = await _datasource.getById(orderId);
       return Right(OrderModel.fromMap(saved ?? row));
     } catch (error) {
-      return Left('No se pudo crear el pedido: $error');
+      return Left(logError(AppErrorCode.orderCreateFailed, error));
     }
   }
 
   @override
-  Future<Either<String, double>> getSpentThisMonth(String storeId) async {
+  Future<Either<AppError, double>> getSpentThisMonth(String storeId) async {
     try {
       final now = DateTime.now();
       final startOfMonth = DateTime(now.year, now.month);
       final spent = await _datasource.getSpentSince(storeId, startOfMonth);
       return Right(spent);
     } catch (error) {
-      return Left('No se pudo calcular el gasto mensual: $error');
+      return Left(logError(AppErrorCode.orderSpentFailed, error));
     }
   }
 
   @override
-  Future<Either<String, Unit>> approve(String orderId) async {
+  Future<Either<AppError, Unit>> approve(String orderId) async {
     try {
       await _datasource.approve(orderId);
       return Right(unit);
     } catch (error) {
-      return Left('No se pudo aprobar el pedido: $error');
+      return Left(
+        logError(
+          AppErrorCode.orderApproveFailed,
+          error,
+          detail: serverMessage(error),
+        ),
+      );
     }
   }
 
   @override
-  Future<Either<String, Unit>> reject(String orderId) async {
+  Future<Either<AppError, Unit>> reject(String orderId) async {
     try {
       await _datasource.reject(orderId);
       return Right(unit);
     } catch (error) {
-      return Left('No se pudo rechazar el pedido: $error');
+      return Left(
+        logError(
+          AppErrorCode.orderRejectFailed,
+          error,
+          detail: serverMessage(error),
+        ),
+      );
     }
   }
 }
