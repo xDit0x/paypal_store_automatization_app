@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
@@ -55,8 +56,8 @@ class _StockPageState extends State<StockPage> {
     if (saved != null && context.mounted) {
       showRestockSnack(
         context,
-        '${product.name}: $saved ${product.unit}.',
-        title: 'Stock actualizado',
+        context.l10n.stockUpdatedMessage(product.name, saved, product.unit),
+        title: context.l10n.stockUpdated,
         tone: RSnackTone.success,
       );
     }
@@ -68,6 +69,7 @@ class _StockPageState extends State<StockPage> {
       builder: (context, state) {
         final p = context.rp;
         final t = context.rt;
+        final l10n = context.l10n;
         final products = _visible(state);
         final segmentStyle = TextStyle(
           fontSize: 13,
@@ -76,10 +78,10 @@ class _StockPageState extends State<StockPage> {
         );
 
         return [
-          const RLargeTitle('Stock'),
+          RLargeTitle(l10n.tabStock),
           const SizedBox(height: 16),
           CupertinoSearchTextField(
-            placeholder: 'Buscar por nombre o UID',
+            placeholder: l10n.stockSearchPlaceholder,
             backgroundColor: p.fill,
             style: TextStyle(color: p.ink),
             onChanged: (value) => setState(() => _query = value),
@@ -94,15 +96,15 @@ class _StockPageState extends State<StockPage> {
               children: {
                 _Filter.all: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text('Todos', style: segmentStyle),
+                  child: Text(l10n.stockFilterAll, style: segmentStyle),
                 ),
                 _Filter.low: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text('Bajo mínimo', style: segmentStyle),
+                  child: Text(l10n.stockFilterLow, style: segmentStyle),
                 ),
                 _Filter.transit: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text('En camino', style: segmentStyle),
+                  child: Text(l10n.stockFilterTransit, style: segmentStyle),
                 ),
               },
               onValueChanged: (value) =>
@@ -114,11 +116,9 @@ class _StockPageState extends State<StockPage> {
             REmptyState(
               icon: CupertinoIcons.cube_box,
               title: state.products.isEmpty
-                  ? 'Aún no hay productos'
-                  : 'Nada con ese filtro',
-              message: state.products.isEmpty
-                  ? 'Los catálogos de tus proveedores aparecerán aquí.'
-                  : null,
+                  ? l10n.stockEmptyTitle
+                  : l10n.stockEmptyFilterTitle,
+              message: state.products.isEmpty ? l10n.stockEmptyMessage : null,
             )
           else
             RInsetGroup(
@@ -134,7 +134,10 @@ class _StockPageState extends State<StockPage> {
           if (products.isNotEmpty) ...[
             const SizedBox(height: 10),
             Center(
-              child: Text('${products.length} productos', style: t.caption),
+              child: Text(
+                l10n.stockProductCount(products.length),
+                style: t.caption,
+              ),
             ),
           ],
         ];
@@ -158,15 +161,16 @@ class _ProductRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final inTransit = state.isInTransit(product);
 
     final (String label, Color text, Color bar, bool strong) = inTransit
-        ? ('En camino', p.transit, p.transit, true)
+        ? (l10n.stockStatusTransit, p.transit, p.transit, true)
         : product.stock <= 0
-        ? ('Agotado', p.warning, p.warningBar, true)
+        ? (l10n.stockStatusOut, p.warning, p.warningBar, true)
         : product.isLowStock
-        ? ('Bajo mínimo', p.warning, p.warningBar, true)
-        : ('Correcto', p.inkSecondary, p.neutralBar, false);
+        ? (l10n.stockStatusLow, p.warning, p.warningBar, true)
+        : (l10n.stockStatusOk, p.inkSecondary, p.neutralBar, false);
 
     // La barra llega al 100 % con el doble del mínimo.
     final reference = product.lowStockThreshold <= 0
@@ -202,7 +206,11 @@ class _ProductRow extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '${product.stock} ${product.unit} · mín. ${product.lowStockThreshold}',
+                      l10n.stockUnitsMin(
+                        product.stock,
+                        product.unit,
+                        product.lowStockThreshold,
+                      ),
                       style: t.footnote,
                     ),
                   ),
@@ -301,6 +309,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final inset = MediaQuery.viewInsetsOf(context).bottom;
     final low = _value <= widget.product.lowStockThreshold;
 
@@ -332,7 +341,11 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
               Text(widget.product.name, style: t.title3),
               const SizedBox(height: 4),
               Text(
-                '${widget.product.uid} · mín. ${widget.product.lowStockThreshold} ${widget.product.unit}',
+                l10n.stockEditorUid(
+                  widget.product.uid,
+                  widget.product.lowStockThreshold,
+                  widget.product.unit,
+                ),
                 style: t.footnote,
               ),
               const SizedBox(height: 20),
@@ -340,7 +353,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                 children: [
                   _StepButton(
                     icon: CupertinoIcons.minus,
-                    label: 'Quitar una unidad',
+                    label: l10n.actionRemoveOneUnit,
                     onTap: _saving ? null : () => _step(-1),
                   ),
                   Expanded(
@@ -370,7 +383,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                   ),
                   _StepButton(
                     icon: CupertinoIcons.plus,
-                    label: 'Añadir una unidad',
+                    label: l10n.actionAddOneUnit,
                     onTap: _saving ? null : () => _step(1),
                   ),
                 ],
@@ -378,7 +391,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
               const SizedBox(height: 14),
               Center(
                 child: RPill(
-                  low ? 'Bajo mínimo' : 'Correcto',
+                  low ? l10n.stockStatusLow : l10n.stockStatusOk,
                   tone: low ? RPillTone.warning : RPillTone.neutral,
                 ),
               ),
@@ -395,7 +408,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                 children: [
                   Expanded(
                     child: RSecondaryButton(
-                      'Cancelar',
+                      l10n.actionCancel,
                       onPressed: _saving
                           ? null
                           : () => Navigator.of(context).pop(),
@@ -404,7 +417,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: RPrimaryButton(
-                      'Guardar',
+                      l10n.actionSave,
                       loading: _saving,
                       onPressed: _save,
                     ),

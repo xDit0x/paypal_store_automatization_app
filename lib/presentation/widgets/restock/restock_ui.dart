@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 
 /// Tarjeta con borde fino y sombra suave (o color de relleno si se indica).
@@ -241,7 +242,7 @@ class RBackLink extends StatelessWidget {
     final p = context.rp;
     return Semantics(
       button: true,
-      label: 'Volver a $label',
+      label: context.l10n.semanticsBackTo(label),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => Navigator.of(context).maybePop(),

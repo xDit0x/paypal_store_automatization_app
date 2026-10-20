@@ -1,0 +1,14 @@
+# Configuracion de la internacionalizacion (flutter gen-l10n).
+#
+#   app_es.arb  -> plantilla con los textos en espanol (idioma de origen).
+#   app_en.arb  -> traduccion al ingles.
+#
+# Genera lib/l10n/app_localizations.dart con la clase AppLocalizations.
+arb-dir: lib/l10n
+template-arb-file: app_es.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
+preferred-supported-locales:
+  - es
+  - en

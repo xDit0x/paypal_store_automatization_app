@@ -1,11 +1,11 @@
 {
-    "name": "store_automatization_app",
-    "short_name": "store_automatization_app",
+    "name": "Restock",
+    "short_name": "Restock",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#050B2E",
+    "theme_color": "#050B2E",
+    "description": "Restock: pedidos automáticos a tus proveedores con IA y PayPal.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

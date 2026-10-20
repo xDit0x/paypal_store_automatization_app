@@ -2,9 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:store_automatization_app/core/configs/assets/app_assets.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 
-/// Marca de la app: cuadro azul redondeado con el icono de caja.
+/// Marca de la app: el icono real de Restock, recortado como una teja.
 class RBrandMark extends StatelessWidget {
   const RBrandMark({super.key, this.size = 64});
 
@@ -13,16 +15,13 @@ class RBrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.rp;
+    final radius = BorderRadius.circular(size * 0.3);
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [p.accent, p.navy],
-        ),
-        borderRadius: BorderRadius.circular(size * 0.3),
+        borderRadius: radius,
         boxShadow: [
           BoxShadow(
             color: p.accent.withValues(alpha: 0.28),
@@ -31,10 +30,18 @@ class RBrandMark extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(
-        CupertinoIcons.cube_box_fill,
-        size: size * 0.48,
-        color: p.onAccent,
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Image.asset(
+          AppAssets.logo,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          // Debajo ya está el texto "Restock": no hace falta que el lector
+          // de pantalla lo diga dos veces.
+          excludeFromSemantics: true,
+        ),
       ),
     );
   }
@@ -136,7 +143,9 @@ class _RAuthPasswordFieldState extends State<RAuthPasswordField> {
       obscure: _hidden,
       suffix: Semantics(
         button: true,
-        label: _hidden ? 'Mostrar contraseña' : 'Ocultar contraseña',
+        label: _hidden
+            ? context.l10n.semanticsShowPassword
+            : context.l10n.semanticsHidePassword,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => setState(() => _hidden = !_hidden),

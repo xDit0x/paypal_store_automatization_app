@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
+
 class PasswordTxtField extends StatefulWidget {
   final TextEditingController controller;
-  final String hint;
+  final String? hint;
   final TextInputAction textInputAction;
   final void Function(String)? onSubmitted;
 
   const PasswordTxtField({
     super.key,
     required this.controller,
-    this.hint = 'Contraseña',
+    this.hint,
     this.textInputAction = TextInputAction.next,
     this.onSubmitted,
   });
@@ -36,7 +38,7 @@ class _PasswordTxtFieldState extends State<PasswordTxtField> {
       cursorWidth: 6.w,
       cursorRadius: const Radius.circular(50),
       decoration: InputDecoration(
-        hintText: widget.hint,
+        hintText: widget.hint ?? context.l10n.authPassword,
         hintStyle: TextStyle(
           fontSize: 13.sp,
           color: scheme.onSurface.withValues(alpha: 0.55),

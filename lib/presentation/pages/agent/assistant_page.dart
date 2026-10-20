@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
 import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
@@ -47,22 +48,31 @@ class _AssistantPageState extends State<AssistantPage> {
   }
 
   void _askPending(RestockState state) {
+    final l10n = context.l10n;
     final pending = state.pendingOrders;
     final answer = pending.isEmpty
-        ? 'No tienes pedidos esperando tu aprobación.'
-        : 'Tienes ${pending.length} por aprobar: '
-            '${pending.map((o) => '**${state.supplierName(o.supplierId)}** (**${euros(o.total, state.currency)}**)').join(', ')}. '
-            'Los encuentras en Inicio.';
-    context.read<RestockCubit>().addExchange('¿Qué tengo por aprobar?', answer);
+        ? l10n.assistantPendingEmpty
+        : l10n.assistantPendingList(
+            pending.length,
+            pending
+                .map((o) =>
+                    '**${state.supplierName(o.supplierId)}** (**${l10n.euros(o.total, state.currency)}**)')
+                .join(', '),
+          );
+    context.read<RestockCubit>().addExchange(l10n.assistantPendingQuestion, answer);
     _scrollToEnd();
   }
 
   void _askSpent(RestockState state) {
+    final l10n = context.l10n;
     final c = state.currency;
-    final answer = 'Llevas **${euros(state.spentThisMonth, c)}** gastados en ${currentMonthName()} '
-        'de un tope de **${eurosShort(state.monthlyLimit, c)}**. '
-        'Te quedan **${euros(state.remaining, c)}**.';
-    context.read<RestockCubit>().addExchange('¿Cuánto llevo gastado?', answer);
+    final answer = l10n.assistantSpentAnswer(
+      l10n.euros(state.spentThisMonth, c),
+      l10n.currentMonthName(),
+      l10n.eurosShort(state.monthlyLimit, c),
+      l10n.euros(state.remaining, c),
+    );
+    context.read<RestockCubit>().addExchange(l10n.assistantSpentQuestion, answer);
     _scrollToEnd();
   }
 
@@ -78,6 +88,7 @@ class _AssistantPageState extends State<AssistantPage> {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final state = context.watch<RestockCubit>().state;
     final media = MediaQuery.of(context);
     final keyboard = media.viewInsets.bottom;
@@ -90,7 +101,7 @@ class _AssistantPageState extends State<AssistantPage> {
       padding: EdgeInsets.fromLTRB(16, media.padding.top + 16, 16, bottom),
       child: Column(
         children: [
-          const RLargeTitle('Asistente', subtitle: 'Tu agente de reposición'),
+          RLargeTitle(l10n.assistantTitle, subtitle: l10n.assistantSubtitle),
           const SizedBox(height: 14),
           Expanded(
             child: ListView.separated(
@@ -99,10 +110,9 @@ class _AssistantPageState extends State<AssistantPage> {
               separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, i) {
                 if (i == 0) {
-                  return const _Bubble(
+                  return _Bubble(
                     fromUser: false,
-                    text: 'Hola. Reviso tu stock, preparo pedidos a tus proveedores y los pago con '
-                        'PayPal, siempre dentro de tus reglas de gasto.',
+                    text: l10n.assistantGreeting,
                   );
                 }
                 if (i <= chat.length) {
@@ -120,14 +130,14 @@ class _AssistantPageState extends State<AssistantPage> {
               scrollDirection: Axis.horizontal,
               children: [
                 _Chip(
-                  label: 'Revisa el stock ahora',
+                  label: l10n.assistantChipReview,
                   icon: CupertinoIcons.sparkles,
                   onTap: state.agentRunning || state.store == null ? null : _runAgent,
                 ),
                 const SizedBox(width: 8),
-                _Chip(label: '¿Qué tengo por aprobar?', onTap: () => _askPending(state)),
+                _Chip(label: l10n.assistantChipPending, onTap: () => _askPending(state)),
                 const SizedBox(width: 8),
-                _Chip(label: '¿Cuánto llevo gastado?', onTap: () => _askSpent(state)),
+                _Chip(label: l10n.assistantChipSpent, onTap: () => _askSpent(state)),
               ],
             ),
           ),
@@ -147,12 +157,12 @@ class _AssistantPageState extends State<AssistantPage> {
                     onSubmitted: (_) => _send(),
                     textInputAction: TextInputAction.send,
                     style: t.body,
-                    decoration: restockPlainInput(context, 'Pregunta lo que quieras'),
+                    decoration: restockPlainInput(context, l10n.assistantInputHint),
                   ),
                 ),
                 RRoundIconButton(
                   icon: CupertinoIcons.arrow_up,
-                  label: 'Enviar',
+                  label: l10n.assistantSend,
                   size: 40,
                   filled: true,
                   onTap: _send,
@@ -212,7 +222,10 @@ class _Bubble extends StatelessWidget {
         if (time != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
-            child: Text(relativeDate(time), style: t.caption),
+            child: Text(
+              context.l10n.relativeDate(time),
+              style: t.caption,
+            ),
           ),
       ],
     );
@@ -235,7 +248,7 @@ class _TypingBubble extends StatelessWidget {
           children: [
             const CupertinoActivityIndicator(radius: 8),
             const SizedBox(width: 8),
-            Text('Revisando tu stock…', style: TextStyle(fontSize: 15, color: p.inkSecondary)),
+            Text(context.l10n.assistantTyping, style: TextStyle(fontSize: 15, color: p.inkSecondary)),
           ],
         ),
       ),

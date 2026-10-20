@@ -10,7 +10,9 @@ import 'package:store_automatization_app/core/configs/supabase/supabase_config.d
 import 'package:store_automatization_app/core/configs/theme/app_theme.dart';
 import 'package:store_automatization_app/core/service_locator.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_in_usecase.dart';
+import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/auth_gate.dart';
 
@@ -58,17 +60,25 @@ class RestockApp extends StatelessWidget {
       builder: (_, _) => MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => LocaleCubit()),
           BlocProvider(create: (_) => sl<AuthCubit>()),
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (context, mode) {
-            return MaterialApp(
-              title: 'Restock',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: mode,
-              home: const AuthGate(),
+            return BlocBuilder<LocaleCubit, Locale?>(
+              builder: (context, locale) => MaterialApp(
+                title: 'Restock',
+                // `null` = el Locale del dispositivo; con un Locale elegido
+                // se fuerza ese idioma.
+                locale: locale,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: mode,
+                home: const AuthGate(),
+              ),
             );
           },
         ),
@@ -86,6 +96,8 @@ class ConfigErrorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Restock',
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: Scaffold(
@@ -97,8 +109,8 @@ class ConfigErrorApp extends StatelessWidget {
               children: [
                 const Icon(Icons.settings_suggest_outlined, size: 56),
                 const SizedBox(height: 16),
-                const Text(
-                  'Configuración incompleta',
+                Text(
+                  AppLocalizations.of(context).configErrorTitle,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),

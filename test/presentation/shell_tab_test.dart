@@ -22,7 +22,9 @@ import 'package:store_automatization_app/domain/usecases/orders/reject_order_use
 import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
+import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/shell/restock_shell.dart';
@@ -117,12 +119,16 @@ void main() {
           providers: [
             BlocProvider.value(value: theme),
             BlocProvider.value(value: _authCubit()),
+            BlocProvider(create: (_) => LocaleCubit()),
           ],
           child: BlocBuilder<ThemeCubit, ThemeMode>(
             builder: (context, mode) => MaterialApp(
               theme: ThemeData.light(),
               darkTheme: ThemeData.dark(),
               themeMode: mode,
+              locale: const Locale('es'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: RestockShell(createCubit: _restockCubit),
             ),
           ),
@@ -150,8 +156,14 @@ void main() {
   testWidgets('reconstruir el shell conserva la pestaña activa',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: RestockShell(createCubit: _restockCubit),
+      MultiBlocProvider(
+        providers: [BlocProvider(create: (_) => LocaleCubit())],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: RestockShell(createCubit: _restockCubit),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -163,15 +175,64 @@ void main() {
     // Simula que el shell se vuelve a crear (cambio de tema, re-emisión de
     // autenticación, etc.): la pestaña activa debe conservarse.
     await tester.pumpWidget(
-      MaterialApp(
-        home: KeyedSubtree(
-          key: const ValueKey('otro-shell'),
-          child: RestockShell(createCubit: _restockCubit),
+      MultiBlocProvider(
+        providers: [BlocProvider(create: (_) => LocaleCubit())],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: KeyedSubtree(
+            key: const ValueKey('otro-shell'),
+            child: RestockShell(createCubit: _restockCubit),
+          ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(_page(tester), 1);
+  });
+
+  testWidgets('el selector de idioma traduce la app al inglés',
+      (tester) async {
+    final locale = LocaleCubit();
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: locale),
+          BlocProvider.value(value: _authCubit()),
+          BlocProvider(create: (_) => ThemeCubit()),
+        ],
+        child: BlocBuilder<LocaleCubit, Locale?>(
+          builder: (context, selected) => MaterialApp(
+            locale: selected ?? const Locale('es'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: RestockShell(createCubit: _restockCubit),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reglas').last);
+    await tester.pumpAndSettle();
+
+    final english = find.text('English');
+    // La tarjeta de cuenta está al final de la pestaña: baja del todo para
+    // que el selector quede por encima del dock.
+    await tester.fling(
+      find.byType(Scrollable).last,
+      const Offset(0, -700),
+      1500,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(english);
+    await tester.pumpAndSettle();
+
+    expect(locale.state, const Locale('en'));
+    expect(find.text('Rules'), findsWidgets);
+    expect(find.text('Reglas'), findsNothing);
   });
 }

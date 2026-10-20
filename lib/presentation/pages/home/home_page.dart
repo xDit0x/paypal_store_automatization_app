@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
@@ -22,14 +23,15 @@ class HomePage extends StatelessWidget {
     return RTabPage(
       builder: (context, state) {
         final t = context.rt;
+        final l10n = context.l10n;
         final pending = state.pendingOrders;
         final low = state.lowStock.take(4).toList();
 
         return [
           RLargeTitle(
-            'Hoy',
+            l10n.homeTitle,
             overline:
-                '${shortDate(DateTime.now())} · ${state.store?.name ?? ''}',
+                '${l10n.shortDate(DateTime.now())} · ${state.store?.name ?? ''}',
             trailing: _AgentBadge(running: state.agentRunning),
           ),
           const SizedBox(height: 22),
@@ -38,21 +40,21 @@ class HomePage extends StatelessWidget {
           _AgentCard(running: state.agentRunning),
           if (pending.isNotEmpty) ...[
             const SizedBox(height: 22),
-            const RSectionTitle('Para aprobar'),
+            RSectionTitle(l10n.homeToApprove),
             for (final order in pending) ...[
               _ApprovalTile(order: order, state: state),
               const SizedBox(height: 8),
             ],
           ],
           const SizedBox(height: 14),
-          const RSectionTitle('Se agota pronto'),
+          RSectionTitle(l10n.homeRunningOutSoon),
           if (low.isEmpty)
             RInsetGroup(
               children: [
                 RListRow(
-                  title: 'Todo en orden',
+                  title: l10n.homeAllInOrder,
                   subtitle: Text(
-                    'Ningún producto está por debajo del mínimo',
+                    l10n.homeAllInOrderDetail,
                     style: t.footnote,
                   ),
                   trailing: Icon(
@@ -106,7 +108,7 @@ class _AgentBadge extends StatelessWidget {
               ),
             const SizedBox(width: 6),
             Text(
-              running ? 'Trabajando…' : 'Agente activo',
+              running ? context.l10n.homeAgentWorking : context.l10n.homeAgentActive,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -129,6 +131,7 @@ class _BudgetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final c = state.currency;
     return RCard(
       radius: 20,
@@ -141,7 +144,10 @@ class _BudgetCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Presupuesto de ${currentMonthName()}', style: t.footnote),
+                Text(
+                  l10n.homeBudgetOfMonth(l10n.currentMonthName()),
+                  style: t.footnote,
+                ),
                 const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
@@ -149,7 +155,7 @@ class _BudgetCard extends StatelessWidget {
                   child: Text.rich(
                     TextSpan(
                       text:
-                          '${eurosShort(state.spentThisMonth.roundToDouble(), c)} ',
+                          '${l10n.eurosShort(state.spentThisMonth.roundToDouble(), c)} ',
                       style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.w700,
@@ -160,7 +166,7 @@ class _BudgetCard extends StatelessWidget {
                       children: [
                         TextSpan(
                           text:
-                              '/ ${eurosShort(state.monthlyLimit.roundToDouble(), c)}',
+                              '/ ${l10n.eurosShort(state.monthlyLimit.roundToDouble(), c)}',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w400,
@@ -173,7 +179,7 @@ class _BudgetCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Quedan ${eurosShort(state.remaining, c)}',
+                  l10n.homeRemaining(l10n.eurosShort(state.remaining, c)),
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -198,15 +204,13 @@ class _AgentCard extends StatelessWidget {
     final cubit = context.read<RestockCubit>();
     final message = await cubit.runAgent();
     if (!context.mounted) return;
-    final lower = message.toLowerCase();
-    final failed =
-        lower.contains('fall') ||
-        lower.contains('no se pudo') ||
-        lower.contains('error');
+    final failed = cubit.lastRunFailed;
     showRestockSnack(
       context,
       message,
-      title: failed ? 'Algo salió mal' : 'Revisión del stock',
+      title: failed
+          ? context.l10n.homeAgentFailed
+          : context.l10n.homeStockReview,
       tone: failed ? RSnackTone.warning : RSnackTone.info,
     );
   }
@@ -215,6 +219,7 @@ class _AgentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     return RCard(
       color: p.blueSoft,
       radius: 20,
@@ -226,7 +231,7 @@ class _AgentCard extends StatelessWidget {
               Icon(CupertinoIcons.sparkles, size: 18, color: p.navy),
               const SizedBox(width: 6),
               Text(
-                'Agente de reposición',
+                l10n.homeAgentTitle,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -237,7 +242,7 @@ class _AgentCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Revisa tu stock, prepara pedidos y págalos con PayPal dentro de tus reglas.',
+            l10n.homeAgentDescription,
             style: t.callout,
           ),
           const SizedBox(height: 12),
@@ -255,7 +260,9 @@ class _AgentCard extends StatelessWidget {
                       ),
                     )
                   : const Icon(CupertinoIcons.arrow_clockwise, size: 18),
-              label: Text(running ? 'Revisando…' : 'Revisar stock ahora'),
+              label: Text(
+                running ? l10n.homeReviewing : l10n.actionReviewStockNow,
+              ),
               style: FilledButton.styleFrom(
                 minimumSize: const Size(0, 44),
                 backgroundColor: p.accent,
@@ -322,15 +329,15 @@ class _ApprovalTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      shortDecisionReason(state, order) ??
-                          'Necesita tu aprobación',
+                      shortDecisionReason(context.l10n, state, order) ??
+                          context.l10n.homeNeedsApproval,
                       style: TextStyle(fontSize: 13, color: p.warning),
                     ),
                   ],
                 ),
               ),
               Text(
-                eurosShort(order.total, state.currency),
+                context.l10n.eurosShort(order.total, state.currency),
                 style: t.amount.copyWith(fontSize: 17),
               ),
               const SizedBox(width: 8),
@@ -352,18 +359,23 @@ class _LowStockRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.rt;
+    final l10n = context.l10n;
     final Widget pill;
     if (state.isInTransit(product)) {
-      pill = const RPill('En camino', tone: RPillTone.transit);
+      pill = RPill(l10n.stockStatusTransit, tone: RPillTone.transit);
     } else if (product.stock <= 0) {
-      pill = const RPill('Agotado', tone: RPillTone.warning);
+      pill = RPill(l10n.stockStatusOut, tone: RPillTone.warning);
     } else {
-      pill = const RPill('Bajo mínimo', tone: RPillTone.warning);
+      pill = RPill(l10n.stockStatusLow, tone: RPillTone.warning);
     }
     return RListRow(
       title: product.name,
       subtitle: Text(
-        '${product.stock} ${product.unit} · mínimo ${product.lowStockThreshold}',
+        l10n.stockUnitsMin(
+          product.stock,
+          product.unit,
+          product.lowStockThreshold,
+        ),
         style: t.footnote,
       ),
       trailing: pill,

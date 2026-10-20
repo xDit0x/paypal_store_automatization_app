@@ -1,0 +1,435 @@
+{
+  "@@locale": "es",
+
+  "appName": "Restock",
+  "appTagline": "Pedidos automáticos con IA + PayPal",
+  "configErrorTitle": "Configuración incompleta",
+
+  "actionSave": "Guardar",
+  "actionCancel": "Cancelar",
+  "actionRetry": "Reintentar",
+  "actionBack": "Atrás",
+  "actionOk": "Vale",
+  "actionSend": "Enviar",
+  "actionSignOut": "Cerrar sesión",
+  "actionCreateAccount": "Crear una cuenta",
+  "actionSignIn": "Iniciar sesión",
+  "actionCreateMyStore": "Crear mi tienda",
+  "actionAlreadyHaveAccount": "Ya tengo cuenta",
+  "actionForgotPassword": "¿Olvidaste tu contraseña?",
+  "actionApproveAndPay": "Aprobar y pagar con PayPal",
+  "actionReject": "Rechazar",
+  "actionConfirmDelivery": "Confirmar entrega",
+  "actionReviewStockNow": "Revisar stock ahora",
+  "actionRemoveOneUnit": "Quitar una unidad",
+  "actionAddOneUnit": "Añadir una unidad",
+
+  "semanticsBackTo": "Volver a {label}",
+  "@semanticsBackTo": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "semanticsShowPassword": "Mostrar contraseña",
+  "semanticsHidePassword": "Ocultar contraseña",
+  "semanticsLess": "Menos",
+  "semanticsMore": "Más",
+
+  "tabHome": "Inicio",
+  "tabStock": "Stock",
+  "tabOrders": "Pedidos",
+  "tabRules": "Reglas",
+  "tabAssistant": "Asistente",
+
+  "homeTitle": "Hoy",
+  "homeToApprove": "Para aprobar",
+  "homeRunningOutSoon": "Se agota pronto",
+  "homeAllInOrder": "Todo en orden",
+  "homeAllInOrderDetail": "Ningún producto está por debajo del mínimo",
+  "homeAgentWorking": "Trabajando…",
+  "homeAgentActive": "Agente activo",
+  "homeBudgetOfMonth": "Presupuesto de {month}",
+  "@homeBudgetOfMonth": {
+    "placeholders": {
+      "month": { "type": "String" }
+    }
+  },
+  "homeRemaining": "Quedan {amount}",
+  "@homeRemaining": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "homeAgentTitle": "Agente de reposición",
+  "homeAgentDescription": "Revisa tu stock, prepara pedidos y págalos con PayPal dentro de tus reglas.",
+  "homeReviewing": "Revisando…",
+  "homeNeedsApproval": "Necesita tu aprobación",
+  "homeAgentFailed": "Algo salió mal",
+  "homeStockReview": "Revisión del stock",
+
+  "stockSearchPlaceholder": "Buscar por nombre o UID",
+  "stockFilterAll": "Todos",
+  "stockFilterLow": "Bajo mínimo",
+  "stockFilterTransit": "En camino",
+  "stockEmptyTitle": "Aún no hay productos",
+  "stockEmptyFilterTitle": "Nada con ese filtro",
+  "stockEmptyMessage": "Los catálogos de tus proveedores aparecerán aquí.",
+  "stockProductCount": "{count, plural, =0{Ningún producto} =1{1 producto} other{{count} productos}}",
+  "@stockProductCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "stockStatusTransit": "En camino",
+  "stockStatusOut": "Agotado",
+  "stockStatusLow": "Bajo mínimo",
+  "stockStatusOk": "Correcto",
+  "stockUnitsMin": "{stock} {unit} · mín. {min}",
+  "@stockUnitsMin": {
+    "placeholders": {
+      "stock": { "type": "int" },
+      "unit": { "type": "String" },
+      "min": { "type": "int" }
+    }
+  },
+  "stockUpdated": "Stock actualizado",
+  "stockUpdatedMessage": "{name}: {stock} {unit}.",
+  "@stockUpdatedMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "stock": { "type": "int" },
+      "unit": { "type": "String" }
+    }
+  },
+  "stockEditorUid": "{uid} · mín. {min} {unit}",
+  "@stockEditorUid": {
+    "placeholders": {
+      "uid": { "type": "String" },
+      "min": { "type": "int" },
+      "unit": { "type": "String" }
+    }
+  },
+
+  "ordersTitle": "Pedidos",
+  "ordersSpentInMonth": "Gastado en {month}",
+  "@ordersSpentInMonth": {
+    "placeholders": {
+      "month": { "type": "String" }
+    }
+  },
+  "ordersCreatedByAgent": "Creados por el agente",
+  "ordersCreatedByAgentValue": "{count} de {total}",
+  "@ordersCreatedByAgentValue": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "ordersHistory": "Historial",
+  "ordersEmptyTitle": "Todavía no hay pedidos",
+  "ordersEmptyMessage": "Pulsa «Revisar stock ahora» en Inicio para que el agente prepare el primero.",
+  "ordersDeliveryQuestion": "¿Ha llegado el pedido?",
+  "ordersCheckDelivery": "Comprueba la entrega de {supplier}",
+  "@ordersCheckDelivery": {
+    "placeholders": {
+      "supplier": { "type": "String" }
+    }
+  },
+  "ordersCreatedByAgentWord": "agente",
+  "ordersCreatedByYouWord": "tú",
+
+  "statusDraft": "Borrador",
+  "statusPendingApproval": "Por aprobar",
+  "statusApproved": "Aprobado",
+  "statusPaying": "Pagando…",
+  "statusPaid": "Pagado con PayPal",
+  "statusInvoiced": "Facturado",
+  "statusCompleted": "Completado",
+  "statusRejected": "Rechazado",
+  "statusPaymentFailed": "Pago fallido",
+
+  "reasonOverMaxPerOrder": "Supera el máximo de {amount} por pedido",
+  "@reasonOverMaxPerOrder": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "reasonOverMonthlyLimit": "Supera tu tope de {amount} al mes",
+  "@reasonOverMonthlyLimit": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "reasonAnyOrderApproval": "Me preguntas por cualquier pedido",
+  "reasonOverApprovalThreshold": "Supera {amount} sin aprobación",
+  "@reasonOverApprovalThreshold": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
+  "orderUnavailable": "Este pedido ya no está disponible",
+  "orderTitle": "Pedido a {supplier}",
+  "@orderTitle": {
+    "placeholders": {
+      "supplier": { "type": "String" }
+    }
+  },
+  "orderCreatedByAgent": "Lo preparó el agente",
+  "orderCreatedByYou": "Lo creaste tú",
+  "orderUnitPrice": "{price} / ud · {uid}",
+  "@orderUnitPrice": {
+    "placeholders": {
+      "price": { "type": "String" },
+      "uid": { "type": "String" }
+    }
+  },
+  "orderTotal": "Total",
+  "orderWhatAgentDecided": "Qué decidió el agente",
+  "orderConfidence": "confianza {percent} %",
+  "@orderConfidence": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "orderPaypalPayment": "Pago PayPal",
+  "orderPaymentDate": "Fecha de pago",
+  "orderPaymentStatusSent": "enviado",
+  "orderBlockedByRules": "Bloqueado por tus reglas",
+  "orderBlockedHint": "Cambia tus reglas en la pestaña Reglas si quieres permitirlo.",
+  "orderApproveHint": "Al aprobar, el servidor paga a {supplier} y genera la factura.",
+  "@orderApproveHint": {
+    "placeholders": {
+      "supplier": { "type": "String" }
+    }
+  },
+  "orderSpendAfterPayment": "Gasto de {month} tras el pago",
+  "@orderSpendAfterPayment": {
+    "placeholders": {
+      "month": { "type": "String" }
+    }
+  },
+  "orderSpendOf": "{spent} de {limit}",
+  "@orderSpendOf": {
+    "placeholders": {
+      "spent": { "type": "String" },
+      "limit": { "type": "String" }
+    }
+  },
+  "orderLegendSpent": "Ya gastado",
+  "orderLegendThisOrder": "Este pedido",
+  "orderPaymentSent": "Pago enviado",
+  "orderPaymentSentMessage": "{amount} enviados a {supplier} con PayPal.",
+  "@orderPaymentSentMessage": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "supplier": { "type": "String" }
+    }
+  },
+  "orderPaymentFailed": "No se pudo pagar",
+  "orderRejectQuestion": "¿Rechazar el pedido?",
+  "orderRejectMessage": "El agente no pagará a {supplier}.",
+  "@orderRejectMessage": {
+    "placeholders": {
+      "supplier": { "type": "String" }
+    }
+  },
+  "orderRejected": "Pedido rechazado",
+  "orderRejectFailed": "No se pudo rechazar",
+
+  "deliveryTitle": "Entrega de {supplier}",
+  "@deliveryTitle": {
+    "placeholders": {
+      "supplier": { "type": "String" }
+    }
+  },
+  "deliverySubtitle": "Ajusta lo que ha llegado. Lo que falte se puede reclamar.",
+  "deliveryComingSoon": "Próximamente",
+  "deliveryComingSoonMessage": "La lectura del albarán con IA llegará pronto.",
+  "deliveryPhoto": "Foto del albarán",
+  "deliveryOrderedMissing": "Pedido {qty} · faltan {missing}",
+  "@deliveryOrderedMissing": {
+    "placeholders": {
+      "qty": { "type": "int" },
+      "missing": { "type": "int" }
+    }
+  },
+  "deliveryOrderedComplete": "Pedido {qty} · completo",
+  "@deliveryOrderedComplete": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "deliveryRegistered": "Entrega registrada",
+  "deliveryRegisteredMessage": "Se ha guardado lo que llegó del pedido.",
+  "deliveryClaim": "Reclamar {units} uds · {amount}",
+  "@deliveryClaim": {
+    "placeholders": {
+      "units": { "type": "int" },
+      "amount": { "type": "String" }
+    }
+  },
+  "deliveryClaimReady": "Reclamación preparada",
+  "deliveryClaimMessage": "Avísale de las unidades que faltan.",
+
+  "assistantTitle": "Asistente",
+  "assistantSubtitle": "Tu agente de reposición",
+  "assistantGreeting": "Hola. Reviso tu stock, preparo pedidos a tus proveedores y los pago con PayPal, siempre dentro de tus reglas de gasto.",
+  "assistantChipReview": "Revisa el stock ahora",
+  "assistantChipPending": "¿Qué tengo por aprobar?",
+  "assistantChipSpent": "¿Cuánto llevo gastado?",
+  "assistantInputHint": "Pregunta lo que quieras",
+  "assistantTyping": "Revisando tu stock…",
+  "assistantSend": "Enviar",
+  "assistantPendingEmpty": "No tienes pedidos esperando tu aprobación.",
+  "assistantPendingList": "Tienes {count} por aprobar: {list}. Los encuentras en Inicio.",
+  "@assistantPendingList": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "list": { "type": "String" }
+    }
+  },
+  "assistantPendingQuestion": "¿Qué tengo por aprobar?",
+  "assistantSpentQuestion": "¿Cuánto llevo gastado?",
+  "assistantSpentAnswer": "Llevas **{spent}** gastados en {month} de un tope de **{limit}**. Te quedan **{remaining}**.",
+  "@assistantSpentAnswer": {
+    "placeholders": {
+      "spent": { "type": "String" },
+      "month": { "type": "String" },
+      "limit": { "type": "String" },
+      "remaining": { "type": "String" }
+    }
+  },
+
+  "rulesTitle": "Reglas",
+  "rulesSubtitle": "El agente solo paga si se cumplen todas",
+  "rulesSpending": "Gasto",
+  "rulesAccount": "Cuenta",
+  "rulesMonthlyLimit": "Tope mensual",
+  "rulesMonthlyLimitText": "No gastes más de {amount} al mes",
+  "@rulesMonthlyLimitText": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "rulesMonthlySpent": "Llevas {amount}",
+  "@rulesMonthlySpent": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "rulesMaxPerOrder": "Máximo por pedido",
+  "rulesMaxPerOrderText": "Ningún pedido puede pasar de {amount}",
+  "@rulesMaxPerOrderText": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "rulesApproval": "Pide aprobación",
+  "rulesApprovalTextAny": "Pregúntame por cualquier pedido",
+  "rulesApprovalTextAbove": "Si un pedido pasa de {amount}, pregúntame",
+  "@rulesApprovalTextAbove": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "rulesSuppliers": "Proveedores",
+  "rulesSuppliersTextAny": "Puedes comprar a cualquier proveedor",
+  "rulesSuppliersTextList": "Compra solo a {list}",
+  "@rulesSuppliersTextList": {
+    "placeholders": {
+      "list": { "type": "String" }
+    }
+  },
+  "rulesHint": "Toca una regla para cambiarla. Las reglas se comprueban en el sistema, no en la IA.",
+  "rulesSession": "Sesión",
+  "rulesAppearance": "Apariencia",
+  "rulesThemeAuto": "Auto",
+  "rulesThemeLight": "Claro",
+  "rulesThemeDark": "Oscuro",
+  "rulesLanguage": "Idioma",
+  "rulesLanguageAuto": "Auto",
+  "rulesLanguageSpanish": "Español",
+  "rulesLanguageEnglish": "English",
+  "rulesSignOutQuestion": "¿Cerrar sesión?",
+  "rulesSignOutCancel": "Cancelar",
+  "rulesSignOutConfirm": "Cerrar sesión",
+  "rulesSaved": "Reglas guardadas",
+  "rulesSavedMessage": "Tus límites de gasto y proveedores ya están aplicados.",
+  "rulesSaveFailed": "No se pudieron guardar las reglas",
+  "rulesMonthlyLimitSheetHint": "No puede ser menor que el máximo por pedido.",
+  "rulesMaxPerOrderSheetHint": "Tiene que ser mayor que 0.",
+  "rulesApprovalSheetTitle": "Pedir aprobación a partir de",
+  "rulesApprovalSheetHint": "Con 0 me preguntas por cualquier pedido.",
+  "rulesSuppliersSheetTitle": "Proveedores permitidos",
+  "rulesSuppliersSheetHint": "Si no marcas ninguno, el agente puede comprar a todos.",
+
+  "authEmail": "Correo",
+  "authPassword": "Contraseña",
+  "authPasswordHint": "Mínimo 6 caracteres",
+  "authConfirmPassword": "Repite la contraseña",
+  "authStoreName": "Nombre de tu tienda",
+  "authStoreNameHint": "Tienda Lumbre",
+  "authEmailHint": "tu@tienda.com",
+  "authSignInFailed": "No se pudo iniciar sesión",
+  "authMissingFields": "Faltan datos",
+  "authMissingFieldsBody": "Completa el correo y la contraseña.",
+  "authMissingEmail": "Falta el correo",
+  "authMissingEmailBody": "Escribe tu correo primero.",
+  "authEmailSent": "Correo enviado",
+  "authEmailSentBody": "Si el correo existe, te enviamos un enlace de recuperación.",
+  "authFirstTime": "¿Primera vez en Restock?",
+  "authFirstTimeBody": "Crea tu tienda y deja que el agente reponga el stock.",
+  "authCreateTitle": "Crear cuenta",
+  "authCreateSubtitle": "Crea tu tienda y empieza a reponer en segundos",
+  "authCreateFailed": "No se pudo crear la cuenta",
+  "authCreateMissingFieldsBody": "Completa el correo y las dos contraseñas.",
+  "authPasswordTooShort": "La contraseña debe tener al menos 6 caracteres.",
+  "authPasswordTooShortTitle": "Contraseña corta",
+  "authPasswordsMismatch": "Las contraseñas no coinciden.",
+  "authPasswordsMismatchTitle": "No coinciden",
+  "authCreateFooter": "Crear la tienda es gratis. Solo pagas los pedidos que el agente prepare y tú apruebes, dentro de tus reglas.",
+
+  "errorLoadData": "No se pudieron cargar tus datos",
+  "errorStoreNotFound": "No se encontró la tienda.",
+  "errorAgentBusy": "El agente ya está trabajando.",
+  "errorNoStoreLoaded": "No hay tienda cargada.",
+
+  "decisionOrderCreated": "Preparé un pedido de reposición con tu stock bajo.",
+  "decisionNoAction": "Revisé el stock: no hacía falta pedir nada.",
+  "decisionBlocked": "Quise pedir, pero tus reglas de gasto lo bloquearon.",
+  "decisionFailed": "La revisión falló. Inténtalo de nuevo en un momento.",
+  "decisionAutoApproved": "Hice un pedido dentro de tus reglas y lo pagué con PayPal.",
+  "decisionRequiresApproval": "Preparé un pedido que necesita tu aprobación.",
+  "decisionGeneric": "Revisión del agente: {decision}",
+  "@decisionGeneric": {
+    "placeholders": {
+      "decision": { "type": "String" }
+    }
+  },
+  "agentChatFallback": "De momento sé revisar tu stock, proponer pedidos y pagarlos con PayPal dentro de tus reglas. Pulsa «Revisa el stock ahora» y me pongo con ello.",
+  "agentChatTrigger": "Revisa el stock ahora",
+
+  "dateToday": "Hoy {time}",
+  "@dateToday": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "dateYesterday": "Ayer {time}",
+  "@dateYesterday": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+
+  "dashboardSignedIn": "Sesión iniciada",
+  "dashboardUser": "Usuario",
+  "dashboardStore": "Tienda: {store}",
+  "@dashboardStore": {
+    "placeholders": {
+      "store": { "type": "String" }
+    }
+  },
+  "dashboardNextStep": "Siguiente paso: catálogo, pedidos y agente."
+}

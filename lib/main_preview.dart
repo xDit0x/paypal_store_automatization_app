@@ -30,7 +30,9 @@ import 'package:store_automatization_app/domain/usecases/orders/reject_order_use
 import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
+import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/shell/restock_shell.dart';
@@ -92,16 +94,22 @@ class PreviewApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ThemeCubit()),
+        BlocProvider(create: (_) => LocaleCubit()),
         BlocProvider(create: (_) => _authCubit()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
-        builder: (context, mode) => MaterialApp(
-          title: 'Restock (vista previa)',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: mode,
-          home: RestockShell(createCubit: _restockCubit),
+        builder: (context, mode) => BlocBuilder<LocaleCubit, Locale?>(
+          builder: (context, locale) => MaterialApp(
+            title: 'Restock (vista previa)',
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: mode,
+            home: RestockShell(createCubit: _restockCubit),
+          ),
         ),
       ),
     );

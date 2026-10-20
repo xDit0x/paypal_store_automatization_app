@@ -1,9 +1,11 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
+import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
 
@@ -44,9 +46,16 @@ void main() {
   });
 
   test('Motivo corto según las reglas', () {
+    final l10n = lookupAppLocalizations(const Locale('es'));
     final state = RestockState(rules: rules, spentThisMonth: 100);
-    expect(shortDecisionReason(state, _order(id: 'a', total: 30)), isNull);
-    expect(shortDecisionReason(state, _order(id: 'b', total: 120)), contains('sin aprobación'));
-    expect(shortDecisionReason(state, _order(id: 'c', total: 250)), contains('máximo'));
+    expect(shortDecisionReason(l10n, state, _order(id: 'a', total: 30)), isNull);
+    expect(
+      shortDecisionReason(l10n, state, _order(id: 'b', total: 120)),
+      contains('sin aprobación'),
+    );
+    expect(
+      shortDecisionReason(l10n, state, _order(id: 'c', total: 250)),
+      contains('máximo'),
+    );
   });
 }

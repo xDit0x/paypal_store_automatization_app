@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
@@ -18,23 +19,30 @@ class OrdersPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return RTabPage(
       builder: (context, state) {
+        final l10n = context.l10n;
         final delivery = state.latestDelivery;
         return [
-          const RLargeTitle('Pedidos'),
+          RLargeTitle(l10n.ordersTitle),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: _StatCard(
-                  label: 'Gastado en ${currentMonthName()}',
-                  value: eurosShort(state.spentThisMonth.roundToDouble(), state.currency),
+                  label: l10n.ordersSpentInMonth(l10n.currentMonthName()),
+                  value: l10n.eurosShort(
+                    state.spentThisMonth.roundToDouble(),
+                    state.currency,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _StatCard(
-                  label: 'Creados por el agente',
-                  value: '${state.agentCreatedCount} de ${state.orders.length}',
+                  label: l10n.ordersCreatedByAgent,
+                  value: l10n.ordersCreatedByAgentValue(
+                    state.agentCreatedCount,
+                    state.orders.length,
+                  ),
                 ),
               ),
             ],
@@ -47,12 +55,12 @@ class OrdersPage extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 22),
-          const RSectionTitle('Historial'),
+          RSectionTitle(l10n.ordersHistory),
           if (state.orders.isEmpty)
-            const REmptyState(
+            REmptyState(
               icon: CupertinoIcons.doc_text,
-              title: 'Todavía no hay pedidos',
-              message: 'Pulsa «Revisar stock ahora» en Inicio para que el agente prepare el primero.',
+              title: l10n.ordersEmptyTitle,
+              message: l10n.ordersEmptyMessage,
             )
           else
             RInsetGroup(children: [for (final o in state.orders) _OrderRow(order: o, state: state)]),
@@ -118,10 +126,10 @@ class _DeliveryBanner extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('¿Ha llegado el pedido?',
+                    Text(context.l10n.ordersDeliveryQuestion,
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: p.onBanner)),
                     const SizedBox(height: 2),
-                    Text('Comprueba la entrega de $supplier',
+                    Text(context.l10n.ordersCheckDelivery(supplier),
                         style: TextStyle(fontSize: 13, color: p.onBannerSecondary)),
                   ],
                 ),
@@ -144,8 +152,11 @@ class _OrderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.rt;
-    final (label, tone) = orderStatusLabel(order.status);
-    final who = order.createdByType == OrderCreatorType.agent ? 'agente' : 'tú';
+    final l10n = context.l10n;
+    final (label, tone) = orderStatusLabel(l10n, order.status);
+    final who = order.createdByType == OrderCreatorType.agent
+        ? l10n.ordersCreatedByAgentWord
+        : l10n.ordersCreatedByYouWord;
 
     return RListRow(
       title: state.supplierName(order.supplierId),
@@ -158,14 +169,14 @@ class _OrderRow extends StatelessWidget {
               text: label,
               style: TextStyle(fontWeight: FontWeight.w600, color: pillToneColor(context, tone)),
             ),
-            TextSpan(text: ' · ${relativeDate(order.createdAt)} · $who'),
+            TextSpan(text: ' · ${l10n.relativeDate(order.createdAt)} · $who'),
           ],
         ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(euros(order.total, state.currency), style: t.amount),
+          Text(l10n.euros(order.total, state.currency), style: t.amount),
           const SizedBox(width: 8),
           const RChevron(),
         ],

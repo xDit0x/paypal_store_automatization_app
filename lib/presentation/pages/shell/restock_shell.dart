@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/core/service_locator.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
@@ -46,7 +47,7 @@ class RestockShell extends StatelessWidget {
   /// datos de ejemplo en vez de Supabase. En la app real es null.
   final RestockCubit Function()? createCubit;
 
-  RestockCubit _defaultCubit() => RestockCubit(
+  RestockCubit _defaultCubit(BuildContext context) => RestockCubit(
         getCurrentStore: sl<GetCurrentStoreUsecase>(),
         getSpendingRules: sl<GetSpendingRulesUsecase>(),
         updateSpendingRules: sl<UpdateSpendingRulesUsecase>(),
@@ -61,12 +62,15 @@ class RestockShell extends StatelessWidget {
         // service_locator.dart. Se pueden registrar allí más adelante.
         approveOrder: ApproveOrderUsecase(repository: sl<OrderRepository>()),
         rejectOrder: RejectOrderUsecase(repository: sl<OrderRepository>()),
+        // Se resuelve en cada llamada, así que al cambiar de idioma los
+        // mensajes del agente salen en el idioma nuevo sin recrear el cubit.
+        l10n: () => AppLocalizations.of(context),
       );
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<RestockCubit>(
-      create: (_) => (createCubit?.call() ?? _defaultCubit())..load(),
+      create: (context) => (createCubit?.call() ?? _defaultCubit(context))..load(),
       child: const _ShellView(),
     );
   }
@@ -85,13 +89,14 @@ class _ShellViewState extends State<_ShellView> {
   );
   late int _index = ShellTabStore.instance.index;
 
-  static const _items = [
-    NavItem('Inicio', CupertinoIcons.house),
-    NavItem('Stock', CupertinoIcons.cube_box),
-    NavItem('Pedidos', CupertinoIcons.doc_text),
-    NavItem('Reglas', CupertinoIcons.slider_horizontal_3),
-    NavItem('Asistente', CupertinoIcons.chat_bubble),
-  ];
+  /// Las pestañas del dock, con los textos del idioma activo.
+  List<NavItem> _items(AppLocalizations l10n) => [
+        NavItem(l10n.tabHome, CupertinoIcons.house),
+        NavItem(l10n.tabStock, CupertinoIcons.cube_box),
+        NavItem(l10n.tabOrders, CupertinoIcons.doc_text),
+        NavItem(l10n.tabRules, CupertinoIcons.slider_horizontal_3),
+        NavItem(l10n.tabAssistant, CupertinoIcons.chat_bubble),
+      ];
 
   @override
   void dispose() {
@@ -162,7 +167,7 @@ class _ShellViewState extends State<_ShellView> {
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: CarouselNavBar(
                     controller: _pages,
-                    items: _items,
+                    items: _items(context.l10n),
                     onSelect: (i) => _goTo(i),
                     onDragSelect: _dragTo,
                   ),

@@ -1,86 +1,66 @@
-/// Formato de importes y fechas en español, sin depender de la
-/// inicialización de locales de `intl`.
+/// Formato de importes y fechas según el idioma activo.
+///
+/// Se usa como extensión de [AppLocalizations] para que el formato siga al
+/// Locale que el usuario ha elegido: `l10n.euros(12.5)` da "12,50 €" en
+/// español y "€12.50" en inglés.
 library;
 
-/// 145.0 -> "145,00 €"
-String euros(double value, [String currency = 'EUR']) =>
-    '${value.toStringAsFixed(2).replaceAll('.', ',')} ${_symbol(currency)}';
+import 'package:intl/intl.dart';
 
-/// 212.0 -> "212 €"; 38.4 -> "38,40 €"
-String eurosShort(double value, [String currency = 'EUR']) {
-  if (value == value.roundToDouble()) {
-    return '${value.round()} ${_symbol(currency)}';
+import 'package:store_automatization_app/l10n/app_localizations.dart';
+
+extension RestockFormat on AppLocalizations {
+  /// "145,00 €" (es) / "€145.00" (en).
+  String euros(double value, [String currency = 'EUR']) =>
+      NumberFormat.currency(
+        locale: localeName,
+        symbol: _symbol(currency),
+        decimalDigits: 2,
+      ).format(value);
+
+  /// "212 €" (es) / "€212" (en); con decimales, el importe completo.
+  String eurosShort(double value, [String currency = 'EUR']) {
+    if (value == value.roundToDouble()) {
+      return NumberFormat.currency(
+        locale: localeName,
+        symbol: _symbol(currency),
+        decimalDigits: 0,
+      ).format(value);
+    }
+    return euros(value, currency);
   }
-  return euros(value, currency);
-}
 
-String _symbol(String currency) => switch (currency.toUpperCase()) {
-      'EUR' => '€',
-      'USD' => r'$',
-      'GBP' => '£',
-      _ => currency,
-    };
+  /// Solo el símbolo: "€".
+  String currencySymbol([String currency = 'EUR']) => _symbol(currency);
 
-const _weekdays = [
-  'Lunes',
-  'Martes',
-  'Miércoles',
-  'Jueves',
-  'Viernes',
-  'Sábado',
-  'Domingo',
-];
-const _months = [
-  'ene',
-  'feb',
-  'mar',
-  'abr',
-  'may',
-  'jun',
-  'jul',
-  'ago',
-  'sep',
-  'oct',
-  'nov',
-  'dic',
-];
+  String _symbol(String currency) => switch (currency.toUpperCase()) {
+        'EUR' => '€',
+        'USD' => r'$',
+        'GBP' => '£',
+        _ => currency,
+      };
 
-/// "Lunes 19 oct"
-String shortDate(DateTime d) =>
-    '${_weekdays[d.weekday - 1]} ${d.day} ${_months[d.month - 1]}';
+  /// "lun, 19 oct" (es) / "Mon, Oct 19" (en).
+  String shortDate(DateTime d) => DateFormat.MMMEd(localeName).format(d);
 
-/// "15:40"
-String clock(DateTime d) =>
-    '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  /// "Hoy 07:02", "Ayer 18:10" o "12 oct".
+  String relativeDate(DateTime? value) {
+    if (value == null) return '';
+    final d = value.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return dateToday(clock(d));
+    if (diff == 1) return dateYesterday(clock(d));
+    return DateFormat('d MMM', localeName).format(d);
+  }
 
-/// "Hoy 07:02", "Ayer 18:10" o "12 oct".
-String relativeDate(DateTime? value) {
-  if (value == null) return '';
-  final d = value.toLocal();
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final day = DateTime(d.year, d.month, d.day);
-  final diff = today.difference(day).inDays;
-  if (diff == 0) return 'Hoy ${clock(d)}';
-  if (diff == 1) return 'Ayer ${clock(d)}';
-  return '${d.day} ${_months[d.month - 1]}';
-}
+  /// "15:40".
+  String clock(DateTime d) =>
+      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
-/// Nombre del mes en curso: "octubre".
-String currentMonthName() {
-  const names = [
-    'enero',
-    'febrero',
-    'marzo',
-    'abril',
-    'mayo',
-    'junio',
-    'julio',
-    'agosto',
-    'septiembre',
-    'octubre',
-    'noviembre',
-    'diciembre',
-  ];
-  return names[DateTime.now().month - 1];
+  /// Nombre del mes en curso: "octubre" / "October".
+  String currentMonthName() =>
+      DateFormat.MMMM(localeName).format(DateTime.now());
 }

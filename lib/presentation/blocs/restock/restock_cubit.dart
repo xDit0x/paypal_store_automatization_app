@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/domain/entities/agent_run.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
@@ -35,6 +36,16 @@ class RestockCubit extends Cubit<RestockState> {
   final ApproveOrderUsecase approveOrder;
   final RejectOrderUsecase rejectOrder;
 
+  /// Textos del idioma activo. La pantalla inyecta una función que los
+  /// resuelve en cada llamada, así que un cambio de idioma se nota al
+  /// instante. Sin ella se usa el Locale del dispositivo.
+  final AppLocalizations Function() _l10n;
+
+  /// El último `runAgent` terminó con error.
+  bool lastRunFailed = false;
+
+  AppLocalizations get l10n => _l10n();
+
   RestockCubit({
     required this.getCurrentStore,
     required this.getSpendingRules,
@@ -48,7 +59,9 @@ class RestockCubit extends Cubit<RestockState> {
     required this.runAgentUsecase,
     required this.approveOrder,
     required this.rejectOrder,
-  }) : super(const RestockState());
+    AppLocalizations Function()? l10n,
+  }) : _l10n = l10n ?? (() => l10nFor(deviceLocale())),
+       super(const RestockState());
 
   /// Carga todo. Si ya había datos, los mantiene visibles mientras refresca.
   Future<void> load() async {
@@ -59,7 +72,7 @@ class RestockCubit extends Cubit<RestockState> {
     final storeResult = await getCurrentStore();
     final store = storeResult.fold<Store?>((_) => null, (s) => s);
     if (store == null) {
-      final message = storeResult.fold<String>((e) => e, (_) => 'No se encontró la tienda.');
+      final message = storeResult.fold<String>((e) => e, (_) => l10n.errorStoreNotFound);
       emit(state.copyWith(status: RestockStatus.failure, error: message));
       return;
     }
@@ -121,19 +134,24 @@ class RestockCubit extends Cubit<RestockState> {
   /// Ejecuta el agente. Devuelve el mensaje para mostrar al usuario.
   Future<String> runAgent({bool fromChat = false}) async {
     final store = state.store;
-    if (store == null || state.agentRunning) return 'El agente ya está trabajando.';
+    if (store == null || state.agentRunning) return l10n.errorAgentBusy;
 
     final chat = [...state.chat];
     if (fromChat) {
-      chat.add(ChatEntry(fromUser: true, text: 'Revisa el stock ahora', at: DateTime.now()));
+      chat.add(ChatEntry(fromUser: true, text: l10n.agentChatTrigger, at: DateTime.now()));
     }
     emit(state.copyWith(agentRunning: true, chat: chat));
 
     final result = await runAgentUsecase(store.id);
+    var failed = false;
     final message = result.fold<String>(
-      (error) => error,
-      (r) => r.message.isNotEmpty ? r.message : describeDecision(r.decision),
+      (error) {
+        failed = true;
+        return error;
+      },
+      (r) => r.message.isNotEmpty ? r.message : describeAgentDecision(l10n, r.decision),
     );
+    lastRunFailed = failed;
 
     emit(state.copyWith(
       agentRunning: false,
@@ -154,8 +172,7 @@ class RestockCubit extends Cubit<RestockState> {
       ChatEntry(fromUser: true, text: clean, at: now),
       ChatEntry(
         fromUser: false,
-        text: 'De momento sé revisar tu stock, proponer pedidos y pagarlos con PayPal '
-            'dentro de tus reglas. Pulsa «Revisa el stock ahora» y me pongo con ello.',
+        text: l10n.agentChatFallback,
         at: now,
       ),
     ]));
@@ -206,7 +223,7 @@ class RestockCubit extends Cubit<RestockState> {
 
   Future<String?> saveRules(SpendingRules rules) async {
     final store = state.store;
-    if (store == null) return 'No hay tienda cargada.';
+    if (store == null) return l10n.errorNoStoreLoaded;
     final result = await updateSpendingRules(store.id, rules);
     return result.fold<String?>((e) => e, (_) {
       emit(state.copyWith(rules: rules));
@@ -221,22 +238,11 @@ class RestockCubit extends Cubit<RestockState> {
       for (final r in recent)
         ChatEntry(
           fromUser: false,
-          text: describeDecision(r.decision!),
+          text: describeAgentDecision(l10n, r.decision!),
           at: r.createdAt?.toLocal() ?? DateTime.now(),
         ),
     ];
   }
-
-  /// Traduce los códigos de decisión del servidor a una frase.
-  static String describeDecision(String decision) => switch (decision) {
-        'order_created' => 'Preparé un pedido de reposición con tu stock bajo.',
-        'no_action' => 'Revisé el stock: no hacía falta pedir nada.',
-        'blocked' => 'Quise pedir, pero tus reglas de gasto lo bloquearon.',
-        'failed' => 'La revisión falló. Inténtalo de nuevo en un momento.',
-        'auto_approved' => 'Hice un pedido dentro de tus reglas y lo pagué con PayPal.',
-        'requires_approval' => 'Preparé un pedido que necesita tu aprobación.',
-        _ => 'Revisión del agente: $decision',
-      };
 
   /// Pedido que el agente acaba de crear, si lo hay (para abrirlo).
   Order? newestPending() {
@@ -244,3 +250,15 @@ class RestockCubit extends Cubit<RestockState> {
     return pending.isEmpty ? null : pending.first;
   }
 }
+
+/// Traduce los códigos de decisión del servidor a una frase.
+String describeAgentDecision(AppLocalizations l10n, String decision) =>
+    switch (decision) {
+      'order_created' => l10n.decisionOrderCreated,
+      'no_action' => l10n.decisionNoAction,
+      'blocked' => l10n.decisionBlocked,
+      'failed' => l10n.decisionFailed,
+      'auto_approved' => l10n.decisionAutoApproved,
+      'requires_approval' => l10n.decisionRequiresApproval,
+      _ => l10n.decisionGeneric(decision),
+    };

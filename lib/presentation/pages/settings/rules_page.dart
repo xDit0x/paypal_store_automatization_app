@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
@@ -24,45 +26,51 @@ class RulesPage extends StatelessWidget {
     return RTabPage(
       builder: (context, state) {
         final t = context.rt;
+        final l10n = context.l10n;
         final r = state.rules;
         final c = state.currency;
         final allowed = r.allowedSupplierIds.map(state.supplierName).toList();
 
         return [
-          const RLargeTitle(
-            'Reglas',
-            subtitle: 'El agente solo paga si se cumplen todas',
+          RLargeTitle(
+            l10n.rulesTitle,
+            subtitle: l10n.rulesSubtitle,
           ),
           const SizedBox(height: 18),
-          const RSectionTitle('Gasto', small: true),
+          RSectionTitle(l10n.rulesSpending, small: true),
           RInsetGroup(
             children: [
               _RuleRow(
-                text:
-                    'No gastes más de ${eurosShort(r.monthlyLimit, c)} al mes',
-                pill: const RPill('Tope mensual', tone: RPillTone.info),
-                detail:
-                    'Llevas ${eurosShort(state.spentThisMonth.roundToDouble(), c)}',
+                text: l10n.rulesMonthlyLimitText(
+                  l10n.eurosShort(r.monthlyLimit, c),
+                ),
+                pill: RPill(l10n.rulesMonthlyLimit, tone: RPillTone.info),
+                detail: l10n.rulesMonthlySpent(
+                  l10n.eurosShort(state.spentThisMonth.roundToDouble(), c),
+                ),
                 onTap: () => _editLimit(context, state, _Limit.monthly),
               ),
               _RuleRow(
-                text:
-                    'Ningún pedido puede pasar de ${eurosShort(r.maxPerOrder, c)}',
-                pill: const RPill('Máximo por pedido'),
+                text: l10n.rulesMaxPerOrderText(
+                  l10n.eurosShort(r.maxPerOrder, c),
+                ),
+                pill: RPill(l10n.rulesMaxPerOrder),
                 onTap: () => _editLimit(context, state, _Limit.perOrder),
               ),
               _RuleRow(
                 text: r.requireApprovalAbove <= 0
-                    ? 'Pregúntame por cualquier pedido'
-                    : 'Si un pedido pasa de ${eurosShort(r.requireApprovalAbove, c)}, pregúntame',
-                pill: const RPill('Pide aprobación', tone: RPillTone.warning),
+                    ? l10n.rulesApprovalTextAny
+                    : l10n.rulesApprovalTextAbove(
+                        l10n.eurosShort(r.requireApprovalAbove, c),
+                      ),
+                pill: RPill(l10n.rulesApproval, tone: RPillTone.warning),
                 onTap: () => _editLimit(context, state, _Limit.approval),
               ),
               _RuleRow(
                 text: allowed.isEmpty
-                    ? 'Puedes comprar a cualquier proveedor'
-                    : 'Compra solo a ${allowed.join(', ')}',
-                pill: const RPill('Proveedores', tone: RPillTone.transit),
+                    ? l10n.rulesSuppliersTextAny
+                    : l10n.rulesSuppliersTextList(allowed.join(', ')),
+                pill: RPill(l10n.rulesSuppliers, tone: RPillTone.transit),
                 onTap: () => _editSuppliers(context, state),
               ),
             ],
@@ -71,12 +79,12 @@ class RulesPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              'Toca una regla para cambiarla. Las reglas se comprueban en el sistema, no en la IA.',
+              l10n.rulesHint,
               style: t.caption,
             ),
           ),
           const SizedBox(height: 22),
-          const RSectionTitle('Cuenta', small: true),
+          RSectionTitle(l10n.rulesAccount, small: true),
           const _AccountGroup(),
         ];
       },
@@ -88,25 +96,26 @@ class RulesPage extends StatelessWidget {
     RestockState state,
     _Limit limit,
   ) async {
+    final l10n = context.l10n;
     final r = state.rules;
     final (title, current, min, hint) = switch (limit) {
       _Limit.monthly => (
-          'Tope mensual',
+          l10n.rulesMonthlyLimit,
           r.monthlyLimit,
           r.maxPerOrder,
-          'No puede ser menor que el máximo por pedido.',
+          l10n.rulesMonthlyLimitSheetHint,
         ),
       _Limit.perOrder => (
-          'Máximo por pedido',
+          l10n.rulesMaxPerOrder,
           r.maxPerOrder,
           0.01,
-          'Tiene que ser mayor que 0.',
+          l10n.rulesMaxPerOrderSheetHint,
         ),
       _Limit.approval => (
-          'Pedir aprobación a partir de',
+          l10n.rulesApprovalSheetTitle,
           r.requireApprovalAbove,
           0.0,
-          'Con 0 me preguntas por cualquier pedido.',
+          l10n.rulesApprovalSheetHint,
         ),
     };
 
@@ -152,20 +161,21 @@ class RulesPage extends StatelessWidget {
   }
 
   Future<void> _save(BuildContext context, SpendingRules rules) async {
+    final l10n = context.l10n;
     final error = await context.read<RestockCubit>().saveRules(rules);
     if (!context.mounted) return;
     if (error != null) {
       showRestockSnack(
         context,
         error,
-        title: 'No se pudieron guardar las reglas',
+        title: l10n.rulesSaveFailed,
         tone: RSnackTone.warning,
       );
     } else {
       showRestockSnack(
         context,
-        'Tus límites de gasto y proveedores ya están aplicados.',
-        title: 'Reglas guardadas',
+        l10n.rulesSavedMessage,
+        title: l10n.rulesSaved,
         tone: RSnackTone.success,
       );
     }
@@ -264,6 +274,7 @@ class _AmountSheetState extends State<_AmountSheet> {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -302,7 +313,7 @@ class _AmountSheetState extends State<_AmountSheet> {
                     ),
                   ),
                   Text(
-                    eurosShort(0, widget.currency).replaceAll('0', '').trim(),
+                    l10n.currencySymbol(widget.currency),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -319,7 +330,7 @@ class _AmountSheetState extends State<_AmountSheet> {
             ),
             const SizedBox(height: 16),
             RPrimaryButton(
-              'Guardar',
+              l10n.actionSave,
               onPressed: (_value ?? double.negativeInfinity) >= widget.min
                   ? () => Navigator.pop(context, _value)
                   : null,
@@ -347,6 +358,7 @@ class _SuppliersSheetState extends State<_SuppliersSheet> {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final suppliers = widget.state.suppliers.values.toList()
       ..sort((a, b) => a.name.compareTo(b.name));
 
@@ -358,11 +370,11 @@ class _SuppliersSheetState extends State<_SuppliersSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const RSectionTitle('Proveedores permitidos'),
+            RSectionTitle(l10n.rulesSuppliersSheetTitle),
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
               child: Text(
-                'Si no marcas ninguno, el agente puede comprar a todos.',
+                l10n.rulesSuppliersSheetHint,
                 style: t.footnote,
               ),
             ),
@@ -392,7 +404,7 @@ class _SuppliersSheetState extends State<_SuppliersSheet> {
             ),
             const SizedBox(height: 16),
             RPrimaryButton(
-              'Guardar',
+              l10n.actionSave,
               onPressed: () => Navigator.pop(context, _selected.toList()),
             ),
           ],
@@ -409,8 +421,10 @@ class _AccountGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final email = context.watch<AuthCubit>().state.user?.email;
     final mode = context.watch<ThemeCubit>().state;
+    final locale = context.watch<LocaleCubit>().state;
     final segmentStyle = TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w600,
@@ -421,7 +435,7 @@ class _AccountGroup extends StatelessWidget {
       children: [
         if (email != null)
           RListRow(
-            title: 'Sesión',
+            title: l10n.rulesSession,
             trailing: Flexible(
               child: Text(
                 email,
@@ -434,7 +448,7 @@ class _AccountGroup extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
           child: Row(
             children: [
-              Text('Apariencia', style: t.body),
+              Text(l10n.rulesAppearance, style: t.body),
               const SizedBox(width: 12),
               Expanded(
                 child: CupertinoSlidingSegmentedControl<ThemeMode>(
@@ -442,14 +456,45 @@ class _AccountGroup extends StatelessWidget {
                   backgroundColor: p.fill,
                   thumbColor: p.surface,
                   children: {
-                    ThemeMode.system: Text('Auto', style: segmentStyle),
-                    ThemeMode.light: Text('Claro', style: segmentStyle),
-                    ThemeMode.dark: Text('Oscuro', style: segmentStyle),
+                    ThemeMode.system:
+                        Text(l10n.rulesThemeAuto, style: segmentStyle),
+                    ThemeMode.light:
+                        Text(l10n.rulesThemeLight, style: segmentStyle),
+                    ThemeMode.dark:
+                        Text(l10n.rulesThemeDark, style: segmentStyle),
                   },
                   onValueChanged: (value) {
                     if (value != null) {
                       context.read<ThemeCubit>().updateTheme(value);
                     }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            children: [
+              Text(l10n.rulesLanguage, style: t.body),
+              const SizedBox(width: 12),
+              Expanded(
+                // `auto` = seguir el Locale del dispositivo.
+                child: CupertinoSlidingSegmentedControl<String>(
+                  groupValue: locale?.languageCode ?? 'auto',
+                  backgroundColor: p.fill,
+                  thumbColor: p.surface,
+                  children: {
+                    'auto': Text(l10n.rulesLanguageAuto, style: segmentStyle),
+                    'es': Text(l10n.rulesLanguageSpanish, style: segmentStyle),
+                    'en': Text(l10n.rulesLanguageEnglish, style: segmentStyle),
+                  },
+                  onValueChanged: (value) {
+                    if (value == null) return;
+                    context.read<LocaleCubit>().updateLocale(
+                      value == 'auto' ? null : Locale(value),
+                    );
                   },
                 ),
               ),
@@ -462,7 +507,10 @@ class _AccountGroup extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
             child: Row(
               children: [
-                Text('Cerrar sesión', style: t.body.copyWith(color: p.warning)),
+                Text(
+                  l10n.actionSignOut,
+                  style: t.body.copyWith(color: p.warning),
+                ),
               ],
             ),
           ),
@@ -472,19 +520,20 @@ class _AccountGroup extends StatelessWidget {
   }
 
   Future<void> _signOut(BuildContext context) async {
+    final l10n = context.l10n;
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('¿Cerrar sesión?'),
+        title: Text(l10n.rulesSignOutQuestion),
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.actionCancel),
           ),
           CupertinoDialogAction(
             isDestructiveAction: true,
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cerrar sesión'),
+            child: Text(l10n.actionSignOut),
           ),
         ],
       ),

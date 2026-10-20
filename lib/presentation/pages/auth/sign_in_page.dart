@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_state.dart';
@@ -33,6 +34,7 @@ class _SignInPageState extends State<SignInPage> {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final isLoading =
         context.watch<AuthCubit>().state.status == AuthStatus.loading;
 
@@ -44,7 +46,7 @@ class _SignInPageState extends State<SignInPage> {
           showRestockSnack(
             context,
             state.error!,
-            title: 'No se pudo iniciar sesión',
+            title: l10n.authSignInFailed,
             tone: RSnackTone.warning,
           );
         }
@@ -70,7 +72,7 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Pedidos automáticos con IA + PayPal',
+                      l10n.appTagline,
                       textAlign: TextAlign.center,
                       style: t.subhead,
                     ),
@@ -81,9 +83,9 @@ class _SignInPageState extends State<SignInPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           RAuthField(
-                            label: 'Correo',
+                            label: l10n.authEmail,
                             controller: _emailController,
-                            hint: 'tu@tienda.com',
+                            hint: l10n.authEmailHint,
                             autofocus: true,
                             keyboardType: TextInputType.emailAddress,
                           ),
@@ -91,9 +93,9 @@ class _SignInPageState extends State<SignInPage> {
                           Divider(height: 1, color: p.separator),
                           const SizedBox(height: 14),
                           RAuthPasswordField(
-                            label: 'Contraseña',
+                            label: l10n.authPassword,
                             controller: _passwordController,
-                            hint: 'Mínimo 6 caracteres',
+                            hint: l10n.authPasswordHint,
                             textInputAction: TextInputAction.done,
                             onSubmitted: (_) => _signIn(),
                           ),
@@ -102,13 +104,13 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                     const SizedBox(height: 18),
                     RPrimaryButton(
-                      'Iniciar sesión',
+                      l10n.actionSignIn,
                       loading: isLoading,
                       onPressed: isLoading ? null : _signIn,
                     ),
                     const SizedBox(height: 6),
                     RTextLink(
-                      '¿Olvidaste tu contraseña?',
+                      l10n.actionForgotPassword,
                       onTap: isLoading ? null : _forgotPassword,
                     ),
                     const SizedBox(height: 18),
@@ -119,17 +121,17 @@ class _SignInPageState extends State<SignInPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            '¿Primera vez en Restock?',
+                            l10n.authFirstTime,
                             style: t.body.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Crea tu tienda y deja que el agente reponga el stock.',
+                            l10n.authFirstTimeBody,
                             style: t.footnote,
                           ),
                           const SizedBox(height: 10),
                           RTextLink(
-                            'Crear una cuenta',
+                            l10n.actionCreateAccount,
                             onTap: isLoading ? null : _openRegister,
                           ),
                         ],
@@ -147,14 +149,15 @@ class _SignInPageState extends State<SignInPage> {
 
   Future<void> _signIn() async {
     HapticFeedback.mediumImpact();
+    final l10n = context.l10n;
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
       showRestockSnack(
         context,
-        'Completa el correo y la contraseña.',
-        title: 'Faltan datos',
+        l10n.authMissingFieldsBody,
+        title: l10n.authMissingFields,
         tone: RSnackTone.warning,
       );
       return;
@@ -171,12 +174,13 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   Future<void> _forgotPassword() async {
+    final l10n = context.l10n;
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       showRestockSnack(
         context,
-        'Escribe tu correo primero.',
-        title: 'Falta el correo',
+        l10n.authMissingEmailBody,
+        title: l10n.authMissingEmail,
         tone: RSnackTone.warning,
       );
       return;
@@ -186,8 +190,8 @@ class _SignInPageState extends State<SignInPage> {
     if (!mounted) return;
     showRestockSnack(
       context,
-      'Si el correo existe, te enviamos un enlace de recuperación.',
-      title: 'Correo enviado',
+      l10n.authEmailSentBody,
+      title: l10n.authEmailSent,
       tone: RSnackTone.success,
     );
   }

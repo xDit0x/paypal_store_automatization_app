@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:store_automatization_app/core/configs/assets/app_assets.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/app_colors.dart';
 
 class SplashPage extends StatelessWidget {
@@ -13,10 +15,11 @@ class SplashPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.inventory_2_outlined,
-              size: 72,
-              color: Colors.white,
+            Image.asset(
+              AppAssets.logoForeground,
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: 16),
             Text(
@@ -29,7 +32,7 @@ class SplashPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Pedidos automáticos con IA + PayPal',
+              context.l10n.appTagline,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.white70,
               ),

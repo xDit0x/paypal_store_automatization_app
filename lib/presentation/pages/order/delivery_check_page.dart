@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
@@ -31,6 +32,7 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final state = context.watch<RestockCubit>().state;
     final order = state.orderById(widget.orderId);
     final media = MediaQuery.of(context);
@@ -38,8 +40,8 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
     if (order == null) {
       return Scaffold(
         backgroundColor: p.background,
-        body: const SafeArea(
-          child: Center(child: Text('Este pedido ya no está disponible')),
+        body: SafeArea(
+          child: Center(child: Text(l10n.orderUnavailable)),
         ),
       );
     }
@@ -64,7 +66,7 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const RBackLink('Pedidos'),
+            RBackLink(l10n.ordersTitle),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.only(top: 8),
@@ -75,12 +77,12 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Entrega de ${state.supplierName(order.supplierId)}',
+                          l10n.deliveryTitle(state.supplierName(order.supplierId)),
                           style: t.title2,
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Ajusta lo que ha llegado. Lo que falte se puede reclamar.',
+                          l10n.deliverySubtitle,
                           style: t.subhead,
                         ),
                       ],
@@ -94,8 +96,8 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
                       borderRadius: BorderRadius.circular(18),
                       onTap: () => showRestockSnack(
                         context,
-                        'La lectura del albarán con IA llegará pronto.',
-                        title: 'Próximamente',
+                        l10n.deliveryComingSoonMessage,
+                        title: l10n.deliveryComingSoon,
                       ),
                       child: SizedBox(
                         height: 120,
@@ -105,7 +107,7 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
                             Icon(CupertinoIcons.camera, color: p.inkSecondary),
                             const SizedBox(width: 8),
                             Text(
-                              'Foto del albarán',
+                              l10n.deliveryPhoto,
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -127,8 +129,11 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
                             title: item.name,
                             subtitle: Text(
                               _got(item) < item.qty
-                                  ? 'Pedido ${item.qty} · faltan ${item.qty - _got(item)}'
-                                  : 'Pedido ${item.qty} · completo',
+                                  ? l10n.deliveryOrderedMissing(
+                                      item.qty,
+                                      item.qty - _got(item),
+                                    )
+                                  : l10n.deliveryOrderedComplete(item.qty),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: _got(item) < item.qty
@@ -152,13 +157,13 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
             ),
             const SizedBox(height: 12),
             RPrimaryButton(
-              'Confirmar entrega',
+              l10n.actionConfirmDelivery,
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 showRestockSnack(
                   context,
-                  'Se ha guardado lo que llegó del pedido.',
-                  title: 'Entrega registrada',
+                  l10n.deliveryRegisteredMessage,
+                  title: l10n.deliveryRegistered,
                   tone: RSnackTone.success,
                 );
                 Navigator.of(context).maybePop();
@@ -167,12 +172,15 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
             if (missing.isNotEmpty) ...[
               const SizedBox(height: 10),
               RSecondaryButton(
-                'Reclamar $missingUnits uds · ${euros(missingValue, c)}',
+                l10n.deliveryClaim(
+                  missingUnits,
+                  l10n.euros(missingValue, c),
+                ),
                 color: p.warning,
                 onPressed: () => showRestockSnack(
                   context,
-                  'Avísale de las unidades que faltan.',
-                  title: 'Reclamación preparada',
+                  l10n.deliveryClaimMessage,
+                  title: l10n.deliveryClaimReady,
                   tone: RSnackTone.warning,
                 ),
               ),
@@ -207,7 +215,7 @@ class _Stepper extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            tooltip: 'Menos',
+            tooltip: context.l10n.semanticsLess,
             icon: Icon(CupertinoIcons.minus, size: 18, color: p.navy),
             onPressed: value > 0 ? () => onChanged(value - 1) : null,
           ),
@@ -220,7 +228,7 @@ class _Stepper extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Más',
+            tooltip: context.l10n.semanticsMore,
             icon: Icon(CupertinoIcons.plus, size: 18, color: p.navy),
             onPressed: value < max ? () => onChanged(value + 1) : null,
           ),

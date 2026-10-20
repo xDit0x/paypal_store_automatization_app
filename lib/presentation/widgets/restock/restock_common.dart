@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
@@ -11,16 +12,17 @@ import 'package:store_automatization_app/presentation/widgets/restock/carousel_n
 import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
 
 /// Texto y tono de cada estado de pedido.
-(String, RPillTone) orderStatusLabel(OrderStatus status) => switch (status) {
-      OrderStatus.draft => ('Borrador', RPillTone.neutral),
-      OrderStatus.pendingApproval => ('Por aprobar', RPillTone.warning),
-      OrderStatus.approved => ('Aprobado', RPillTone.info),
-      OrderStatus.paying => ('Pagando…', RPillTone.info),
-      OrderStatus.paid => ('Pagado con PayPal', RPillTone.info),
-      OrderStatus.invoiced => ('Facturado', RPillTone.info),
-      OrderStatus.completed => ('Completado', RPillTone.neutral),
-      OrderStatus.rejected => ('Rechazado', RPillTone.neutral),
-      OrderStatus.paymentFailed => ('Pago fallido', RPillTone.warning),
+(String, RPillTone) orderStatusLabel(AppLocalizations l10n, OrderStatus status) =>
+    switch (status) {
+      OrderStatus.draft => (l10n.statusDraft, RPillTone.neutral),
+      OrderStatus.pendingApproval => (l10n.statusPendingApproval, RPillTone.warning),
+      OrderStatus.approved => (l10n.statusApproved, RPillTone.info),
+      OrderStatus.paying => (l10n.statusPaying, RPillTone.info),
+      OrderStatus.paid => (l10n.statusPaid, RPillTone.info),
+      OrderStatus.invoiced => (l10n.statusInvoiced, RPillTone.info),
+      OrderStatus.completed => (l10n.statusCompleted, RPillTone.neutral),
+      OrderStatus.rejected => (l10n.statusRejected, RPillTone.neutral),
+      OrderStatus.paymentFailed => (l10n.statusPaymentFailed, RPillTone.warning),
     };
 
 Color pillToneColor(BuildContext context, RPillTone tone) {
@@ -34,23 +36,29 @@ Color pillToneColor(BuildContext context, RPillTone tone) {
 }
 
 /// Motivo corto por el que un pedido no se paga solo.
-String? shortDecisionReason(RestockState state, Order order) {
+String? shortDecisionReason(
+  AppLocalizations l10n,
+  RestockState state,
+  Order order,
+) {
   final decision = state.evaluate(order);
   final c = state.currency;
   if (decision.isBlocked) {
     if (order.total > state.rules.maxPerOrder) {
-      return 'Supera el máximo de ${eurosShort(state.rules.maxPerOrder, c)} por pedido';
+      return l10n.reasonOverMaxPerOrder(l10n.eurosShort(state.rules.maxPerOrder, c));
     }
     if (state.spentThisMonth + order.total > state.rules.monthlyLimit) {
-      return 'Supera tu tope de ${eurosShort(state.rules.monthlyLimit, c)} al mes';
+      return l10n.reasonOverMonthlyLimit(l10n.eurosShort(state.rules.monthlyLimit, c));
     }
     return decision.reason;
   }
   if (decision.needsApproval) {
     if (state.rules.requireApprovalAbove <= 0) {
-      return 'Me preguntas por cualquier pedido';
+      return l10n.reasonAnyOrderApproval;
     }
-    return 'Supera ${eurosShort(state.rules.requireApprovalAbove, c)} sin aprobación';
+    return l10n.reasonOverApprovalThreshold(
+      l10n.eurosShort(state.rules.requireApprovalAbove, c),
+    );
   }
   return null;
 }
@@ -88,11 +96,14 @@ class RTabPage extends StatelessWidget {
       return Center(
         child: REmptyState(
           icon: CupertinoIcons.wifi_exclamationmark,
-          title: 'No se pudieron cargar tus datos',
+          title: context.l10n.errorLoadData,
           message: state.error,
           action: SizedBox(
             width: 200,
-            child: RPrimaryButton('Reintentar', onPressed: () => context.read<RestockCubit>().load()),
+            child: RPrimaryButton(
+              context.l10n.actionRetry,
+              onPressed: () => context.read<RestockCubit>().load(),
+            ),
           ),
         ),
       );

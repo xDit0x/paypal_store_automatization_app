@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "store_automatization_app" "\0"
+            VALUE "FileDescription", "Restock" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "store_automatization_app" "\0"
+            VALUE "InternalName", "Restock" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "store_automatization_app.exe" "\0"
-            VALUE "ProductName", "store_automatization_app" "\0"
+            VALUE "OriginalFilename", "Restock.exe" "\0"
+            VALUE "ProductName", "Restock" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

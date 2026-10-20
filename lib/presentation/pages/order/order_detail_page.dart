@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
@@ -24,6 +25,7 @@ class OrderDetailPage extends StatelessWidget {
     Order order,
   ) async {
     final cubit = context.read<RestockCubit>();
+    final l10n = context.l10n;
     final supplier = state.supplierName(order.supplierId);
     final error = await cubit.approve(order.id);
     if (!context.mounted) return;
@@ -31,13 +33,13 @@ class OrderDetailPage extends StatelessWidget {
       await showCupertinoDialog<void>(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('No se pudo pagar'),
+          title: Text(l10n.orderPaymentFailed),
           content: Text(error),
           actions: [
             CupertinoDialogAction(
               isDefaultAction: true,
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Vale'),
+              child: Text(l10n.actionOk),
             ),
           ],
         ),
@@ -47,8 +49,8 @@ class OrderDetailPage extends StatelessWidget {
     HapticFeedback.mediumImpact();
     showRestockSnack(
       context,
-      '${euros(order.total, state.currency)} enviados a $supplier con PayPal.',
-      title: 'Pago enviado',
+      l10n.orderPaymentSentMessage(l10n.euros(order.total, state.currency), supplier),
+      title: l10n.orderPaymentSent,
       tone: RSnackTone.success,
     );
     Navigator.of(context).maybePop();
@@ -59,21 +61,22 @@ class OrderDetailPage extends StatelessWidget {
     RestockState state,
     Order order,
   ) async {
+    final l10n = context.l10n;
     final supplier = state.supplierName(order.supplierId);
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('¿Rechazar el pedido?'),
-        content: Text('El agente no pagará a $supplier.'),
+        title: Text(l10n.orderRejectQuestion),
+        content: Text(l10n.orderRejectMessage(supplier)),
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.actionCancel),
           ),
           CupertinoDialogAction(
             isDestructiveAction: true,
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Rechazar'),
+            child: Text(l10n.actionReject),
           ),
         ],
       ),
@@ -85,14 +88,14 @@ class OrderDetailPage extends StatelessWidget {
       showRestockSnack(
         context,
         error,
-        title: 'No se pudo rechazar',
+        title: l10n.orderRejectFailed,
         tone: RSnackTone.warning,
       );
     } else {
       showRestockSnack(
         context,
-        'El agente no pagará a $supplier.',
-        title: 'Pedido rechazado',
+        l10n.orderRejectMessage(supplier),
+        title: l10n.orderRejected,
         tone: RSnackTone.success,
       );
     }
@@ -104,6 +107,7 @@ class OrderDetailPage extends StatelessWidget {
     final p = context.rp;
     final t = context.rt;
     final state = context.watch<RestockCubit>().state;
+    final l10n = context.l10n;
     final order = state.orderById(orderId);
     final media = MediaQuery.of(context);
 
@@ -114,15 +118,15 @@ class OrderDetailPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: RBackLink('Atrás'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: RBackLink(l10n.actionBack),
               ),
               Expanded(
                 child: Center(
                   child: REmptyState(
                     icon: CupertinoIcons.doc_text,
-                    title: 'Este pedido ya no está disponible',
+                    title: l10n.orderUnavailable,
                   ),
                 ),
               ),
@@ -136,8 +140,8 @@ class OrderDetailPage extends StatelessWidget {
     final supplier = state.supplierName(order.supplierId);
     final pending = order.canBeApproved;
     final decision = state.evaluate(order);
-    final reason = pending ? shortDecisionReason(state, order) : null;
-    final (statusLabel, statusTone) = orderStatusLabel(order.status);
+    final reason = pending ? shortDecisionReason(l10n, state, order) : null;
+    final (statusLabel, statusTone) = orderStatusLabel(l10n, order.status);
     final run = state.runForOrder(order);
     final busy = state.busyOrderId == order.id;
     final byAgent = order.createdByType == OrderCreatorType.agent;
@@ -154,7 +158,7 @@ class OrderDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const RBackLink('Atrás'),
+            RBackLink(l10n.actionBack),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.only(top: 8),
@@ -166,10 +170,10 @@ class OrderDetailPage extends StatelessWidget {
                         : RPill(statusLabel, tone: statusTone),
                   ),
                   const SizedBox(height: 8),
-                  Text('Pedido a $supplier', style: t.title2),
+                  Text(l10n.orderTitle(supplier), style: t.title2),
                   const SizedBox(height: 4),
                   Text(
-                    '${byAgent ? 'Lo preparó el agente' : 'Lo creaste tú'} · ${relativeDate(order.createdAt)}',
+                    '${byAgent ? l10n.orderCreatedByAgent : l10n.orderCreatedByYou} · ${l10n.relativeDate(order.createdAt)}',
                     style: t.footnote,
                   ),
                   const SizedBox(height: 16),
@@ -179,21 +183,24 @@ class OrderDetailPage extends StatelessWidget {
                         RListRow(
                           title: '${item.name}  × ${item.qty}',
                           subtitle: Text(
-                            '${euros(item.unitPrice, c)} / ud · ${item.productUid}',
+                            l10n.orderUnitPrice(
+                              l10n.euros(item.unitPrice, c),
+                              item.productUid,
+                            ),
                             style: t.footnote,
                           ),
                           trailing: Text(
-                            euros(item.lineTotal, c),
+                            l10n.euros(item.lineTotal, c),
                             style: t.amount.copyWith(
                               fontWeight: FontWeight.w400,
                             ),
                           ),
                         ),
                       RListRow(
-                        title: 'Total',
+                        title: l10n.orderTotal,
                         bold: true,
                         trailing: Text(
-                          euros(order.total, c),
+                          l10n.euros(order.total, c),
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
@@ -220,7 +227,7 @@ class OrderDetailPage extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Qué decidió el agente',
+                                l10n.orderWhatAgentDecided,
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -231,7 +238,8 @@ class OrderDetailPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            RestockCubit.describeDecision(
+                            describeAgentDecision(
+                              l10n,
                               run.decision ?? 'unknown',
                             ),
                             style: t.callout,
@@ -239,7 +247,7 @@ class OrderDetailPage extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             '${run.provider} · ${run.model}'
-                            '${run.confidence != null ? ' · confianza ${(run.confidence! * 100).round()} %' : ''}',
+                            '${run.confidence != null ? ' · ${l10n.orderConfidence((run.confidence! * 100).round())}' : ''}',
                             style: t.caption,
                           ),
                         ],
@@ -251,21 +259,21 @@ class OrderDetailPage extends StatelessWidget {
                     RInsetGroup(
                       children: [
                         RListRow(
-                          title: 'Pago PayPal',
+                          title: l10n.orderPaypalPayment,
                           subtitle: Text(
                             order.paymentPayoutId!,
                             style: t.footnote,
                           ),
                           trailing: RPill(
-                            order.paymentStatus ?? 'enviado',
+                            order.paymentStatus ?? l10n.orderPaymentStatusSent,
                             tone: RPillTone.info,
                           ),
                         ),
                         if (order.paymentAt != null)
                           RListRow(
-                            title: 'Fecha de pago',
+                            title: l10n.orderPaymentDate,
                             trailing: Text(
-                              relativeDate(order.paymentAt),
+                              l10n.relativeDate(order.paymentAt),
                               style: t.footnote,
                             ),
                           ),
@@ -283,8 +291,8 @@ class OrderDetailPage extends StatelessWidget {
               const SizedBox(height: 12),
               RPrimaryButton(
                 decision.isBlocked
-                    ? 'Bloqueado por tus reglas'
-                    : 'Aprobar y pagar con PayPal',
+                    ? l10n.orderBlockedByRules
+                    : l10n.actionApproveAndPay,
                 loading: busy,
                 onPressed: decision.isBlocked
                     ? null
@@ -292,7 +300,7 @@ class OrderDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               RSecondaryButton(
-                'Rechazar',
+                l10n.actionReject,
                 color: p.warning,
                 onPressed: busy ? null : () => _reject(context, state, order),
               ),
@@ -300,8 +308,8 @@ class OrderDetailPage extends StatelessWidget {
               Center(
                 child: Text(
                   decision.isBlocked
-                      ? 'Cambia tus reglas en la pestaña Reglas si quieres permitirlo.'
-                      : 'Al aprobar, el servidor paga a $supplier y genera la factura.',
+                      ? l10n.orderBlockedHint
+                      : l10n.orderApproveHint(supplier),
                   style: t.caption,
                   textAlign: TextAlign.center,
                 ),
@@ -324,6 +332,7 @@ class _BudgetImpact extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final c = state.currency;
     final cap = state.monthlyLimit <= 0 ? 1.0 : state.monthlyLimit;
     final after = state.spentThisMonth + order.total;
@@ -348,12 +357,15 @@ class _BudgetImpact extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Gasto de ${currentMonthName()} tras el pago',
+                  l10n.orderSpendAfterPayment(l10n.currentMonthName()),
                   style: t.footnote.copyWith(fontSize: 14),
                 ),
               ),
               Text(
-                '${eurosShort(after.roundToDouble(), c)} de ${eurosShort(state.monthlyLimit, c)}',
+                l10n.orderSpendOf(
+                  l10n.eurosShort(after.roundToDouble(), c),
+                  l10n.eurosShort(state.monthlyLimit, c),
+                ),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -391,9 +403,9 @@ class _BudgetImpact extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              _Legend(color: p.navy, label: 'Ya gastado'),
+              _Legend(color: p.navy, label: l10n.orderLegendSpent),
               const SizedBox(width: 14),
-              _Legend(color: p.blueLight, label: 'Este pedido'),
+              _Legend(color: p.blueLight, label: l10n.orderLegendThisOrder),
             ],
           ),
         ],

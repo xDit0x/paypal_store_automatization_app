@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_state.dart';
@@ -35,6 +36,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
+    final l10n = context.l10n;
     final isLoading =
         context.watch<AuthCubit>().state.status == AuthStatus.loading;
 
@@ -46,7 +48,7 @@ class _RegisterPageState extends State<RegisterPage> {
           showRestockSnack(
             context,
             state.error!,
-            title: 'No se pudo crear la cuenta',
+            title: l10n.authCreateFailed,
             tone: RSnackTone.warning,
           );
         }
@@ -63,14 +65,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Align(
+                    Align(
                       alignment: Alignment.centerLeft,
-                      child: RBackLink('Iniciar sesión'),
+                      child: RBackLink(l10n.actionSignIn),
                     ),
                     const SizedBox(height: 6),
-                    const RLargeTitle(
-                      'Crear cuenta',
-                      subtitle: 'Crea tu tienda y empieza a reponer en segundos',
+                    RLargeTitle(
+                      l10n.authCreateTitle,
+                      subtitle: l10n.authCreateSubtitle,
                     ),
                     const SizedBox(height: 22),
                     RCard(
@@ -79,9 +81,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           RAuthField(
-                            label: 'Nombre de tu tienda',
+                            label: l10n.authStoreName,
                             controller: _storeController,
-                            hint: 'Tienda Lumbre',
+                            hint: l10n.authStoreNameHint,
                             autofocus: true,
                             textInputAction: TextInputAction.next,
                           ),
@@ -89,24 +91,24 @@ class _RegisterPageState extends State<RegisterPage> {
                           Divider(height: 1, color: p.separator),
                           const SizedBox(height: 14),
                           RAuthField(
-                            label: 'Correo',
+                            label: l10n.authEmail,
                             controller: _emailController,
-                            hint: 'tu@tienda.com',
+                            hint: l10n.authEmailHint,
                             keyboardType: TextInputType.emailAddress,
                           ),
                           const SizedBox(height: 14),
                           Divider(height: 1, color: p.separator),
                           const SizedBox(height: 14),
                           RAuthPasswordField(
-                            label: 'Contraseña',
+                            label: l10n.authPassword,
                             controller: _passwordController,
-                            hint: 'Mínimo 6 caracteres',
+                            hint: l10n.authPasswordHint,
                           ),
                           const SizedBox(height: 14),
                           Divider(height: 1, color: p.separator),
                           const SizedBox(height: 14),
                           RAuthPasswordField(
-                            label: 'Repite la contraseña',
+                            label: l10n.authConfirmPassword,
                             controller: _confirmController,
                             textInputAction: TextInputAction.done,
                             onSubmitted: (_) => _register(),
@@ -116,19 +118,18 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 18),
                     RPrimaryButton(
-                      'Crear mi tienda',
+                      l10n.actionCreateMyStore,
                       loading: isLoading,
                       onPressed: isLoading ? null : _register,
                     ),
                     const SizedBox(height: 6),
                     RTextLink(
-                      'Ya tengo cuenta',
+                      l10n.actionAlreadyHaveAccount,
                       onTap: isLoading ? null : () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Crear la tienda es gratis. Solo pagas los pedidos que el agente '
-                      'prepare y tú apruebes, dentro de tus reglas.',
+                      l10n.authCreateFooter,
                       textAlign: TextAlign.center,
                       style: t.caption,
                     ),
@@ -144,6 +145,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     HapticFeedback.mediumImpact();
+    final l10n = context.l10n;
     final storeName = _storeController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -152,8 +154,8 @@ class _RegisterPageState extends State<RegisterPage> {
     if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
       showRestockSnack(
         context,
-        'Completa el correo y las dos contraseñas.',
-        title: 'Faltan datos',
+        l10n.authCreateMissingFieldsBody,
+        title: l10n.authMissingFields,
         tone: RSnackTone.warning,
       );
       return;
@@ -161,8 +163,8 @@ class _RegisterPageState extends State<RegisterPage> {
     if (password.length < 6) {
       showRestockSnack(
         context,
-        'La contraseña debe tener al menos 6 caracteres.',
-        title: 'Contraseña corta',
+        l10n.authPasswordTooShort,
+        title: l10n.authPasswordTooShortTitle,
         tone: RSnackTone.warning,
       );
       return;
@@ -170,8 +172,8 @@ class _RegisterPageState extends State<RegisterPage> {
     if (password != confirm) {
       showRestockSnack(
         context,
-        'Las contraseñas no coinciden.',
-        title: 'No coinciden',
+        l10n.authPasswordsMismatch,
+        title: l10n.authPasswordsMismatchTitle,
         tone: RSnackTone.warning,
       );
       return;
