@@ -46,10 +46,10 @@ class SupabaseOrderDatasource {
   }
 
   Future<void> approve(String orderId) async {
-    await _dio.post<Map<String, dynamic>>('/orders/$orderId/approve');
+    await _dio.post<Map<String, dynamic>>('/orders/$orderId/approve', data: {});
   }
 
   Future<void> reject(String orderId) async {
-    await _dio.post<Map<String, dynamic>>('/orders/$orderId/reject');
+    await _dio.post<Map<String, dynamic>>('/orders/$orderId/reject', data: {});
   }
 }
