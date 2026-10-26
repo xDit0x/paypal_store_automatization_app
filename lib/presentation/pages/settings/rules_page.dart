@@ -494,7 +494,7 @@ class _AccountGroup extends StatelessWidget {
                   onValueChanged: (value) {
                     if (value == null) return;
                     final selected = value == 'auto' ? null : Locale(value);
-                    final current = context.watch<LocaleCubit>().state;
+                    final current = context.read<LocaleCubit>().state;
                     if (selected != current) {
                       RestockSounds.instance.play(RSound.soft);
                       context.read<LocaleCubit>().updateLocale(selected);

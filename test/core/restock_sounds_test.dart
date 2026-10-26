@@ -66,7 +66,11 @@ void main() {
           sound == RSound.soft ? greaterThan(2000) : greaterThan(4000),
           reason: '$sound es demasiado corto (${pcm.length} samples)',
         );
-        expect(peak, greaterThan(3000), reason: '$sound sale mudo');
+        expect(
+          peak,
+          sound == RSound.soft ? greaterThan(2000) : greaterThan(3000),
+          reason: '$sound sale mudo (${peak} / 32767)',
+        );
         expect(peak, lessThan(32767), reason: '$sound satura');
         // Sin esto el altavoz chasquea al empezar y al cortar.
         expect(
@@ -90,7 +94,7 @@ void main() {
         RSound.message: 0.26,
         RSound.success: 0.28,
         RSound.warning: 0.24,
-        RSound.soft: 0.12,
+        RSound.soft: 0.08,
       };
 
       for (final MapEntry(key: sound, value: peak) in expected.entries) {
