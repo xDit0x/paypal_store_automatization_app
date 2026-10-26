@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'package:store_automatization_app/core/audio/restock_sounds.dart';
 import 'package:store_automatization_app/core/configs/env.dart';
 import 'package:store_automatization_app/core/configs/supabase/supabase_config.dart';
 import 'package:store_automatization_app/core/configs/theme/app_theme.dart';
@@ -13,11 +15,19 @@ import 'package:store_automatization_app/domain/usecases/auth/sign_in_usecase.da
 import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/sound/sound_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Sin audio (navegador sin permisos, plataforma rara) la app sigue.
+  try {
+    await SoLoud.instance.init();
+  } catch (error) {
+    debugPrint('No se pudo inicializar el audio: $error');
+  }
 
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: kIsWeb
@@ -30,6 +40,9 @@ Future<void> main() async {
   try {
     await SupabaseConfig.initialize();
     await initializeDependencies();
+    // Las ondas se generan al arrancar para que el primer toque no tarde.
+    RestockSounds.instance.enabled = sl<SoundCubit>().state;
+    await RestockSounds.instance.warmUp();
     await _signInDemoIfConfigured();
     runApp(const RestockApp());
   } catch (error) {
@@ -62,6 +75,7 @@ class RestockApp extends StatelessWidget {
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => LocaleCubit()),
           BlocProvider(create: (_) => sl<AuthCubit>()),
+          BlocProvider.value(value: sl<SoundCubit>()),
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (context, mode) {
@@ -77,7 +91,14 @@ class RestockApp extends StatelessWidget {
                 theme: AppTheme.lightTheme,
                 darkTheme: AppTheme.darkTheme,
                 themeMode: mode,
-                home: const AuthGate(),
+                home: BlocListener<SoundCubit, bool>(
+                  listenWhen: (previous, current) => previous != current,
+                  listener: (context, enabled) {
+                    RestockSounds.instance.enabled = enabled;
+                    if (enabled) RestockSounds.instance.play(RSound.success);
+                  },
+                  child: const AuthGate(),
+                ),
               ),
             );
           },

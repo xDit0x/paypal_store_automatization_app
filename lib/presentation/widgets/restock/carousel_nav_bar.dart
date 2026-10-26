@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
+import 'package:store_automatization_app/core/audio/restock_sounds.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 
 class NavItem {
@@ -154,6 +155,7 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   }
 
   void _onTap(int index) {
+    RestockSounds.instance.play(RSound.tap);
     _settleToken++;
     _settle.stop();
     final current = _visualPage();

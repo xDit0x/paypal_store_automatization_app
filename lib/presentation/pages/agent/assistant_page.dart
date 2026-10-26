@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
 import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
+import 'package:store_automatization_app/core/audio/restock_sounds.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
@@ -44,6 +45,7 @@ class _AssistantPageState extends State<AssistantPage> {
   Future<void> _runAgent() async {
     _scrollToEnd();
     await context.read<RestockCubit>().runAgent(fromChat: true);
+    RestockSounds.instance.play(RSound.message);
     _scrollToEnd();
   }
 

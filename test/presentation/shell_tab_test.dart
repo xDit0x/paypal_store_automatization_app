@@ -26,6 +26,7 @@ import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/sound/sound_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/shell/restock_shell.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
@@ -120,6 +121,7 @@ void main() {
             BlocProvider.value(value: theme),
             BlocProvider.value(value: _authCubit()),
             BlocProvider(create: (_) => LocaleCubit()),
+            BlocProvider(create: (_) => SoundCubit()),
           ],
           child: BlocBuilder<ThemeCubit, ThemeMode>(
             builder: (context, mode) => MaterialApp(
@@ -157,7 +159,10 @@ void main() {
       (tester) async {
     await tester.pumpWidget(
       MultiBlocProvider(
-        providers: [BlocProvider(create: (_) => LocaleCubit())],
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
         child: MaterialApp(
           locale: const Locale('es'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -176,7 +181,10 @@ void main() {
     // autenticación, etc.): la pestaña activa debe conservarse.
     await tester.pumpWidget(
       MultiBlocProvider(
-        providers: [BlocProvider(create: (_) => LocaleCubit())],
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
         child: MaterialApp(
           locale: const Locale('es'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -203,6 +211,7 @@ void main() {
           BlocProvider.value(value: locale),
           BlocProvider.value(value: _authCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
         ],
         child: BlocBuilder<LocaleCubit, Locale?>(
           builder: (context, selected) => MaterialApp(

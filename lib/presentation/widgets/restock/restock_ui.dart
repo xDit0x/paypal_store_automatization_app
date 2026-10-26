@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
+import 'package:store_automatization_app/core/audio/restock_sounds.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 
@@ -280,7 +281,7 @@ class RPrimaryButton extends StatelessWidget {
       height: 54,
       width: double.infinity,
       child: FilledButton(
-        onPressed: loading ? null : onPressed,
+        onPressed: loading ? null : _tapThen(onPressed),
         style: FilledButton.styleFrom(
           backgroundColor: p.accent,
           foregroundColor: p.onAccent,
@@ -325,7 +326,7 @@ class RSecondaryButton extends StatelessWidget {
       height: 48,
       width: double.infinity,
       child: TextButton(
-        onPressed: onPressed,
+        onPressed: _tapThen(onPressed),
         style: TextButton.styleFrom(
           backgroundColor: p.fill,
           foregroundColor: color ?? p.navy,
@@ -492,6 +493,12 @@ void showRestockSnack(
   final p = context.rp;
   final t = context.rt;
 
+  RestockSounds.instance.play(switch (tone) {
+    RSnackTone.success => RSound.success,
+    RSnackTone.warning => RSound.warning,
+    RSnackTone.info => RSound.message,
+  });
+
   final (Color foreground, Color background, IconData icon) = switch (tone) {
     RSnackTone.success => (
       p.success,
@@ -572,4 +579,13 @@ void showRestockSnack(
         ),
       ),
     );
+}
+
+/// Pulsa con sonido: el toque suena y después corre la acción del botón.
+VoidCallback? _tapThen(VoidCallback? action) {
+  if (action == null) return null;
+  return () {
+    RestockSounds.instance.play(RSound.tap);
+    action();
+  };
 }

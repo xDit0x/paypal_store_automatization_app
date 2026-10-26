@@ -11,6 +11,7 @@ import 'package:store_automatization_app/domain/entities/spending_rules.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/sound/sound_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
@@ -497,6 +498,20 @@ class _AccountGroup extends StatelessWidget {
                     );
                   },
                 ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+          child: Row(
+            children: [
+              Expanded(child: Text(l10n.rulesSounds, style: t.body)),
+              CupertinoSwitch(
+                value: context.watch<SoundCubit>().state,
+                activeTrackColor: p.accent,
+                onChanged: (value) =>
+                    context.read<SoundCubit>().updateEnabled(value),
               ),
             ],
           ),

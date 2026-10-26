@@ -50,6 +50,7 @@ import 'package:store_automatization_app/domain/usecases/settings/update_spendin
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/update_store_usecase.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/sound/sound_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -176,6 +177,8 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(
     () => GetAgentRunsUsecase(repository: sl<AgentRepository>()),
   );
+
+  sl.registerLazySingleton(() => SoundCubit());
 
   sl.registerLazySingleton(
     () => AuthCubit(

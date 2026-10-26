@@ -589,6 +589,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rulesLanguageEnglish => 'English';
 
   @override
+  String get rulesSounds => 'Sounds';
+
+  @override
   String get rulesSignOutQuestion => 'Sign out?';
 
   @override

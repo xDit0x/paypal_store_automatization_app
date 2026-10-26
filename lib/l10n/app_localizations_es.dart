@@ -590,6 +590,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get rulesLanguageEnglish => 'English';
 
   @override
+  String get rulesSounds => 'Sonidos';
+
+  @override
   String get rulesSignOutQuestion => '¿Cerrar sesión?';
 
   @override

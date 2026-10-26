@@ -1087,6 +1087,12 @@ abstract class AppLocalizations {
   /// **'English'**
   String get rulesLanguageEnglish;
 
+  /// No description provided for @rulesSounds.
+  ///
+  /// In es, this message translates to:
+  /// **'Sonidos'**
+  String get rulesSounds;
+
   /// No description provided for @rulesSignOutQuestion.
   ///
   /// In es, this message translates to:
