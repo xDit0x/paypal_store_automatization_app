@@ -235,7 +235,7 @@ export async function runAgent(params: {
     return {
       orderId: null,
       decision: 'no_action',
-      message: 'No hay productos con stock bajo. No se hizo ningún pedido.',
+      message: 'No low-stock products. No order was created.',
     };
   }
 
