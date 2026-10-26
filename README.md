@@ -33,6 +33,18 @@ flutter run --dart-define-from-file=dart_defines.json
 `.env`, `dart_defines.json` y `server/.env` están en `.gitignore`: **nunca**
 subas claves al repositorio.
 
+### Si tras añadir un paquete nativo falla al arrancar
+
+Un error del tipo `Couldn't resolve native function '...'` con
+`Available native assets: package:objective_c/objective_c.dylib` significa que
+el build está reutilizando un manifiesto de native assets antiguo. Un hot
+restart **no** vuelve a compilar esos assets: hace falta un build limpio.
+
+```bash
+flutter clean && flutter pub get
+flutter run --dart-define-from-file=dart_defines.json
+```
+
 ## Antes de publicar
 
 - `ALLOWED_ORIGINS` con los orígenes reales (en producción el CORS bloquea
