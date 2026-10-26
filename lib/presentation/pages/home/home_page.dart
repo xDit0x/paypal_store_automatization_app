@@ -10,6 +10,7 @@ import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
 import 'package:store_automatization_app/presentation/pages/order/order_detail_page.dart';
+import 'package:store_automatization_app/presentation/pages/orders/orders_page.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/budget_ring.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
@@ -212,6 +213,12 @@ class _AgentCard extends StatelessWidget {
           ? context.l10n.homeAgentFailed
           : context.l10n.homeStockReview,
       tone: failed ? RSnackTone.warning : RSnackTone.info,
+      actionLabel: context.l10n.ordersTitle,
+      onAction: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const OrdersPage()),
+        );
+      },
     );
   }
 
