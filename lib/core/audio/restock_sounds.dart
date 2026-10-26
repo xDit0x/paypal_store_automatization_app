@@ -6,14 +6,19 @@ import 'package:flutter_soloud/flutter_soloud.dart';
 
 /// Sonidos de interfaz de Restock.
 ///
-/// No hay ficheros de audio: cada sonido se sintetiza al arrancar (sinusoides
-/// con armónicos y un sobre de ataque/caída) y se carga en memoria como WAV.
+/// No hay ficheros de audio: cada sonido se sintetiza al arrancar y se carga en
+/// memoria como WAV. El instrumento es un timbal, y suena a timbal por tres
+/// cosas que un tono con caída no tiene:
+///
+///  * modos inarmónicos (1, 1'5, 2, 2'44…), no solo la fundamental;
+///  * la afinación cae unos céntimos justo después del golpe;
+///  * un golpe de maza corto y filtrado, que es el "toc" del parche.
 ///
 /// El sobre va **dentro de las muestras** a propósito. SoLoud tiene un único
 /// fader de volumen por voz: si se programa el ataque con `fadeScheduled` y
 /// después la caída, la segunda llamada reemplaza a la primera y el sonido se
-/// queda mudo. Generar el sobre en el buffer evita ese problema y da una caída
-/// exponencial, que es lo que hace que suene a campana y no a pitido.
+/// queda mudo. Generar el sobre en el buffer evita ese problema y permite una
+/// caída exponencial por parcial.
 enum RSound {
   /// Toque de un botón o de una pestaña.
   tap,
@@ -28,25 +33,28 @@ enum RSound {
   warning,
 }
 
-/// Una nota del acorde: frecuencia y cuándo entra.
-class _Note {
-  const _Note(this.freq, {this.at = Duration.zero});
+/// Un golpe de maza: nota base del parche y cuándo entra.
+class _Hit {
+  const _Hit(this.freq, {this.at = Duration.zero, this.gain = 1});
 
   final double freq;
   final Duration at;
+  final double gain;
 }
 
 /// Receta de un sonido.
 class _Preset {
   const _Preset({
-    required this.notes,
+    required this.hits,
     required this.peak,
     required this.attack,
     required this.length,
-    this.decay = 3.2,
+    this.decay = 3.4,
+    this.bend = 0.02,
+    this.strike = 0.14,
   });
 
-  final List<_Note> notes;
+  final List<_Hit> hits;
 
   /// Volumen máximo del sonido ya renderizado, antes del volumen maestro.
   final double peak;
@@ -54,12 +62,18 @@ class _Preset {
   /// Entrada en rampa: sin esto, la onda empieza de golpe y chasquea.
   final Duration attack;
 
-  /// Duración de cada nota que no defina la suya.
+  /// Cuánto aguanta la fundamental.
   final Duration length;
 
-  /// Cuántas constantes de tiempo caben en [length]. Más alto = caída más
-  /// rápida, más seco.
+  /// Cuántas constantes de tiempo caben en [length]. Más alto = más seco.
   final double decay;
+
+  /// Cuánto cae la afinación tras el golpe, en tanto por uno. Es lo que da la
+  /// sensación de parche y no de nota fija.
+  final double bend;
+
+  /// Peso del golpe de maza respecto a la fundamental.
+  final double strike;
 }
 
 class RestockSounds {
@@ -78,46 +92,65 @@ class RestockSounds {
   /// La caída final dura esto y llega a cero exacto: así no hay chasquido.
   static const double _tail = 0.012;
 
+  /// Cómo cae la afinación tras el golpe: rápido al principio y luego estable.
+  static const double _bendTime = 0.025;
+
+  /// Modos del parche, como (ratio de frecuencia, peso, factor de caída). Los
+  /// agudos se apagan antes que la fundamental, igual que en un timbal real.
+  static const List<(double, double, double)> _partials = [
+    (1.00, 1.00, 1.00),
+    (1.50, 0.55, 0.72),
+    (2.00, 0.42, 0.58),
+    (2.44, 0.24, 0.44),
+    (3.00, 0.14, 0.34),
+    (4.00, 0.07, 0.26),
+  ];
+
   static const Map<RSound, _Preset> _presets = {
-    // Do agudo y muy corto: el "tok" de un botón.
+    // Un golpe solo en sol grave (98 Hz): el "tok" de un botón.
     RSound.tap: _Preset(
-      notes: [_Note(523.25)],
-      peak: 0.22,
-      attack: Duration(milliseconds: 4),
-      length: Duration(milliseconds: 110),
-      decay: 4.5,
+      hits: [_Hit(98.00)],
+      peak: 0.26,
+      attack: Duration(milliseconds: 6),
+      length: Duration(milliseconds: 170),
+      decay: 4.4,
     ),
-    // Sol y re: una campanita suave, sin urgencia.
+    // Sol y su quinta: dos golpes suaves, sin urgencia.
     RSound.message: _Preset(
-      notes: [
-        _Note(392.00),
-        _Note(587.33, at: Duration(milliseconds: 95)),
+      hits: [
+        _Hit(98.00),
+        _Hit(146.83, at: Duration(milliseconds: 110), gain: 0.85),
       ],
-      peak: 0.22,
+      peak: 0.26,
       attack: Duration(milliseconds: 8),
-      length: Duration(milliseconds: 280),
+      length: Duration(milliseconds: 300),
+      decay: 3.6,
     ),
-    // Do, mi, sol ascendente: acorde mayor, alegre pero corto.
+    // Sol, si y re: el acorde mayor que sube, redondo y corto.
     RSound.success: _Preset(
-      notes: [
-        _Note(523.25),
-        _Note(659.25, at: Duration(milliseconds: 80)),
-        _Note(783.99, at: Duration(milliseconds: 160)),
+      hits: [
+        _Hit(98.00),
+        _Hit(123.47, at: Duration(milliseconds: 95)),
+        _Hit(146.83, at: Duration(milliseconds: 190)),
+      ],
+      peak: 0.28,
+      attack: Duration(milliseconds: 10),
+      length: Duration(milliseconds: 420),
+      decay: 3.4,
+    ),
+    // Sol que cae a re grave: "no ha podido ser", sin alarma.
+    RSound.warning: _Preset(
+      hits: [
+        _Hit(98.00),
+        _Hit(73.42, at: Duration(milliseconds: 140)),
       ],
       peak: 0.24,
-      attack: Duration(milliseconds: 10),
-      length: Duration(milliseconds: 340),
-    ),
-    // Fa y re descendente, más lento: "no ha podido ser", sin alarma.
-    RSound.warning: _Preset(
-      notes: [
-        _Note(349.23),
-        _Note(293.66, at: Duration(milliseconds: 120)),
-      ],
-      peak: 0.20,
-      attack: Duration(milliseconds: 14),
-      length: Duration(milliseconds: 380),
-      decay: 2.6,
+      attack: Duration(milliseconds: 12),
+      length: Duration(milliseconds: 460),
+      decay: 3.0,
+      // Más maza y una caída de afinación mayor: así suena a "se acabó".
+      bend: 0.028,
+      strike: 0.18,
     ),
   };
 
@@ -234,35 +267,47 @@ class RestockSounds {
   @visibleForTesting
   Uint8List renderWav(RSound sound) => _render(_presets[sound]!);
 
-  /// Mezcla las notas y devuelve un WAV PCM 16 bits mono listo para SoLoud.
+  /// Mezcla los golpes y devuelve un WAV PCM 16 bits mono listo para SoLoud.
   Uint8List _render(_Preset preset) {
     final attack = _samples(preset.attack);
     final length = _samples(preset.length);
-    final total = preset.notes.fold<int>(0, (max, note) {
-      final end = _samples(note.at) + length;
+    final total = preset.hits.fold<int>(0, (max, hit) {
+      final end = _samples(hit.at) + length;
       return end > max ? end : max;
     });
 
     final mix = Float64List(total);
-    for (final note in preset.notes) {
-      final start = _samples(note.at);
-      final tau = (length / _sampleRate) / preset.decay;
+    // Semilla fija: el golpe de maza suena igual en cada arranque.
+    final random = math.Random(7);
 
-      for (var i = 0; i < length && start + i < total; i++) {
-        final t = i / _sampleRate;
-        final phase = 2 * math.pi * note.freq * t;
-        // Fundamental dominante y dos armónicos suaves: da cuerpo de campana
-        // sin volverse metálico.
-        final wave =
-            math.sin(phase) +
-            0.18 * math.sin(2 * phase) +
-            0.05 * math.sin(3 * phase);
-        mix[start + i] += _envelope(i, length, attack, tau) * wave;
+    for (final hit in preset.hits) {
+      final start = _samples(hit.at);
+
+      for (final (ratio, weight, falloff) in _partials) {
+        final tau = (length / _sampleRate) / preset.decay * falloff;
+        final freq = hit.freq * ratio;
+        var phase = 0.0;
+
+        for (var i = 0; i < length && start + i < total; i++) {
+          final t = i / _sampleRate;
+          // La afinación cae tras el golpe y se asienta en unos milisegundos.
+          final glide = 1 - preset.bend * (1 - math.exp(-t / _bendTime));
+          phase += 2 * math.pi * freq * glide / _sampleRate;
+          mix[start + i] +=
+              hit.gain *
+              weight *
+              _envelope(i, length, attack, tau) *
+              math.sin(phase);
+        }
+      }
+
+      if (preset.strike > 0) {
+        _addStrike(mix, start, hit.gain * preset.strike, random);
       }
     }
 
     // Normalizar al pico pedido: así el volumen de cada sonido es predecible
-    // aunque el acorde sume varias notas.
+    // aunque el acorde sume varios golpes.
     var maxAbs = 0.0;
     for (final sample in mix) {
       final abs = sample.abs();
@@ -271,6 +316,36 @@ class RestockSounds {
     final scale = maxAbs == 0 ? 0.0 : preset.peak / maxAbs;
 
     return _wav(mix, scale);
+  }
+
+  /// Golpe de maza: ruido muy corto y pasado por un filtro grave. Es lo que
+  /// hace que se oiga "golpe" y no solo tono, sin aportar agudos ásperos.
+  void _addStrike(Float64List mix, int start, double gain, math.Random random) {
+    const duration = 0.030;
+    final count = (duration * _sampleRate).round();
+    final smoothing = 1 - math.exp(-2 * math.pi * 900 / _sampleRate);
+    // Entrada de 2 ms: una maza real no golpea instantáneamente, y sin esto
+    // la primera muestra salta y se oye un chasquido.
+    final attack = math.max(1, (0.002 * _sampleRate).round());
+
+    final burst = Float64List(count);
+    var low = 0.0;
+    var peak = 0.0;
+    for (var i = 0; i < count; i++) {
+      final white = random.nextDouble() * 2 - 1;
+      low += smoothing * (white - low);
+      final ramp = i >= attack
+          ? 1.0
+          : 0.5 - 0.5 * math.cos(math.pi * i / attack);
+      burst[i] = low * ramp * math.exp(-(i / _sampleRate) / 0.007);
+      final abs = burst[i].abs();
+      if (abs > peak) peak = abs;
+    }
+    if (peak == 0) return;
+
+    for (var i = 0; i < count && start + i < mix.length; i++) {
+      mix[start + i] += burst[i] / peak * gain;
+    }
   }
 
   /// Ataque en rampa, caída exponencial y cierre a cero exacto.

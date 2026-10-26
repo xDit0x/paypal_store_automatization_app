@@ -83,13 +83,13 @@ void main() {
     });
 
     test('cada sonido se queda en su volumen, sin saturar al sumar notas', () {
-      // Los picos de los presets. El acorde de "success" suma tres notas y aun
+      // Los picos de los presets. El acorde de "success" suma tres golpes y aun
       // así tiene que caber en el mismo margen.
       const expected = {
-        RSound.tap: 0.22,
-        RSound.message: 0.22,
-        RSound.success: 0.24,
-        RSound.warning: 0.20,
+        RSound.tap: 0.26,
+        RSound.message: 0.26,
+        RSound.success: 0.28,
+        RSound.warning: 0.24,
       };
 
       for (final MapEntry(key: sound, value: peak) in expected.entries) {
@@ -99,6 +99,24 @@ void main() {
           amplitude,
           closeTo(peak, 0.01),
           reason: '$sound debería quedarse en $peak',
+        );
+      }
+    });
+
+    test('no hay saltos bruscos entre muestras', () {
+      // Un salto grande es un chasquido. Con un timbal grave, la muestra
+      // siguiente siempre está cerca de la anterior.
+      for (final sound in RSound.values) {
+        final pcm = samples(sound);
+        var maxJump = 0;
+        for (var i = 1; i < pcm.length; i++) {
+          final jump = (pcm[i] - pcm[i - 1]).abs();
+          if (jump > maxJump) maxJump = jump;
+        }
+        expect(
+          maxJump / 32767,
+          lessThan(0.15),
+          reason: '$sound tiene un salto que se oiría como chasquido',
         );
       }
     });
