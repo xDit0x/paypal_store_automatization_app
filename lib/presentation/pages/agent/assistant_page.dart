@@ -81,6 +81,7 @@ class _AssistantPageState extends State<AssistantPage> {
   void _send() {
     final text = _input.text;
     if (text.trim().isEmpty) return;
+    RestockSounds.instance.play(RSound.tap);
     context.read<RestockCubit>().ask(text);
     _input.clear();
     _scrollToEnd();
