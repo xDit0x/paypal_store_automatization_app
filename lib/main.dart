@@ -131,8 +131,9 @@ class ConfigErrorApp extends StatelessWidget {
                 const Icon(Icons.settings_suggest_outlined, size: 56),
                 const SizedBox(height: 16),
                 Text(
-                  AppLocalizations.of(context).configErrorTitle,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  'Config error: unable to start app.',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(message, textAlign: TextAlign.center),

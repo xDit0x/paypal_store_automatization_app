@@ -38,8 +38,12 @@ class ShellTabStore {
 
   static final ShellTabStore instance = ShellTabStore._();
 
-  int index = 0;
+  final ValueNotifier<int> indexNotifier = ValueNotifier(0);
+
+  int get index => indexNotifier.value;
+  set index(int value) => indexNotifier.value = value;
 }
+
 class RestockShell extends StatelessWidget {
   const RestockShell({super.key, this.createCubit});
 
@@ -48,42 +52,48 @@ class RestockShell extends StatelessWidget {
   final RestockCubit Function()? createCubit;
 
   RestockCubit _defaultCubit(BuildContext context) => RestockCubit(
-        getCurrentStore: sl<GetCurrentStoreUsecase>(),
-        getSpendingRules: sl<GetSpendingRulesUsecase>(),
-        updateSpendingRules: sl<UpdateSpendingRulesUsecase>(),
-        getSpentThisMonth: sl<GetSpentThisMonthUsecase>(),
-        getOrders: sl<GetOrdersUsecase>(),
-        getSuppliers: sl<GetSuppliersUsecase>(),
-        getSupplierCatalog: sl<GetSupplierCatalogUsecase>(),
-        updateProductStock: sl<UpdateProductStockUsecase>(),
-        getAgentRuns: sl<GetAgentRunsUsecase>(),
-        runAgentUsecase: sl<RunAgentUsecase>(),
-        // Estos dos casos de uso son nuevos; se crean aquí para no tocar
-        // service_locator.dart. Se pueden registrar allí más adelante.
-        approveOrder: ApproveOrderUsecase(repository: sl<OrderRepository>()),
-        rejectOrder: RejectOrderUsecase(repository: sl<OrderRepository>()),
-        // Se resuelve en cada llamada, así que al cambiar de idioma los
-        // mensajes del agente salen en el idioma nuevo sin recrear el cubit.
-        l10n: () => AppLocalizations.of(context),
-      );
+    getCurrentStore: sl<GetCurrentStoreUsecase>(),
+    getSpendingRules: sl<GetSpendingRulesUsecase>(),
+    updateSpendingRules: sl<UpdateSpendingRulesUsecase>(),
+    getSpentThisMonth: sl<GetSpentThisMonthUsecase>(),
+    getOrders: sl<GetOrdersUsecase>(),
+    getSuppliers: sl<GetSuppliersUsecase>(),
+    getSupplierCatalog: sl<GetSupplierCatalogUsecase>(),
+    updateProductStock: sl<UpdateProductStockUsecase>(),
+    getAgentRuns: sl<GetAgentRunsUsecase>(),
+    runAgentUsecase: sl<RunAgentUsecase>(),
+    // Estos dos casos de uso son nuevos; se crean aquí para no tocar
+    // service_locator.dart. Se pueden registrar allí más adelante.
+    approveOrder: ApproveOrderUsecase(repository: sl<OrderRepository>()),
+    rejectOrder: RejectOrderUsecase(repository: sl<OrderRepository>()),
+    // Se resuelve en cada llamada, así que al cambiar de idioma los
+    // mensajes del agente salen en el idioma nuevo sin recrear el cubit.
+    l10n: () => AppLocalizations.of(context),
+  );
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<RestockCubit>(
-      create: (context) => (createCubit?.call() ?? _defaultCubit(context))..load(),
-      child: const _ShellView(),
+      create: (context) =>
+          (createCubit?.call() ?? _defaultCubit(context))..load(),
+      child: ShellView(key: _shellKey),
     );
   }
 }
 
-class _ShellView extends StatefulWidget {
-  const _ShellView();
+final _shellKey = GlobalKey<ShellViewState>();
+
+class ShellView extends StatefulWidget {
+  const ShellView({super.key});
+
+  static void jumpToTab(int index) =>
+      _shellKey.currentState?._goTo(index, animate: false);
 
   @override
-  State<_ShellView> createState() => _ShellViewState();
+  State<ShellView> createState() => ShellViewState();
 }
 
-class _ShellViewState extends State<_ShellView> {
+class ShellViewState extends State<ShellView> {
   late final PageController _pages = PageController(
     initialPage: ShellTabStore.instance.index,
   );
@@ -91,21 +101,35 @@ class _ShellViewState extends State<_ShellView> {
 
   /// Las pestañas del dock, con los textos del idioma activo.
   List<NavItem> _items(AppLocalizations l10n) => [
-        NavItem(l10n.tabHome, CupertinoIcons.house),
-        NavItem(l10n.tabStock, CupertinoIcons.cube_box),
-        NavItem(l10n.tabOrders, CupertinoIcons.doc_text),
-        NavItem(l10n.tabRules, CupertinoIcons.slider_horizontal_3),
-        NavItem(l10n.tabAssistant, CupertinoIcons.chat_bubble),
-      ];
+    NavItem(l10n.tabHome, CupertinoIcons.house),
+    NavItem(l10n.tabStock, CupertinoIcons.cube_box),
+    NavItem(l10n.tabOrders, CupertinoIcons.doc_text),
+    NavItem(l10n.tabRules, CupertinoIcons.slider_horizontal_3),
+    NavItem(l10n.tabAssistant, CupertinoIcons.chat_bubble),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    ShellTabStore.instance.indexNotifier.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    final newIndex = ShellTabStore.instance.index;
+    if (newIndex == _index) return;
+    _index = newIndex;
+  }
 
   @override
   void dispose() {
+    ShellTabStore.instance.indexNotifier.removeListener(_onTabChanged);
     _pages.dispose();
     super.dispose();
   }
 
   void _goTo(int index, {bool animate = true}) {
     if (index == _index) return;
+    _index = index;
     ShellTabStore.instance.index = index;
     if (animate) {
       _pages.animateToPage(
@@ -120,6 +144,7 @@ class _ShellViewState extends State<_ShellView> {
 
   void _dragTo(int index) {
     if (index == _index) return;
+    _index = index;
     ShellTabStore.instance.index = index;
     _pages.animateToPage(
       index,

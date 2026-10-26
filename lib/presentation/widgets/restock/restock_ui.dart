@@ -489,6 +489,8 @@ void showRestockSnack(
   String message, {
   String? title,
   RSnackTone tone = RSnackTone.info,
+  String? actionLabel,
+  VoidCallback? onAction,
 }) {
   final p = context.rp;
   final t = context.rt;
@@ -571,6 +573,48 @@ void showRestockSnack(
                         ),
                       ),
                     ),
+                    if (tone != RSnackTone.warning &&
+                        actionLabel != null &&
+                        onAction != null) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          SizedBox(
+                            height: 34,
+                            child: FilledButton(
+                              onPressed: () {
+                                RestockSounds.instance.play(RSound.tap);
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                onAction();
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: p.accent,
+                                foregroundColor: p.onAccent,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(actionLabel),
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.chevron_right, size: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
