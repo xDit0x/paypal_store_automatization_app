@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/core/audio/restock_sounds.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
@@ -34,10 +35,7 @@ class RulesPage extends StatelessWidget {
         final allowed = r.allowedSupplierIds.map(state.supplierName).toList();
 
         return [
-          RLargeTitle(
-            l10n.rulesTitle,
-            subtitle: l10n.rulesSubtitle,
-          ),
+          RLargeTitle(l10n.rulesTitle, subtitle: l10n.rulesSubtitle),
           const SizedBox(height: 18),
           RSectionTitle(l10n.rulesSpending, small: true),
           RInsetGroup(
@@ -80,10 +78,7 @@ class RulesPage extends StatelessWidget {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              l10n.rulesHint,
-              style: t.caption,
-            ),
+            child: Text(l10n.rulesHint, style: t.caption),
           ),
           const SizedBox(height: 22),
           RSectionTitle(l10n.rulesAccount, small: true),
@@ -102,23 +97,23 @@ class RulesPage extends StatelessWidget {
     final r = state.rules;
     final (title, current, min, hint) = switch (limit) {
       _Limit.monthly => (
-          l10n.rulesMonthlyLimit,
-          r.monthlyLimit,
-          r.maxPerOrder,
-          l10n.rulesMonthlyLimitSheetHint,
-        ),
+        l10n.rulesMonthlyLimit,
+        r.monthlyLimit,
+        r.maxPerOrder,
+        l10n.rulesMonthlyLimitSheetHint,
+      ),
       _Limit.perOrder => (
-          l10n.rulesMaxPerOrder,
-          r.maxPerOrder,
-          0.01,
-          l10n.rulesMaxPerOrderSheetHint,
-        ),
+        l10n.rulesMaxPerOrder,
+        r.maxPerOrder,
+        0.01,
+        l10n.rulesMaxPerOrderSheetHint,
+      ),
       _Limit.approval => (
-          l10n.rulesApprovalSheetTitle,
-          r.requireApprovalAbove,
-          0.0,
-          l10n.rulesApprovalSheetHint,
-        ),
+        l10n.rulesApprovalSheetTitle,
+        r.requireApprovalAbove,
+        0.0,
+        l10n.rulesApprovalSheetHint,
+      ),
     };
 
     final value = await showModalBottomSheet<double>(
@@ -325,10 +320,7 @@ class _AmountSheetState extends State<_AmountSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              widget.hint,
-              style: t.caption,
-            ),
+            Text(widget.hint, style: t.caption),
             const SizedBox(height: 16),
             RPrimaryButton(
               l10n.actionSave,
@@ -374,10 +366,7 @@ class _SuppliersSheetState extends State<_SuppliersSheet> {
             RSectionTitle(l10n.rulesSuppliersSheetTitle),
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-              child: Text(
-                l10n.rulesSuppliersSheetHint,
-                style: t.footnote,
-              ),
+              child: Text(l10n.rulesSuppliersSheetHint, style: t.footnote),
             ),
             Flexible(
               child: SingleChildScrollView(
@@ -457,16 +446,27 @@ class _AccountGroup extends StatelessWidget {
                   backgroundColor: p.fill,
                   thumbColor: p.surface,
                   children: {
-                    ThemeMode.system:
-                        Text(l10n.rulesThemeAuto, style: segmentStyle),
-                    ThemeMode.light:
-                        Text(l10n.rulesThemeLight, style: segmentStyle),
-                    ThemeMode.dark:
-                        Text(l10n.rulesThemeDark, style: segmentStyle),
+                    ThemeMode.system: Text(
+                      l10n.rulesThemeAuto,
+                      style: segmentStyle,
+                    ),
+                    ThemeMode.light: Text(
+                      l10n.rulesThemeLight,
+                      style: segmentStyle,
+                    ),
+                    ThemeMode.dark: Text(
+                      l10n.rulesThemeDark,
+                      style: segmentStyle,
+                    ),
                   },
                   onValueChanged: (value) {
                     if (value != null) {
-                      context.read<ThemeCubit>().updateTheme(value);
+                      // Solo suena si de verdad cambió: el control emite al
+                      // tocar una pestaña que ya estaba seleccionada.
+                      if (value != mode) {
+                        RestockSounds.instance.play(RSound.soft);
+                        context.read<ThemeCubit>().updateTheme(value);
+                      }
                     }
                   },
                 ),
@@ -493,9 +493,12 @@ class _AccountGroup extends StatelessWidget {
                   },
                   onValueChanged: (value) {
                     if (value == null) return;
-                    context.read<LocaleCubit>().updateLocale(
-                      value == 'auto' ? null : Locale(value),
-                    );
+                    final selected = value == 'auto' ? null : Locale(value);
+                    final current = context.watch<LocaleCubit>().state;
+                    if (selected != current) {
+                      RestockSounds.instance.play(RSound.soft);
+                      context.read<LocaleCubit>().updateLocale(selected);
+                    }
                   },
                 ),
               ),

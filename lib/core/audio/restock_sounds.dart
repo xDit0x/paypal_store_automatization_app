@@ -31,6 +31,9 @@ enum RSound {
 
   /// Algo no salió: suena grave y descendente, nunca estridente.
   warning,
+
+  /// Cambio de ajustes: un toque luminoso, casi un susurro.
+  soft,
 }
 
 /// Un golpe de maza: nota base del parche y cuándo entra.
@@ -151,6 +154,14 @@ class RestockSounds {
       // Más maza y una caída de afinación mayor: así suena a "se acabó".
       bend: 0.028,
       strike: 0.18,
+    ),
+    // Un toque muy leve y luminoso, casi un susurro: cambio de apariencia.
+    RSound.soft: _Preset(
+      hits: [_Hit(1046.50, gain: 0.6)],
+      peak: 0.08,
+      attack: Duration(milliseconds: 3),
+      length: Duration(milliseconds: 60),
+      decay: 2.5,
     ),
   };
 
