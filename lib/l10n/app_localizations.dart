@@ -605,7 +605,7 @@ abstract class AppLocalizations {
   /// No description provided for @reasonAnyOrderApproval.
   ///
   /// In es, this message translates to:
-  /// **'Me preguntas por cualquier pedido'**
+  /// **'Este pedido requiere tu aprobación antes de continuar'**
   String get reasonAnyOrderApproval;
 
   /// No description provided for @reasonOverApprovalThreshold.

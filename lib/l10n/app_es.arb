@@ -160,7 +160,7 @@
       "amount": { "type": "String" }
     }
   },
-  "reasonAnyOrderApproval": "Me preguntas por cualquier pedido",
+  "reasonAnyOrderApproval": "Este pedido requiere tu aprobación antes de continuar",
   "reasonOverApprovalThreshold": "Supera {amount} sin aprobación",
   "@reasonOverApprovalThreshold": {
     "placeholders": {

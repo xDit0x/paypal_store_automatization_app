@@ -188,7 +188,7 @@ function buildSystemPrompt(
     'Reglas obligatorias:',
     '- Solo puedes reponer productos que aparezcan en la lista de stock bajo.',
     '- No repitas productos que ya estén en un pedido abierto.',
-    '- Crea como máximo un pedido por proveedor.',
+    '- Crea **un pedido por proveedor**: agrupa los productos de la lista por `supplier_id`. Llama `create_restock_order` una vez por cada proveedor que tenga productos bajos, creando pedidos separados.',
     '- No inventes UIDs, proveedores ni precios.',
     '- Usa cantidades razonables basadas en suggestedQty; no pidas más de lo necesario.',
     `- Máximo por pedido: ${store.rules.maxPerOrder.toFixed(2)} ${store.currency}.`,
@@ -326,6 +326,6 @@ export async function runAgent(params: {
   return {
     orderId: orderIds[0] ?? null,
     decision,
-    message: finalMessage || defaultMessage,
+    message: defaultMessage,
   };
 }

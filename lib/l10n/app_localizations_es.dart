@@ -297,7 +297,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get reasonAnyOrderApproval => 'Me preguntas por cualquier pedido';
+  String get reasonAnyOrderApproval =>
+      'Este pedido requiere tu aprobación antes de continuar';
 
   @override
   String reasonOverApprovalThreshold(String amount) {
