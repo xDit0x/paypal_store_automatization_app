@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum UtilSnackbarType {
   ok(Colors.green, Icons.check_rounded),
-  warning(Colors.amber, Icons.warning_amber_rounded),
+  warning(Color(0xFFFF8F00), Icons.warning_amber_rounded),
   bad(Colors.red, Icons.error_outline);
 
   final Color color;
@@ -14,12 +14,21 @@ enum UtilSnackbarType {
 class UtilSnackbar {
   const UtilSnackbar._();
 
+  static String? _activeKey;
+
   static void show(
     BuildContext context,
     String message, {
     UtilSnackbarType selection = UtilSnackbarType.bad,
   }) {
-    ScaffoldMessenger.of(context)
+    final key = '${selection.name}|$message';
+
+    if (_activeKey == key) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    _activeKey = key;
+
+    messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
@@ -46,6 +55,8 @@ class UtilSnackbar {
           margin: const EdgeInsets.all(16),
           duration: const Duration(seconds: 3),
         ),
-      );
+      ).closed.then((_) {
+        if (_activeKey == key) _activeKey = null;
+      });
   }
 }
