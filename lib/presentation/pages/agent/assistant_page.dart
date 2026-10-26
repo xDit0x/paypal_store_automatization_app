@@ -43,6 +43,7 @@ class _AssistantPageState extends State<AssistantPage> {
   }
 
   Future<void> _runAgent() async {
+    if (context.read<RestockCubit>().state.agentRunning) return;
     _scrollToEnd();
     await context.read<RestockCubit>().runAgent(fromChat: true);
     RestockSounds.instance.play(RSound.message);
@@ -79,6 +80,7 @@ class _AssistantPageState extends State<AssistantPage> {
   }
 
   void _send() {
+    if (context.read<RestockCubit>().state.agentRunning) return;
     final text = _input.text;
     if (text.trim().isEmpty) return;
     RestockSounds.instance.play(RSound.tap);
