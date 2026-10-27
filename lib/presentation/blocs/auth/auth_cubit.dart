@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/domain/entities/app_user.dart';
 import 'package:store_automatization_app/domain/usecases/auth/check_auth_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/auth/resend_confirmation_email_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/send_reset_password_email_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_in_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_out_usecase.dart';
@@ -18,6 +19,7 @@ class AuthCubit extends Cubit<AuthState> {
   final CheckAuthUsecase checkAuthUseCase;
   final WatchAuthUsecase watchAuthUseCase;
   final SendResetPasswordEmailUsecase sendResetPasswordEmailUseCase;
+  final ResendConfirmationEmailUsecase resendConfirmationEmailUseCase;
 
   StreamSubscription<AppUser?>? _authSubscription;
 
@@ -28,6 +30,7 @@ class AuthCubit extends Cubit<AuthState> {
     required this.checkAuthUseCase,
     required this.watchAuthUseCase,
     required this.sendResetPasswordEmailUseCase,
+    required this.resendConfirmationEmailUseCase,
   }) : super(const AuthState(status: AuthStatus.unknown)) {
     final user = checkAuthUseCase();
     emit(
@@ -55,12 +58,9 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(status: AuthStatus.loading));
     final result = await signInUseCase(email, password);
     result.fold(
-      (error) => emit(
-        AuthState(status: AuthStatus.unauthenticated, error: error),
-      ),
-      (user) => emit(
-        AuthState(status: AuthStatus.authenticated, user: user),
-      ),
+      (error) =>
+          emit(AuthState(status: AuthStatus.unauthenticated, error: error)),
+      (user) => emit(AuthState(status: AuthStatus.authenticated, user: user)),
     );
   }
 
@@ -68,20 +68,19 @@ class AuthCubit extends Cubit<AuthState> {
     String email,
     String password, {
     String? storeName,
+    String? paypalMerchantEmail,
   }) async {
     emit(state.copyWith(status: AuthStatus.loading));
     final result = await signUpUseCase(
       email,
       password,
       storeName: storeName,
+      paypalMerchantEmail: paypalMerchantEmail,
     );
     result.fold(
-      (error) => emit(
-        AuthState(status: AuthStatus.unauthenticated, error: error),
-      ),
-      (user) => emit(
-        AuthState(status: AuthStatus.authenticated, user: user),
-      ),
+      (error) =>
+          emit(AuthState(status: AuthStatus.unauthenticated, error: error)),
+      (user) => emit(AuthState(status: AuthStatus.authenticated, user: user)),
     );
   }
 
@@ -90,7 +89,11 @@ class AuthCubit extends Cubit<AuthState> {
     final result = await signOutUseCase();
     result.fold(
       (error) => emit(
-        AuthState(status: AuthStatus.authenticated, user: state.user, error: error),
+        AuthState(
+          status: AuthStatus.authenticated,
+          user: state.user,
+          error: error,
+        ),
       ),
       (_) => emit(const AuthState(status: AuthStatus.unauthenticated)),
     );
@@ -102,6 +105,13 @@ class AuthCubit extends Cubit<AuthState> {
       (error) => emit(state.copyWith(error: error)),
       (_) => emit(state.copyWith(error: null)),
     );
+  }
+
+  /// Reenvía el correo de confirmación de la cuenta. Devuelve `true` si
+  /// Supabase lo aceptó.
+  Future<bool> resendConfirmationEmail(String email) async {
+    final result = await resendConfirmationEmailUseCase(email);
+    return result.isRight();
   }
 
   @override

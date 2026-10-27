@@ -16,6 +16,7 @@ import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_us
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/check_auth_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/send_reset_password_email_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/auth/resend_confirmation_email_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_in_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_out_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.dart';
@@ -45,7 +46,9 @@ Future<void> main() async {
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: kIsWeb
         ? HydratedStorageDirectory.web
-        : HydratedStorageDirectory((await getApplicationDocumentsDirectory()).path),
+        : HydratedStorageDirectory(
+            (await getApplicationDocumentsDirectory()).path,
+          ),
   );
 
   runApp(PreviewApp(db: PreviewDb()));
@@ -62,12 +65,16 @@ class PreviewApp extends StatelessWidget {
     final settings = PreviewSettingsRepository(db);
     final agent = PreviewAgentRepository(db);
     return RestockCubit(
-      getCurrentStore: GetCurrentStoreUsecase(repository: PreviewStoreRepository(db)),
+      getCurrentStore: GetCurrentStoreUsecase(
+        repository: PreviewStoreRepository(db),
+      ),
       getSpendingRules: GetSpendingRulesUsecase(repository: settings),
       updateSpendingRules: UpdateSpendingRulesUsecase(repository: settings),
       getSpentThisMonth: GetSpentThisMonthUsecase(repository: orders),
       getOrders: GetOrdersUsecase(repository: orders),
-      getSuppliers: GetSuppliersUsecase(repository: PreviewSupplierRepository(db)),
+      getSuppliers: GetSuppliersUsecase(
+        repository: PreviewSupplierRepository(db),
+      ),
       getSupplierCatalog: GetSupplierCatalogUsecase(repository: products),
       updateProductStock: UpdateProductStockUsecase(repository: products),
       getAgentRuns: GetAgentRunsUsecase(repository: agent),
@@ -85,7 +92,12 @@ class PreviewApp extends StatelessWidget {
       signOutUseCase: SignOutUsecase(repository: auth),
       checkAuthUseCase: CheckAuthUsecase(repository: auth),
       watchAuthUseCase: WatchAuthUsecase(repository: auth),
-      sendResetPasswordEmailUseCase: SendResetPasswordEmailUsecase(repository: auth),
+      sendResetPasswordEmailUseCase: SendResetPasswordEmailUsecase(
+        repository: auth,
+      ),
+      resendConfirmationEmailUseCase: ResendConfirmationEmailUsecase(
+        repository: auth,
+      ),
     );
   }
 

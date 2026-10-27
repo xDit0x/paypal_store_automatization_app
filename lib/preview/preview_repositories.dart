@@ -27,7 +27,8 @@ DateTime _today(int hour, int minute) {
   return DateTime(now.year, now.month, now.day, hour, minute);
 }
 
-DateTime _daysAgo(int days, int hour) => _today(hour, 0).subtract(Duration(days: days));
+DateTime _daysAgo(int days, int hour) =>
+    _today(hour, 0).subtract(Duration(days: days));
 
 /// Fuente única de datos de la vista previa, compartida por los repositorios.
 class PreviewDb {
@@ -52,14 +53,86 @@ class PreviewDb {
   ];
 
   final products = <Product>[
-    Product(id: 'p1', uid: 'CAF-001', supplierId: 's1', name: 'Café en grano 1 kg', price: 12.5, stock: 2, lowStockThreshold: 8, unit: 'kg'),
-    Product(id: 'p2', uid: 'CAF-002', supplierId: 's1', name: 'Descafeinado 1 kg', price: 10, stock: 4, lowStockThreshold: 3, unit: 'kg'),
-    Product(id: 'p3', uid: 'LAC-001', supplierId: 's2', name: 'Leche entera 1 L', price: 1.6, stock: 31, lowStockThreshold: 12, unit: 'L'),
-    Product(id: 'p4', uid: 'LAC-002', supplierId: 's2', name: 'Leche de avena 1 L', price: 2.1, stock: 6, lowStockThreshold: 8, unit: 'L'),
-    Product(id: 'p5', uid: 'PAN-001', supplierId: 's3', name: 'Croissant', price: 0.6, stock: 6, lowStockThreshold: 20, unit: 'ud'),
-    Product(id: 'p6', uid: 'PAN-002', supplierId: 's3', name: 'Napolitana', price: 0.75, stock: 14, lowStockThreshold: 12, unit: 'ud'),
-    Product(id: 'p7', uid: 'ENV-001', supplierId: 's4', name: 'Vasos 12 oz (caja 50)', price: 4.2, stock: 7, lowStockThreshold: 4, unit: 'cajas'),
-    Product(id: 'p8', uid: 'ENV-002', supplierId: 's4', name: 'Azúcar en sobres (caja 500)', price: 6.5, stock: 3, lowStockThreshold: 2, unit: 'cajas'),
+    Product(
+      id: 'p1',
+      uid: 'CAF-001',
+      supplierId: 's1',
+      name: 'Café en grano 1 kg',
+      price: 12.5,
+      stock: 2,
+      lowStockThreshold: 8,
+      unit: 'kg',
+    ),
+    Product(
+      id: 'p2',
+      uid: 'CAF-002',
+      supplierId: 's1',
+      name: 'Descafeinado 1 kg',
+      price: 10,
+      stock: 4,
+      lowStockThreshold: 3,
+      unit: 'kg',
+    ),
+    Product(
+      id: 'p3',
+      uid: 'LAC-001',
+      supplierId: 's2',
+      name: 'Leche entera 1 L',
+      price: 1.6,
+      stock: 31,
+      lowStockThreshold: 12,
+      unit: 'L',
+    ),
+    Product(
+      id: 'p4',
+      uid: 'LAC-002',
+      supplierId: 's2',
+      name: 'Leche de avena 1 L',
+      price: 2.1,
+      stock: 6,
+      lowStockThreshold: 8,
+      unit: 'L',
+    ),
+    Product(
+      id: 'p5',
+      uid: 'PAN-001',
+      supplierId: 's3',
+      name: 'Croissant',
+      price: 0.6,
+      stock: 6,
+      lowStockThreshold: 20,
+      unit: 'ud',
+    ),
+    Product(
+      id: 'p6',
+      uid: 'PAN-002',
+      supplierId: 's3',
+      name: 'Napolitana',
+      price: 0.75,
+      stock: 14,
+      lowStockThreshold: 12,
+      unit: 'ud',
+    ),
+    Product(
+      id: 'p7',
+      uid: 'ENV-001',
+      supplierId: 's4',
+      name: 'Vasos 12 oz (caja 50)',
+      price: 4.2,
+      stock: 7,
+      lowStockThreshold: 4,
+      unit: 'cajas',
+    ),
+    Product(
+      id: 'p8',
+      uid: 'ENV-002',
+      supplierId: 's4',
+      name: 'Azúcar en sobres (caja 500)',
+      price: 6.5,
+      stock: 3,
+      lowStockThreshold: 2,
+      unit: 'cajas',
+    ),
   ];
 
   late final List<Order> orders = [
@@ -69,8 +142,18 @@ class PreviewDb {
       supplierId: 's1',
       createdByType: OrderCreatorType.agent,
       items: const [
-        OrderItem(productUid: 'CAF-001', name: 'Café en grano 1 kg', qty: 10, unitPrice: 12.5),
-        OrderItem(productUid: 'CAF-002', name: 'Descafeinado 1 kg', qty: 2, unitPrice: 10),
+        OrderItem(
+          productUid: 'CAF-001',
+          name: 'Café en grano 1 kg',
+          qty: 10,
+          unitPrice: 12.5,
+        ),
+        OrderItem(
+          productUid: 'CAF-002',
+          name: 'Descafeinado 1 kg',
+          qty: 2,
+          unitPrice: 10,
+        ),
       ],
       subtotal: 145,
       total: 145,
@@ -84,7 +167,14 @@ class PreviewDb {
       storeId: _storeId,
       supplierId: 's2',
       createdByType: OrderCreatorType.agent,
-      items: const [OrderItem(productUid: 'LAC-001', name: 'Leche entera 1 L', qty: 24, unitPrice: 1.6)],
+      items: const [
+        OrderItem(
+          productUid: 'LAC-001',
+          name: 'Leche entera 1 L',
+          qty: 24,
+          unitPrice: 1.6,
+        ),
+      ],
       subtotal: 38.4,
       total: 38.4,
       status: OrderStatus.paid,
@@ -102,8 +192,18 @@ class PreviewDb {
       supplierId: 's3',
       createdByType: OrderCreatorType.agent,
       items: const [
-        OrderItem(productUid: 'PAN-001', name: 'Croissant', qty: 60, unitPrice: 0.6),
-        OrderItem(productUid: 'PAN-002', name: 'Napolitana', qty: 24, unitPrice: 0.75),
+        OrderItem(
+          productUid: 'PAN-001',
+          name: 'Croissant',
+          qty: 60,
+          unitPrice: 0.6,
+        ),
+        OrderItem(
+          productUid: 'PAN-002',
+          name: 'Napolitana',
+          qty: 24,
+          unitPrice: 0.75,
+        ),
       ],
       subtotal: 54,
       total: 54,
@@ -120,8 +220,18 @@ class PreviewDb {
       storeId: _storeId,
       supplierId: 's4',
       items: const [
-        OrderItem(productUid: 'ENV-001', name: 'Vasos 12 oz (caja 50)', qty: 10, unitPrice: 4.2),
-        OrderItem(productUid: 'ENV-002', name: 'Azúcar en sobres (caja 500)', qty: 2, unitPrice: 6.5),
+        OrderItem(
+          productUid: 'ENV-001',
+          name: 'Vasos 12 oz (caja 50)',
+          qty: 10,
+          unitPrice: 4.2,
+        ),
+        OrderItem(
+          productUid: 'ENV-002',
+          name: 'Azúcar en sobres (caja 500)',
+          qty: 2,
+          unitPrice: 6.5,
+        ),
       ],
       subtotal: 55,
       total: 55,
@@ -171,7 +281,11 @@ class PreviewDb {
 }
 
 class PreviewAuthRepository implements AuthRepository {
-  static const _user = AppUser(id: 'demo-user', email: 'demo@restock.app', storeName: 'Café Lumbre');
+  static const _user = AppUser(
+    id: 'demo-user',
+    email: 'demo@restock.app',
+    storeName: 'Café Lumbre',
+  );
 
   @override
   AppUser? currentUser() => _user;
@@ -180,17 +294,30 @@ class PreviewAuthRepository implements AuthRepository {
   Stream<AppUser?> authStateChanges() => const Stream.empty();
 
   @override
-  Future<Either<AppError, AppUser>> signIn(String email, String password) async => const Right(_user);
+  Future<Either<AppError, AppUser>> signIn(
+    String email,
+    String password,
+  ) async => const Right(_user);
 
   @override
-  Future<Either<AppError, AppUser>> signUp(String email, String password, {String? storeName}) async =>
-      const Right(_user);
+  Future<Either<AppError, AppUser>> signUp(
+    String email,
+    String password, {
+    String? storeName,
+    String? paypalMerchantEmail,
+  }) async => const Right(_user);
 
   @override
-  Future<Either<AppError, Unit>> signOut() async => const Left(AppError(AppErrorCode.previewNoSignOut));
+  Future<Either<AppError, Unit>> signOut() async =>
+      const Left(AppError(AppErrorCode.previewNoSignOut));
 
   @override
-  Future<Either<AppError, Unit>> sendResetPasswordEmail(String email) async => const Right(unit);
+  Future<Either<AppError, Unit>> sendResetPasswordEmail(String email) async =>
+      const Right(unit);
+
+  @override
+  Future<Either<AppError, Unit>> resendConfirmationEmail(String email) async =>
+      const Right(unit);
 }
 
 class PreviewStoreRepository implements StoreRepository {
@@ -201,8 +328,12 @@ class PreviewStoreRepository implements StoreRepository {
   Future<Either<AppError, Store?>> getOwn() async => Right(db.store);
 
   @override
-  Future<Either<AppError, Unit>> update(String storeId,
-      {String? name, String? paypalMerchantEmail, String? notificationEmail}) async {
+  Future<Either<AppError, Unit>> update(
+    String storeId, {
+    String? name,
+    String? paypalMerchantEmail,
+    String? notificationEmail,
+  }) async {
     final s = db.store;
     db.store = Store(
       id: s.id,
@@ -221,10 +352,15 @@ class PreviewSettingsRepository implements SettingsRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<AppError, SpendingRules>> getSpendingRules(String storeId) async => Right(db.rules);
+  Future<Either<AppError, SpendingRules>> getSpendingRules(
+    String storeId,
+  ) async => Right(db.rules);
 
   @override
-  Future<Either<AppError, Unit>> updateSpendingRules(String storeId, SpendingRules rules) async {
+  Future<Either<AppError, Unit>> updateSpendingRules(
+    String storeId,
+    SpendingRules rules,
+  ) async {
     db.rules = rules;
     return const Right(unit);
   }
@@ -235,7 +371,8 @@ class PreviewSupplierRepository implements SupplierRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<AppError, List<Supplier>>> getAll() async => Right(db.suppliers);
+  Future<Either<AppError, List<Supplier>>> getAll() async =>
+      Right(db.suppliers);
 
   @override
   Future<Either<AppError, Supplier?>> getById(String id) async {
@@ -251,7 +388,9 @@ class PreviewProductRepository implements ProductRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<AppError, List<Product>>> getBySupplier(String supplierId) async =>
+  Future<Either<AppError, List<Product>>> getBySupplier(
+    String supplierId,
+  ) async =>
       Right(db.products.where((p) => p.supplierId == supplierId).toList());
 
   @override
@@ -284,12 +423,19 @@ class PreviewOrderRepository implements OrderRepository {
   PreviewOrderRepository(this.db);
   final PreviewDb db;
 
-  static const _spentStatuses = {OrderStatus.paid, OrderStatus.invoiced, OrderStatus.completed};
+  static const _spentStatuses = {
+    OrderStatus.paid,
+    OrderStatus.invoiced,
+    OrderStatus.completed,
+  };
 
   @override
   Future<Either<AppError, List<Order>>> getByStore(String storeId) async {
     final list = [...db.orders]
-      ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+      ..sort(
+        (a, b) =>
+            (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)),
+      );
     return Right(list);
   }
 
@@ -332,8 +478,11 @@ class PreviewOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<Either<AppError, double>> getSpentThisMonth(String storeId) async => Right(
-        db.orders.where((o) => _spentStatuses.contains(o.status)).fold<double>(0, (s, o) => s + o.total),
+  Future<Either<AppError, double>> getSpentThisMonth(String storeId) async =>
+      Right(
+        db.orders
+            .where((o) => _spentStatuses.contains(o.status))
+            .fold<double>(0, (s, o) => s + o.total),
       );
 
   @override
@@ -370,22 +519,30 @@ class PreviewAgentRepository implements AgentRepository {
   Future<Either<AppError, AgentRunResult>> run(String storeId) async {
     await Future<void>.delayed(const Duration(milliseconds: 1600));
 
-    final pending = db.orders.where((o) => o.status == OrderStatus.pendingApproval).toList();
+    final pending = db.orders
+        .where((o) => o.status == OrderStatus.pendingApproval)
+        .toList();
     if (pending.isNotEmpty) {
       _log('no_action');
-      return const Right(AgentRunResult(
-        decision: 'no_action',
-        message: 'Ya tienes un pedido de café esperando tu aprobación. No preparo otro hasta que decidas.',
-      ));
+      return const Right(
+        AgentRunResult(
+          decision: 'no_action',
+          message: 'Ya tienes un pedido de café esperando tu aprobación. No preparo otro hasta que decidas.',
+        ),
+      );
     }
 
-    final alreadyOrdered = db.orders.any((o) => o.items.any((i) => i.productUid == 'LAC-002'));
+    final alreadyOrdered = db.orders.any(
+      (o) => o.items.any((i) => i.productUid == 'LAC-002'),
+    );
     if (alreadyOrdered) {
       _log('no_action');
-      return const Right(AgentRunResult(
-        decision: 'no_action',
-        message: 'He revisado el stock: lo que está bajo ya va en camino. No hace falta pedir nada más.',
-      ));
+      return const Right(
+        AgentRunResult(
+          decision: 'no_action',
+          message: 'He revisado el stock: lo que está bajo ya va en camino. No hace falta pedir nada más.',
+        ),
+      );
     }
 
     final runId = db.nextId('r');
@@ -394,7 +551,14 @@ class PreviewAgentRepository implements AgentRepository {
       storeId: storeId,
       supplierId: 's2',
       createdByType: OrderCreatorType.agent,
-      items: const [OrderItem(productUid: 'LAC-002', name: 'Leche de avena 1 L', qty: 20, unitPrice: 2.1)],
+      items: const [
+        OrderItem(
+          productUid: 'LAC-002',
+          name: 'Leche de avena 1 L',
+          qty: 20,
+          unitPrice: 2.1,
+        ),
+      ],
       subtotal: 42,
       total: 42,
       status: OrderStatus.paid,
@@ -420,12 +584,15 @@ class PreviewAgentRepository implements AgentRepository {
         createdAt: DateTime.now(),
       ),
     );
-    return Right(AgentRunResult(
-      orderId: order.id,
-      decision: 'auto_approved',
-      message: 'Pedí 20 L de leche de avena a Lácteos Sierra (42,00 €) y lo pagué con PayPal: '
-          'estaba dentro de tus reglas.',
-    ));
+    return Right(
+      AgentRunResult(
+        orderId: order.id,
+        decision: 'auto_approved',
+        message:
+            'Pedí 20 L de leche de avena a Lácteos Sierra (42,00 €) y lo pagué con PayPal: '
+            'estaba dentro de tus reglas.',
+      ),
+    );
   }
 
   void _log(String decision) {
@@ -443,5 +610,6 @@ class PreviewAgentRepository implements AgentRepository {
   }
 
   @override
-  Future<Either<AppError, List<AgentRun>>> getRuns(String storeId) async => Right([...db.runs]);
+  Future<Either<AppError, List<AgentRun>>> getRuns(String storeId) async =>
+      Right([...db.runs]);
 }

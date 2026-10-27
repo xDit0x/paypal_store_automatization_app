@@ -299,6 +299,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reasonAnyOrderApproval => 'You ask me about every order';
 
   @override
+  String get authPaypalSameEmail => 'Use the same email as the account';
+
+  @override
   String reasonOverApprovalThreshold(String amount) {
     return 'Over $amount without approval';
   }
@@ -649,6 +652,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authStoreNameHint => 'Lumbre Store';
 
   @override
+  String get authPaypalEmail => 'PayPal email (optional)';
+
+  @override
+  String get authPaypalEmailHint => 'payments@yourshop.com';
+
+  @override
+  String get authPaypalEmailHelp =>
+      'You will receive order payments here. If you leave it empty, orders can\'t be paid automatically.';
+
+  @override
+  String get authPaypalSectionTitle => 'PayPal payments';
+
+  @override
+  String get authPaypalEmailInvalid => 'The PayPal email doesn\'t look valid.';
+
+  @override
   String get authEmailHint => 'you@yourshop.com';
 
   @override
@@ -674,6 +693,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'If the email exists, we sent you a recovery link.';
 
   @override
+  String get authResendEmail => 'Resend confirmation email';
+
+  @override
+  String get authResendEmailSent => 'Email resent';
+
+  @override
+  String get authResendEmailSentBody =>
+      'We sent you another confirmation email. Check your inbox or spam folder.';
+
+  @override
   String get authFirstTime => 'First time in Restock?';
 
   @override
@@ -689,6 +718,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authCreateFailed => 'Could not create the account';
+
+  @override
+  String get authAccountCreated => 'Account created';
 
   @override
   String get authCreateMissingFieldsBody =>
@@ -790,6 +822,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Account created. Check your email to confirm it, then sign in.';
 
   @override
+  String get errorAuthSignUpRateLimited =>
+      'The account could not be created: the attempt or email sending limit was reached. Wait a while and try again.';
+
+  @override
   String get errorAuthSignOutFailed => 'Could not sign out. Try again.';
 
   @override
@@ -810,7 +846,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Confirm your email before signing in';
 
   @override
-  String get errorAuthTooManyAttempts => 'Too many attempts. Wait a moment.';
+  String get errorAuthResendConfirmFailed =>
+      'Could not resend the confirmation email.';
+
+  @override
+  String get errorAuthTooManyAttempts =>
+      'Too many attempts. Wait a while and try again.';
 
   @override
   String get errorAuthValidationFailed => 'Check the email and the password';

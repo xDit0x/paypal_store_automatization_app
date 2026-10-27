@@ -9,9 +9,11 @@ abstract class AuthRepository {
     String email,
     String password, {
     String? storeName,
+    String? paypalMerchantEmail,
   });
   Future<Either<AppError, Unit>> signOut();
   Future<Either<AppError, Unit>> sendResetPasswordEmail(String email);
+  Future<Either<AppError, Unit>> resendConfirmationEmail(String email);
   AppUser? currentUser();
   Stream<AppUser?> authStateChanges();
 }

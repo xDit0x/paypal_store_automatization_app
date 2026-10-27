@@ -31,6 +31,7 @@ import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_us
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/check_auth_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/send_reset_password_email_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/auth/resend_confirmation_email_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_in_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_out_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.dart';
@@ -126,6 +127,9 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(
     () => SendResetPasswordEmailUsecase(repository: sl<AuthRepository>()),
   );
+  sl.registerLazySingleton(
+    () => ResendConfirmationEmailUsecase(repository: sl<AuthRepository>()),
+  );
 
   sl.registerLazySingleton(
     () => GetSuppliersUsecase(repository: sl<SupplierRepository>()),
@@ -188,6 +192,7 @@ Future<void> initializeDependencies() async {
       checkAuthUseCase: sl<CheckAuthUsecase>(),
       watchAuthUseCase: sl<WatchAuthUsecase>(),
       sendResetPasswordEmailUseCase: sl<SendResetPasswordEmailUsecase>(),
+      resendConfirmationEmailUseCase: sl<ResendConfirmationEmailUsecase>(),
     ),
   );
 }
