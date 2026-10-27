@@ -112,9 +112,9 @@ class _RegisterPageState extends State<RegisterPage> {
           Navigator.of(context).pop();
           return;
         }
-        // El alta falló por el límite de correos de Supabase: la cuenta no
-        // existe, así que se deja el formulario abierto para reintentar luego.
-        if (error.code == AppErrorCode.authSignUpEmailRateLimited) {
+        // El alta falló por un límite de Supabase (correos o intentos): la
+        // cuenta no existe, así que se deja el formulario abierto.
+        if (error.code == AppErrorCode.authSignUpRateLimited) {
           showRestockSnack(
             context,
             l10n.describeDetail(error),

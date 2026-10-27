@@ -1501,11 +1501,11 @@ abstract class AppLocalizations {
   /// **'Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.'**
   String get errorAuthConfirmEmail;
 
-  /// No description provided for @errorAuthSignUpEmailRateLimited.
+  /// No description provided for @errorAuthSignUpRateLimited.
   ///
   /// In es, this message translates to:
-  /// **'No se pudo crear la cuenta: se agotó el límite de envío de correos de confirmación. Espera un rato y vuelve a intentarlo.'**
-  String get errorAuthSignUpEmailRateLimited;
+  /// **'No se pudo crear la cuenta: se alcanzó el límite de intentos o de envío de correos. Espera un rato y vuelve a intentarlo.'**
+  String get errorAuthSignUpRateLimited;
 
   /// No description provided for @errorAuthSignOutFailed.
   ///
@@ -1552,7 +1552,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorAuthTooManyAttempts.
   ///
   /// In es, this message translates to:
-  /// **'Demasiados intentos. Espera un momento.'**
+  /// **'Demasiados intentos. Espera un rato y vuelve a intentarlo.'**
   String get errorAuthTooManyAttempts;
 
   /// No description provided for @errorAuthValidationFailed.

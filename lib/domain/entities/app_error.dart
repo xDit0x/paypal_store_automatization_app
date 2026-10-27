@@ -43,7 +43,7 @@ enum AppErrorCode {
   authSignInFailed,
   authSignUpFailed,
   authConfirmEmail,
-  authSignUpEmailRateLimited,
+  authSignUpRateLimited,
   authSignOutFailed,
   authResetEmailFailed,
   authInvalidCredentials,

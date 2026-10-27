@@ -825,8 +825,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.';
 
   @override
-  String get errorAuthSignUpEmailRateLimited =>
-      'No se pudo crear la cuenta: se agotó el límite de envío de correos de confirmación. Espera un rato y vuelve a intentarlo.';
+  String get errorAuthSignUpRateLimited =>
+      'No se pudo crear la cuenta: se alcanzó el límite de intentos o de envío de correos. Espera un rato y vuelve a intentarlo.';
 
   @override
   String get errorAuthSignOutFailed =>
@@ -855,7 +855,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get errorAuthTooManyAttempts =>
-      'Demasiados intentos. Espera un momento.';
+      'Demasiados intentos. Espera un rato y vuelve a intentarlo.';
 
   @override
   String get errorAuthValidationFailed => 'Revisa el correo y la contraseña';

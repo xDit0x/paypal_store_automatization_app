@@ -822,8 +822,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Account created. Check your email to confirm it, then sign in.';
 
   @override
-  String get errorAuthSignUpEmailRateLimited =>
-      'The account could not be created: the confirmation email sending limit was reached. Wait a while and try again.';
+  String get errorAuthSignUpRateLimited =>
+      'The account could not be created: the attempt or email sending limit was reached. Wait a while and try again.';
 
   @override
   String get errorAuthSignOutFailed => 'Could not sign out. Try again.';
@@ -850,7 +850,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not resend the confirmation email.';
 
   @override
-  String get errorAuthTooManyAttempts => 'Too many attempts. Wait a moment.';
+  String get errorAuthTooManyAttempts =>
+      'Too many attempts. Wait a while and try again.';
 
   @override
   String get errorAuthValidationFailed => 'Check the email and the password';

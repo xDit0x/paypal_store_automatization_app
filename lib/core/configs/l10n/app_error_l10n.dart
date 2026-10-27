@@ -14,8 +14,7 @@ extension AppErrorL10n on AppLocalizations {
     AppErrorCode.authSignInFailed => errorAuthSignInFailed,
     AppErrorCode.authSignUpFailed => errorAuthSignUpFailed,
     AppErrorCode.authConfirmEmail => errorAuthConfirmEmail,
-    AppErrorCode.authSignUpEmailRateLimited =>
-      errorAuthSignUpEmailRateLimited,
+    AppErrorCode.authSignUpRateLimited => errorAuthSignUpRateLimited,
     AppErrorCode.authSignOutFailed => errorAuthSignOutFailed,
     AppErrorCode.authResetEmailFailed => errorAuthResetEmailFailed,
     AppErrorCode.authInvalidCredentials => errorAuthInvalidCredentials,

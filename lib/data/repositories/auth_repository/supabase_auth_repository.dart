@@ -65,11 +65,12 @@ class SupabaseAuthRepository implements AuthRepository {
       }
       return Right(_toAppUser(user));
     } on AuthException catch (error) {
-      // Supabase crea la cuenta antes de mandar el correo de confirmación. Si
-      // el envío choca con su límite de correos, la cuenta ya existe: hay que
-      // avisar de eso, no de un alta fallida.
-      if (error.code == 'over_email_send_rate_limit') {
-        return const Left(AppError(AppErrorCode.authSignUpEmailRateLimited));
+      // Un 429 en el alta (límite de correos o de peticiones) significa que la
+      // cuenta no se ha creado: GoTrue revierte la transacción. Se avisa con un
+      // mensaje propio y se deja el formulario abierto para reintentar.
+      if (error.statusCode == '429' ||
+          error.code == 'over_email_send_rate_limit') {
+        return const Left(AppError(AppErrorCode.authSignUpRateLimited));
       }
       return Left(_mapError(error, AppErrorCode.authSignUpFailed));
     } catch (error) {
