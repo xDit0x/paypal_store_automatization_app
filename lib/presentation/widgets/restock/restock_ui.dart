@@ -573,9 +573,7 @@ void showRestockSnack(
                         ),
                       ),
                     ),
-                    if (tone != RSnackTone.warning &&
-                        actionLabel != null &&
-                        onAction != null) ...[
+                    if (actionLabel != null && onAction != null) ...[
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -585,7 +583,8 @@ void showRestockSnack(
                             child: FilledButton(
                               onPressed: () {
                                 RestockSounds.instance.play(RSound.tap);
-                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context)
+                                    .hideCurrentSnackBar();
                                 onAction();
                               },
                               style: FilledButton.styleFrom(
