@@ -301,6 +301,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Este pedido requiere tu aprobación antes de continuar';
 
   @override
+  String get authPaypalSameEmail => 'Usar el mismo correo que la cuenta';
+
+  @override
   String reasonOverApprovalThreshold(String amount) {
     return 'Supera $amount sin aprobación';
   }
@@ -652,6 +655,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authStoreNameHint => 'Tienda Lumbre';
 
   @override
+  String get authPaypalEmail => 'Correo de PayPal (opcional)';
+
+  @override
+  String get authPaypalEmailHint => 'pagos@tutienda.com';
+
+  @override
+  String get authPaypalEmailHelp =>
+      'Aquí recibirás los pagos de los pedidos. Si lo dejas vacío, los pedidos no se podrán pagar automáticamente.';
+
+  @override
+  String get authPaypalSectionTitle => 'Cobros con PayPal';
+
+  @override
+  String get authPaypalEmailInvalid => 'El correo de PayPal no parece válido.';
+
+  @override
   String get authEmailHint => 'tu@tienda.com';
 
   @override
@@ -677,6 +696,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Si el correo existe, te enviamos un enlace de recuperación.';
 
   @override
+  String get authResendEmail => 'Reenviar correo de confirmación';
+
+  @override
+  String get authResendEmailSent => 'Correo reenviado';
+
+  @override
+  String get authResendEmailSentBody =>
+      'Te hemos enviado otro correo de confirmación. Revisa tu bandeja de entrada o el spam.';
+
+  @override
   String get authFirstTime => '¿Primera vez en Restock?';
 
   @override
@@ -692,6 +721,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authCreateFailed => 'No se pudo crear la cuenta';
+
+  @override
+  String get authAccountCreated => 'Cuenta creada';
 
   @override
   String get authCreateMissingFieldsBody =>
@@ -793,6 +825,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.';
 
   @override
+  String get errorAuthSignUpEmailRateLimited =>
+      'No se pudo crear la cuenta: se agotó el límite de envío de correos de confirmación. Espera un rato y vuelve a intentarlo.';
+
+  @override
   String get errorAuthSignOutFailed =>
       'No se pudo cerrar sesión. Inténtalo de nuevo.';
 
@@ -812,6 +848,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get errorAuthEmailNotConfirmed => 'Confirma tu correo antes de entrar';
+
+  @override
+  String get errorAuthResendConfirmFailed =>
+      'No se pudo reenviar el correo de confirmación.';
 
   @override
   String get errorAuthTooManyAttempts =>

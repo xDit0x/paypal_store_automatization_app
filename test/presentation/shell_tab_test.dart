@@ -8,6 +8,7 @@ import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_us
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/check_auth_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/send_reset_password_email_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/auth/resend_confirmation_email_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_in_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_out_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.dart';
@@ -59,8 +60,12 @@ AuthCubit _authCubit() {
     signOutUseCase: SignOutUsecase(repository: auth),
     checkAuthUseCase: CheckAuthUsecase(repository: auth),
     watchAuthUseCase: WatchAuthUsecase(repository: auth),
-    sendResetPasswordEmailUseCase:
-        SendResetPasswordEmailUsecase(repository: auth),
+    sendResetPasswordEmailUseCase: SendResetPasswordEmailUsecase(
+      repository: auth,
+    ),
+    resendConfirmationEmailUseCase: ResendConfirmationEmailUsecase(
+      repository: auth,
+    ),
   );
 }
 
@@ -71,13 +76,16 @@ RestockCubit _restockCubit() {
   final settings = PreviewSettingsRepository(db);
   final agent = PreviewAgentRepository(db);
   return RestockCubit(
-    getCurrentStore:
-        GetCurrentStoreUsecase(repository: PreviewStoreRepository(db)),
+    getCurrentStore: GetCurrentStoreUsecase(
+      repository: PreviewStoreRepository(db),
+    ),
     getSpendingRules: GetSpendingRulesUsecase(repository: settings),
     updateSpendingRules: UpdateSpendingRulesUsecase(repository: settings),
     getSpentThisMonth: GetSpentThisMonthUsecase(repository: orders),
     getOrders: GetOrdersUsecase(repository: orders),
-    getSuppliers: GetSuppliersUsecase(repository: PreviewSupplierRepository(db)),
+    getSuppliers: GetSuppliersUsecase(
+      repository: PreviewSupplierRepository(db),
+    ),
     getSupplierCatalog: GetSupplierCatalogUsecase(repository: products),
     updateProductStock: UpdateProductStockUsecase(repository: products),
     getAgentRuns: GetAgentRunsUsecase(repository: agent),
@@ -155,8 +163,9 @@ void main() {
     );
   });
 
-  testWidgets('reconstruir el shell conserva la pestaña activa',
-      (tester) async {
+  testWidgets('reconstruir el shell conserva la pestaña activa', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
@@ -201,8 +210,7 @@ void main() {
     expect(_page(tester), 1);
   });
 
-  testWidgets('el selector de idioma traduce la app al inglés',
-      (tester) async {
+  testWidgets('el selector de idioma traduce la app al inglés', (tester) async {
     final locale = LocaleCubit();
 
     await tester.pumpWidget(

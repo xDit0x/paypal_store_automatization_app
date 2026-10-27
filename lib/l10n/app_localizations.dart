@@ -608,6 +608,12 @@ abstract class AppLocalizations {
   /// **'Este pedido requiere tu aprobación antes de continuar'**
   String get reasonAnyOrderApproval;
 
+  /// No description provided for @authPaypalSameEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Usar el mismo correo que la cuenta'**
+  String get authPaypalSameEmail;
+
   /// No description provided for @reasonOverApprovalThreshold.
   ///
   /// In es, this message translates to:
@@ -1201,6 +1207,36 @@ abstract class AppLocalizations {
   /// **'Tienda Lumbre'**
   String get authStoreNameHint;
 
+  /// No description provided for @authPaypalEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo de PayPal (opcional)'**
+  String get authPaypalEmail;
+
+  /// No description provided for @authPaypalEmailHint.
+  ///
+  /// In es, this message translates to:
+  /// **'pagos@tutienda.com'**
+  String get authPaypalEmailHint;
+
+  /// No description provided for @authPaypalEmailHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí recibirás los pagos de los pedidos. Si lo dejas vacío, los pedidos no se podrán pagar automáticamente.'**
+  String get authPaypalEmailHelp;
+
+  /// No description provided for @authPaypalSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cobros con PayPal'**
+  String get authPaypalSectionTitle;
+
+  /// No description provided for @authPaypalEmailInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'El correo de PayPal no parece válido.'**
+  String get authPaypalEmailInvalid;
+
   /// No description provided for @authEmailHint.
   ///
   /// In es, this message translates to:
@@ -1249,6 +1285,24 @@ abstract class AppLocalizations {
   /// **'Si el correo existe, te enviamos un enlace de recuperación.'**
   String get authEmailSentBody;
 
+  /// No description provided for @authResendEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Reenviar correo de confirmación'**
+  String get authResendEmail;
+
+  /// No description provided for @authResendEmailSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo reenviado'**
+  String get authResendEmailSent;
+
+  /// No description provided for @authResendEmailSentBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Te hemos enviado otro correo de confirmación. Revisa tu bandeja de entrada o el spam.'**
+  String get authResendEmailSentBody;
+
   /// No description provided for @authFirstTime.
   ///
   /// In es, this message translates to:
@@ -1278,6 +1332,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo crear la cuenta'**
   String get authCreateFailed;
+
+  /// No description provided for @authAccountCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta creada'**
+  String get authAccountCreated;
 
   /// No description provided for @authCreateMissingFieldsBody.
   ///
@@ -1441,6 +1501,12 @@ abstract class AppLocalizations {
   /// **'Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.'**
   String get errorAuthConfirmEmail;
 
+  /// No description provided for @errorAuthSignUpEmailRateLimited.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo crear la cuenta: se agotó el límite de envío de correos de confirmación. Espera un rato y vuelve a intentarlo.'**
+  String get errorAuthSignUpEmailRateLimited;
+
   /// No description provided for @errorAuthSignOutFailed.
   ///
   /// In es, this message translates to:
@@ -1476,6 +1542,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Confirma tu correo antes de entrar'**
   String get errorAuthEmailNotConfirmed;
+
+  /// No description provided for @errorAuthResendConfirmFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo reenviar el correo de confirmación.'**
+  String get errorAuthResendConfirmFailed;
 
   /// No description provided for @errorAuthTooManyAttempts.
   ///

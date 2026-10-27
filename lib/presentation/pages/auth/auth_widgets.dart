@@ -59,6 +59,7 @@ class RAuthField extends StatelessWidget {
     this.onSubmitted,
     this.autofocus = false,
     this.obscure = false,
+    this.readOnly = false,
     this.suffix,
   });
 
@@ -70,6 +71,7 @@ class RAuthField extends StatelessWidget {
   final ValueChanged<String>? onSubmitted;
   final bool autofocus;
   final bool obscure;
+  final bool readOnly;
   final Widget? suffix;
 
   @override
@@ -89,13 +91,18 @@ class RAuthField extends StatelessWidget {
                 controller: controller,
                 autofocus: autofocus,
                 obscureText: obscure,
+                readOnly: readOnly,
                 autocorrect: false,
                 enableSuggestions: false,
                 keyboardType: keyboardType,
                 textInputAction: textInputAction,
                 onSubmitted: onSubmitted,
                 cursorColor: p.accent,
-                style: t.title3.copyWith(fontSize: 17, fontWeight: FontWeight.w500),
+                style: t.title3.copyWith(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                  color: readOnly ? p.inkSecondary : null,
+                ),
                 decoration: restockPlainInput(context, hint ?? ''),
               ),
             ),

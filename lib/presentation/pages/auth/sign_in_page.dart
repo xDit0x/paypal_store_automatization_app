@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_state.dart';
 import 'package:store_automatization_app/presentation/pages/auth/auth_widgets.dart';
@@ -43,13 +44,23 @@ class _SignInPageState extends State<SignInPage> {
       listenWhen: (previous, current) =>
           current.error != null && current.error != previous.error,
       listener: (context, state) {
-        if (state.error != null) {
+        final error = state.error;
+        if (error == null) return;
+        if (error.code == AppErrorCode.authEmailNotConfirmed) {
           showRestockSnack(
             context,
-            l10n.describeDetail(state.error!),
+            l10n.describeDetail(error),
             tone: RSnackTone.warning,
+            actionLabel: l10n.authResendEmail,
+            onAction: _resendConfirmation,
           );
+          return;
         }
+        showRestockSnack(
+          context,
+          l10n.describeDetail(error),
+          tone: RSnackTone.warning,
+        );
       },
       child: Scaffold(
         backgroundColor: p.background,
@@ -125,10 +136,7 @@ class _SignInPageState extends State<SignInPage> {
                             style: t.body.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            l10n.authFirstTimeBody,
-                            style: t.footnote,
-                          ),
+                          Text(l10n.authFirstTimeBody, style: t.footnote),
                           const SizedBox(height: 10),
                           RTextLink(
                             l10n.actionCreateAccount,
@@ -168,8 +176,32 @@ class _SignInPageState extends State<SignInPage> {
 
   void _openRegister() {
     HapticFeedback.lightImpact();
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const RegisterPage()),
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const RegisterPage()));
+  }
+
+  /// Reenvía el correo de confirmación cuando el login avisa de que la
+  /// cuenta aún no está verificada.
+  Future<void> _resendConfirmation() async {
+    final l10n = context.l10n;
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      showRestockSnack(
+        context,
+        l10n.authMissingEmailBody,
+        title: l10n.authMissingEmail,
+        tone: RSnackTone.warning,
+      );
+      return;
+    }
+
+    final sent = await context.read<AuthCubit>().resendConfirmationEmail(email);
+    if (!mounted) return;
+    showRestockSnack(
+      context,
+      sent ? l10n.authResendEmailSentBody : l10n.errorAuthResendConfirmFailed,
+      title: sent ? l10n.authResendEmailSent : l10n.authCreateFailed,
+      tone: sent ? RSnackTone.success : RSnackTone.warning,
     );
   }
 

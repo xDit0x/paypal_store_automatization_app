@@ -21,6 +21,9 @@ class SupabaseAuthDatasource {
   Future<void> sendResetPasswordEmail(String email) =>
       _client.auth.resetPasswordForEmail(email);
 
+  Future<void> resendConfirmationEmail(String email) =>
+      _client.auth.resend(email: email, type: OtpType.signup);
+
   User? get currentUser => _client.auth.currentUser;
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;

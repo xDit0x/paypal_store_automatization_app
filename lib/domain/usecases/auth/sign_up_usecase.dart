@@ -12,5 +12,11 @@ class SignUpUsecase {
     String email,
     String password, {
     String? storeName,
-  }) => repository.signUp(email, password, storeName: storeName);
+    String? paypalMerchantEmail,
+  }) => repository.signUp(
+    email,
+    password,
+    storeName: storeName,
+    paypalMerchantEmail: paypalMerchantEmail,
+  );
 }

@@ -7,6 +7,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:store_automatization_app/core/configs/assets/app_assets.dart';
 import 'package:store_automatization_app/domain/usecases/auth/check_auth_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/send_reset_password_email_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/auth/resend_confirmation_email_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_in_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_out_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.dart';
@@ -43,24 +44,28 @@ AuthCubit _authCubit() {
     signOutUseCase: SignOutUsecase(repository: auth),
     checkAuthUseCase: CheckAuthUsecase(repository: auth),
     watchAuthUseCase: WatchAuthUsecase(repository: auth),
-    sendResetPasswordEmailUseCase:
-        SendResetPasswordEmailUsecase(repository: auth),
+    sendResetPasswordEmailUseCase: SendResetPasswordEmailUsecase(
+      repository: auth,
+    ),
+    resendConfirmationEmailUseCase: ResendConfirmationEmailUsecase(
+      repository: auth,
+    ),
   );
 }
 
 Widget _signIn({Locale locale = const Locale('es')}) => ScreenUtilInit(
-      designSize: const Size(375, 812),
-      builder: (_, _) => BlocProvider.value(
-        value: _authCubit(),
-        child: MaterialApp(
-          theme: ThemeData.light(),
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const SignInPage(),
-        ),
-      ),
-    );
+  designSize: const Size(375, 812),
+  builder: (_, _) => BlocProvider.value(
+    value: _authCubit(),
+    child: MaterialApp(
+      theme: ThemeData.light(),
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const SignInPage(),
+    ),
+  ),
+);
 
 /// Nombres de los assets que se están pintando en pantalla.
 Iterable<String> _paintedAssets(WidgetTester tester) => tester
@@ -74,8 +79,9 @@ void main() {
     HydratedBloc.storage = _MemoryStorage();
   });
 
-  testWidgets('el inicio de sesión muestra el icono real de Restock',
-      (tester) async {
+  testWidgets('el inicio de sesión muestra el icono real de Restock', (
+    tester,
+  ) async {
     await tester.pumpWidget(_signIn());
     await tester.pumpAndSettle();
 
@@ -84,8 +90,7 @@ void main() {
     expect(find.text('Pedidos automáticos con IA + PayPal'), findsOneWidget);
   });
 
-  testWidgets('el inicio de sesión traduce la marca al inglés',
-      (tester) async {
+  testWidgets('el inicio de sesión traduce la marca al inglés', (tester) async {
     await tester.pumpWidget(_signIn(locale: const Locale('en')));
     await tester.pumpAndSettle();
 

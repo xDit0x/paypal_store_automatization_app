@@ -12,7 +12,10 @@ class SupabaseAuthRepository implements AuthRepository {
   SupabaseAuthRepository(this._datasource);
 
   @override
-  Future<Either<AppError, AppUser>> signIn(String email, String password) async {
+  Future<Either<AppError, AppUser>> signIn(
+    String email,
+    String password,
+  ) async {
     try {
       final response = await _datasource.signIn(email, password);
       final user = response.user;
@@ -32,6 +35,7 @@ class SupabaseAuthRepository implements AuthRepository {
     String email,
     String password, {
     String? storeName,
+    String? paypalMerchantEmail,
   }) async {
     try {
       final response = await _datasource.signUp(
@@ -40,14 +44,33 @@ class SupabaseAuthRepository implements AuthRepository {
         data: {
           if (storeName != null && storeName.trim().isNotEmpty)
             'store_name': storeName.trim(),
+          if (paypalMerchantEmail != null &&
+              paypalMerchantEmail.trim().isNotEmpty)
+            'paypal_merchant_email': paypalMerchantEmail.trim(),
         },
       );
       final user = response.user;
       if (user == null) {
+        return const Left(AppError(AppErrorCode.authSignUpFailed));
+      }
+      // Con la confirmación por correo activada, Supabase devuelve un usuario
+      // sin `identities` cuando el correo ya está registrado, para no revelar
+      // qué cuentas existen. Ese es el aviso de "correo ya registrado".
+      if (user.identities != null && user.identities!.isEmpty) {
+        return const Left(AppError(AppErrorCode.authEmailTaken));
+      }
+      // Sin sesión el correo aún no está confirmado: no se entra a la app.
+      if (response.session == null) {
         return const Left(AppError(AppErrorCode.authConfirmEmail));
       }
       return Right(_toAppUser(user));
     } on AuthException catch (error) {
+      // Supabase crea la cuenta antes de mandar el correo de confirmación. Si
+      // el envío choca con su límite de correos, la cuenta ya existe: hay que
+      // avisar de eso, no de un alta fallida.
+      if (error.code == 'over_email_send_rate_limit') {
+        return const Left(AppError(AppErrorCode.authSignUpEmailRateLimited));
+      }
       return Left(_mapError(error, AppErrorCode.authSignUpFailed));
     } catch (error) {
       return Left(logError(AppErrorCode.authSignUpFailed, error));
@@ -73,6 +96,18 @@ class SupabaseAuthRepository implements AuthRepository {
       return Left(_mapError(error, AppErrorCode.authResetEmailFailed));
     } catch (_) {
       return const Left(AppError(AppErrorCode.authResetEmailFailed));
+    }
+  }
+
+  @override
+  Future<Either<AppError, Unit>> resendConfirmationEmail(String email) async {
+    try {
+      await _datasource.resendConfirmationEmail(email);
+      return Right(unit);
+    } on AuthException catch (error) {
+      return Left(_mapError(error, AppErrorCode.authResendConfirmFailed));
+    } catch (error) {
+      return Left(logError(AppErrorCode.authResendConfirmFailed, error));
     }
   }
 
