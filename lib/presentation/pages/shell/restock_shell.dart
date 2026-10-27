@@ -2,10 +2,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show SupabaseClient;
 
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/core/service_locator.dart';
+import 'package:store_automatization_app/data/datasources/store_repository/supabase_store_changes_datasource.dart';
+import 'package:store_automatization_app/data/repositories/store_repository/supabase_store_changes_repository.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
 import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
@@ -19,6 +22,7 @@ import 'package:store_automatization_app/domain/usecases/orders/reject_order_use
 import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/store/watch_store_changes_usecase.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/agent/assistant_page.dart';
 import 'package:store_automatization_app/presentation/pages/catalog/stock_page.dart';
@@ -66,6 +70,12 @@ class RestockShell extends StatelessWidget {
     // service_locator.dart. Se pueden registrar allí más adelante.
     approveOrder: ApproveOrderUsecase(repository: sl<OrderRepository>()),
     rejectOrder: RejectOrderUsecase(repository: sl<OrderRepository>()),
+    // Tiempo real: la app se actualiza sola cuando cambian pedidos o stock.
+    watchStoreChanges: WatchStoreChangesUsecase(
+      repository: SupabaseStoreChangesRepository(
+        SupabaseStoreChangesDatasource(sl<SupabaseClient>()),
+      ),
+    ),
     // Se resuelve en cada llamada, así que al cambiar de idioma los
     // mensajes del agente salen en el idioma nuevo sin recrear el cubit.
     l10n: () => AppLocalizations.of(context),
@@ -93,7 +103,7 @@ class ShellView extends StatefulWidget {
   State<ShellView> createState() => ShellViewState();
 }
 
-class ShellViewState extends State<ShellView> {
+class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
   late final PageController _pages = PageController(
     initialPage: ShellTabStore.instance.index,
   );
@@ -111,7 +121,17 @@ class ShellViewState extends State<ShellView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ShellTabStore.instance.indexNotifier.addListener(_onTabChanged);
+  }
+
+  /// Al volver a la app (desde otra app o con la pantalla apagada) se
+  /// recargan los datos, por si algo cambió mientras tanto.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<RestockCubit>().load();
+    }
   }
 
   void _onTabChanged() {
@@ -122,6 +142,7 @@ class ShellViewState extends State<ShellView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ShellTabStore.instance.indexNotifier.removeListener(_onTabChanged);
     _pages.dispose();
     super.dispose();

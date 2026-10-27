@@ -21,7 +21,8 @@
     "send:invoice": "tsx src/scripts/send-invoice.ts",
     "inspect:stock": "tsx src/scripts/inspect-stock.ts",
     "approve:order": "tsx src/scripts/approve-order.ts",
-    "reset:demo": "tsx src/scripts/reset-demo.ts"
+    "reset:demo": "tsx src/scripts/reset-demo.ts",
+    "job:restock": "tsx src/scripts/run-scheduled-restock.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",

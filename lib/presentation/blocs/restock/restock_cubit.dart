@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
@@ -21,6 +23,7 @@ import 'package:store_automatization_app/domain/usecases/orders/reject_order_use
 import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/store/watch_store_changes_usecase.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
 
 /// Cubit de las pantallas principales. Solo usa casos de uso del dominio.
@@ -37,6 +40,14 @@ class RestockCubit extends Cubit<RestockState> {
   final RunAgentUsecase runAgentUsecase;
   final ApproveOrderUsecase approveOrder;
   final RejectOrderUsecase rejectOrder;
+
+  /// Cambios en tiempo real de la tienda. Opcional: sin él (vista previa,
+  /// tests) la app solo se actualiza al cargar o tras una acción.
+  final WatchStoreChangesUsecase? watchStoreChanges;
+
+  StreamSubscription<void>? _changesSubscription;
+  String? _watchedStoreId;
+  Timer? _reloadTimer;
 
   /// Textos del idioma activo. La pantalla inyecta una función que los
   /// resuelve en cada llamada, así que un cambio de idioma se nota al
@@ -61,6 +72,7 @@ class RestockCubit extends Cubit<RestockState> {
     required this.runAgentUsecase,
     required this.approveOrder,
     required this.rejectOrder,
+    this.watchStoreChanges,
     AppLocalizations Function()? l10n,
   }) : _l10n = l10n ?? (() => l10nFor(deviceLocale())),
        super(const RestockState());
@@ -136,6 +148,39 @@ class RestockCubit extends Cubit<RestockState> {
       error: errors.isEmpty ? null : errors.first,
       clearError: errors.isEmpty,
     ));
+
+    _watch(store.id);
+  }
+
+  /// Se suscribe a los cambios en tiempo real de la tienda (una sola vez).
+  void _watch(String storeId) {
+    final watch = watchStoreChanges;
+    if (watch == null || isClosed || _watchedStoreId == storeId) return;
+
+    _changesSubscription?.cancel();
+    _watchedStoreId = storeId;
+    _changesSubscription = watch(storeId).listen(
+      (_) => _scheduleReload(),
+      // Si el tiempo real falla, la app sigue funcionando: se actualiza al
+      // volver a abrirla o al deslizar para refrescar.
+      onError: (Object _) {},
+    );
+  }
+
+  /// Agrupa los cambios que llegan seguidos (un pedido nuevo suele traer
+  /// también cambios de stock) en una sola recarga.
+  void _scheduleReload() {
+    _reloadTimer?.cancel();
+    _reloadTimer = Timer(const Duration(milliseconds: 700), () {
+      if (!isClosed) load();
+    });
+  }
+
+  @override
+  Future<void> close() async {
+    _reloadTimer?.cancel();
+    await _changesSubscription?.cancel();
+    return super.close();
   }
 
   /// Ejecuta el agente. Devuelve el mensaje para mostrar al usuario.
