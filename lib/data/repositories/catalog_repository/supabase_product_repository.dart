@@ -12,9 +12,12 @@ class SupabaseProductRepository implements ProductRepository {
   SupabaseProductRepository(this._datasource);
 
   @override
-  Future<Either<AppError, List<Product>>> getBySupplier(String supplierId) async {
+  Future<Either<AppError, List<Product>>> getBySupplier(
+    String storeId,
+    String supplierId,
+  ) async {
     try {
-      final rows = await _datasource.getBySupplier(supplierId);
+      final rows = await _datasource.getBySupplier(storeId, supplierId);
       return Right(rows.map(ProductModel.fromMap).toList());
     } catch (error) {
       return Left(logError(AppErrorCode.catalogLoadFailed, error));
@@ -22,9 +25,12 @@ class SupabaseProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, Product?>> getByUid(String uid) async {
+  Future<Either<AppError, Product?>> getByUid(
+    String storeId,
+    String uid,
+  ) async {
     try {
-      final row = await _datasource.getByUid(uid);
+      final row = await _datasource.getByUid(storeId, uid);
       return Right(row == null ? null : ProductModel.fromMap(row));
     } catch (error) {
       return Left(logError(AppErrorCode.productSearchFailed, error));
@@ -32,9 +38,12 @@ class SupabaseProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, List<Product>>> getByUids(List<String> uids) async {
+  Future<Either<AppError, List<Product>>> getByUids(
+    String storeId,
+    List<String> uids,
+  ) async {
     try {
-      final rows = await _datasource.getByUids(uids);
+      final rows = await _datasource.getByUids(storeId, uids);
       return Right(rows.map(ProductModel.fromMap).toList());
     } catch (error) {
       return Left(logError(AppErrorCode.productsLoadFailed, error));
@@ -42,9 +51,9 @@ class SupabaseProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, List<Product>>> getLowStock() async {
+  Future<Either<AppError, List<Product>>> getLowStock(String storeId) async {
     try {
-      final rows = await _datasource.getLowStock();
+      final rows = await _datasource.getLowStock(storeId);
       return Right(rows.map(ProductModel.fromMap).toList());
     } catch (error) {
       return Left(logError(AppErrorCode.lowStockLoadFailed, error));
@@ -52,9 +61,13 @@ class SupabaseProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, Unit>> updateStock(String uid, int stock) async {
+  Future<Either<AppError, Unit>> updateStock(
+    String storeId,
+    String uid,
+    int stock,
+  ) async {
     try {
-      await _datasource.updateStock(uid, stock);
+      await _datasource.updateStock(storeId, uid, stock);
       return const Right(unit);
     } catch (error) {
       final message = error

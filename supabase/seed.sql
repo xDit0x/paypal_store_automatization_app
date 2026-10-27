@@ -160,3 +160,15 @@ values
     true
   )
 on conflict (uid) do nothing;
+
+-- Stock inicial de cada tienda: cada una recibe el stock del catálogo.
+insert into public.store_products (
+  store_id,
+  product_uid,
+  stock,
+  low_stock_threshold
+)
+select s.id, p.uid, p.stock, p.low_stock_threshold
+from public.stores s
+cross join public.products p
+on conflict (store_id, product_uid) do nothing;

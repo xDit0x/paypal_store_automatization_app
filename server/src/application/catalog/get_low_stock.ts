@@ -5,14 +5,18 @@ interface ProductRow {
   name: string;
   price: number | string;
   currency: string;
-  stock: number;
-  low_stock_threshold: number;
   unit: string;
   supplier_id: string;
   suppliers:
     | { name: string; paypal_email: string | null }
     | { name: string; paypal_email: string | null }[]
     | null;
+}
+
+interface InventoryRow {
+  stock: number;
+  low_stock_threshold: number;
+  products: ProductRow | ProductRow[] | null;
 }
 
 export interface LowStockProduct {
@@ -68,47 +72,52 @@ export async function getProductsInOpenOrders(
   return uids;
 }
 
-export async function getLowStockProducts(options?: {
-  storeId?: string;
+export async function getLowStockProducts(options: {
+  storeId: string;
   excludeUids?: Set<string>;
 }): Promise<LowStockProduct[]> {
   const excluded =
-    options?.excludeUids ??
-    (options?.storeId
-      ? await getProductsInOpenOrders(options.storeId)
-      : new Set<string>());
+    options.excludeUids ?? (await getProductsInOpenOrders(options.storeId));
 
   const { data, error } = await supabaseAdmin
-    .from('products')
+    .from('store_products')
     .select(
-      'uid, name, price, currency, stock, low_stock_threshold, unit, supplier_id, suppliers(name, paypal_email)',
+      'stock, low_stock_threshold, products!inner(uid, name, price, currency, unit, supplier_id, active, suppliers(name, paypal_email))',
     )
-    .eq('active', true);
+    .eq('store_id', options.storeId)
+    .eq('products.active', true);
 
   if (error) {
     throw new Error(`No se pudo leer el inventario: ${error.message}`);
   }
 
-  return ((data ?? []) as unknown as ProductRow[])
-    .filter((row) => row.stock <= row.low_stock_threshold)
-    .filter((row) => !excluded.has(row.uid))
-    .map((row) => {
-      const supplier = Array.isArray(row.suppliers)
-        ? row.suppliers[0]
-        : row.suppliers;
-      const missing = row.low_stock_threshold - row.stock;
-      return {
-        uid: row.uid,
-        name: row.name,
-        price: Number(row.price),
-        currency: row.currency,
-        stock: row.stock,
-        lowStockThreshold: row.low_stock_threshold,
-        suggestedQty: missing >= 0 ? missing + 1 : 1,
-        unit: row.unit,
-        supplierId: row.supplier_id,
-        supplierName: supplier?.name ?? 'Proveedor',
-        supplierPaypalEmail: supplier?.paypal_email ?? null,
-      };
+  const products: LowStockProduct[] = [];
+  for (const row of (data ?? []) as unknown as InventoryRow[]) {
+    const product = Array.isArray(row.products)
+      ? row.products[0]
+      : row.products;
+    if (!product) continue;
+    if (row.stock > row.low_stock_threshold) continue;
+    if (excluded.has(product.uid)) continue;
+
+    const supplier = Array.isArray(product.suppliers)
+      ? product.suppliers[0]
+      : product.suppliers;
+    const missing = row.low_stock_threshold - row.stock;
+    products.push({
+      uid: product.uid,
+      name: product.name,
+      price: Number(product.price),
+      currency: product.currency,
+      stock: row.stock,
+      lowStockThreshold: row.low_stock_threshold,
+      suggestedQty: missing >= 0 ? missing + 1 : 1,
+      unit: product.unit,
+      supplierId: product.supplier_id,
+      supplierName: supplier?.name ?? 'Proveedor',
+      supplierPaypalEmail: supplier?.paypal_email ?? null,
     });
+  }
+
+  return products;
 }

@@ -16,32 +16,47 @@ class _FakeProductRepository implements ProductRepository {
   _FakeProductRepository(this.products);
 
   @override
-  Future<Either<AppError, List<Product>>> getBySupplier(String supplierId) async {
+  Future<Either<AppError, List<Product>>> getBySupplier(
+    String storeId,
+    String supplierId,
+  ) async {
     return Right(products);
   }
 
   @override
-  Future<Either<AppError, Product?>> getByUid(String uid) async {
+  Future<Either<AppError, Product?>> getByUid(
+    String storeId,
+    String uid,
+  ) async {
     final matches = products.where((product) => product.uid == uid);
     return Right(matches.isEmpty ? null : matches.first);
   }
 
   @override
-  Future<Either<AppError, List<Product>>> getByUids(List<String> uids) async {
+  Future<Either<AppError, List<Product>>> getByUids(
+    String storeId,
+    List<String> uids,
+  ) async {
     return Right(
       products.where((product) => uids.contains(product.uid)).toList(),
     );
   }
 
   @override
-  Future<Either<AppError, List<Product>>> getLowStock() async {
+  Future<Either<AppError, List<Product>>> getLowStock(String storeId) async {
     return Right(products.where((product) => product.isLowStock).toList());
   }
 
   @override
-  Future<Either<AppError, Unit>> updateStock(String uid, int stock) async {
+  Future<Either<AppError, Unit>> updateStock(
+    String storeId,
+    String uid,
+    int stock,
+  ) async {
     final exists = products.any((product) => product.uid == uid);
-    return exists ? const Right(unit) : const Left(AppError(AppErrorCode.productMissing));
+    return exists
+        ? const Right(unit)
+        : const Left(AppError(AppErrorCode.productMissing));
   }
 }
 
@@ -142,19 +157,22 @@ void main() {
     expect(orderRepository.lastItems?.single.qty, 2);
   });
 
-  test('crea un pedido pendiente de aprobación por encima del umbral', () async {
-    final result = await usecase(
-      storeId: 'store-1',
-      supplierId: 'sup-1',
-      lines: const [DraftOrderLine(productUid: 'LECHE-001', qty: 6)],
-    );
+  test(
+    'crea un pedido pendiente de aprobación por encima del umbral',
+    () async {
+      final result = await usecase(
+        storeId: 'store-1',
+        supplierId: 'sup-1',
+        lines: const [DraftOrderLine(productUid: 'LECHE-001', qty: 6)],
+      );
 
-    final value = result.getOrElse(
-      () => throw StateError('esperaba un pedido'),
-    );
-    expect(value.decision.needsApproval, isTrue);
-    expect(orderRepository.lastStatus, OrderStatus.pendingApproval);
-  });
+      final value = result.getOrElse(
+        () => throw StateError('esperaba un pedido'),
+      );
+      expect(value.decision.needsApproval, isTrue);
+      expect(orderRepository.lastStatus, OrderStatus.pendingApproval);
+    },
+  );
 
   test('no crea el pedido si las reglas lo bloquean', () async {
     final result = await usecase(

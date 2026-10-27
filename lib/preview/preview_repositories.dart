@@ -389,12 +389,16 @@ class PreviewProductRepository implements ProductRepository {
 
   @override
   Future<Either<AppError, List<Product>>> getBySupplier(
+    String storeId,
     String supplierId,
   ) async =>
       Right(db.products.where((p) => p.supplierId == supplierId).toList());
 
   @override
-  Future<Either<AppError, Product?>> getByUid(String uid) async {
+  Future<Either<AppError, Product?>> getByUid(
+    String storeId,
+    String uid,
+  ) async {
     for (final p in db.products) {
       if (p.uid == uid) return Right(p);
     }
@@ -402,15 +406,21 @@ class PreviewProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, List<Product>>> getByUids(List<String> uids) async =>
-      Right(db.products.where((p) => uids.contains(p.uid)).toList());
+  Future<Either<AppError, List<Product>>> getByUids(
+    String storeId,
+    List<String> uids,
+  ) async => Right(db.products.where((p) => uids.contains(p.uid)).toList());
 
   @override
-  Future<Either<AppError, List<Product>>> getLowStock() async =>
+  Future<Either<AppError, List<Product>>> getLowStock(String storeId) async =>
       Right(db.products.where((p) => p.isLowStock).toList());
 
   @override
-  Future<Either<AppError, Unit>> updateStock(String uid, int stock) async {
+  Future<Either<AppError, Unit>> updateStock(
+    String storeId,
+    String uid,
+    int stock,
+  ) async {
     final index = db.products.indexWhere((p) => p.uid == uid);
     if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
     if (stock < 0) return const Left(AppError(AppErrorCode.stockNegative));
