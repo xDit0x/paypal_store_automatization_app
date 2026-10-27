@@ -70,6 +70,8 @@ export function verifyOrderAmount(params: {
   rules: SpendingRules;
   spentThisMonth: number;
   tolerance?: number;
+  /** El dueño ya aprobó el pedido: superar el umbral de aprobación no bloquea. */
+  ownerApproved?: boolean;
 }): AmountCheck {
   const tolerance = params.tolerance ?? 0.01;
 
@@ -121,7 +123,7 @@ export function verifyOrderAmount(params: {
     };
   }
 
-  if (decision.status === 'requires_approval') {
+  if (decision.status === 'requires_approval' && !params.ownerApproved) {
     return {
       ok: false,
       total: computed.total,
@@ -146,6 +148,7 @@ interface OrderAmountRow {
  */
 export async function guardOrderAmount(
   orderId: string,
+  options: { ownerApproved?: boolean } = {},
 ): Promise<{ total: number }> {
   const { data, error } = await supabaseAdmin
     .from('orders')
@@ -212,6 +215,7 @@ export async function guardOrderAmount(
     products,
     rules: mapSpendingRules(rulesRow ?? {}),
     spentThisMonth,
+    ownerApproved: options.ownerApproved ?? false,
   });
 
   if (!check.ok) {

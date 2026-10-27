@@ -148,7 +148,9 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         // Antes de aprobar se comprueba el importe contra el catálogo y las
         // reglas vigentes: si no cuadra, no se paga.
         try {
-          await guardOrderAmount(order.id);
+          // El dueño está aprobando: el umbral de aprobación ya no bloquea,
+          // pero el importe, el máximo por pedido y el tope mensual sí.
+          await guardOrderAmount(order.id, { ownerApproved: true });
         } catch (error) {
           return reply.code(409).send({
             error:
@@ -171,7 +173,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
           throw new Error(`No se pudo aprobar el pedido: ${error.message}`);
         }
 
-        const fulfillment = await fulfillOrder(order.id);
+        const fulfillment = await fulfillOrder(order.id, { ownerApproved: true });
         return reply.send({ order_id: order.id, ...fulfillment });
       } catch (error) {
         request.log.error(error);

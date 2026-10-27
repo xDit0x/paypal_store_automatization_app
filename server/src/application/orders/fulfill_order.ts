@@ -207,6 +207,7 @@ export async function sendInvoiceForOrder(
 
 export async function fulfillOrder(
   orderId: string,
+  options: { ownerApproved?: boolean } = {},
 ): Promise<FulfillmentResult> {
   const { order, store, supplier } = await loadOrderContext(orderId);
 
@@ -216,7 +217,7 @@ export async function fulfillOrder(
 
   // El importe se recalcula desde el catálogo y se vuelven a comprobar las
   // reglas: el valor guardado en orders.total no es de fiar.
-  const { total } = await guardOrderAmount(orderId);
+  const { total } = await guardOrderAmount(orderId, options);
   const warnings: string[] = [];
 
   let payment: FulfillmentResult['payment'] = null;

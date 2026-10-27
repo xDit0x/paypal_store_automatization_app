@@ -2,11 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Restock (simulador iOS)",
+      "name": "Restock (dispositivo seleccionado)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
-      "deviceId": "F4100DDA-95E6-427F-B677-7DB97C02097D",
       "args": ["--dart-define-from-file=dart_defines.json"]
     },
     {
@@ -16,6 +15,12 @@
       "program": "lib/main.dart",
       "deviceId": "chrome",
       "args": ["--dart-define-from-file=dart_defines.json"]
+    },
+    {
+      "name": "Restock vista previa (sin Supabase)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_preview.dart"
     }
   ]
 }

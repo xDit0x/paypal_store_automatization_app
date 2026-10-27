@@ -38,5 +38,5 @@ if (error) {
   process.exit(1);
 }
 
-const result = await fulfillOrder(orderId);
+const result = await fulfillOrder(orderId, { ownerApproved: true });
 console.log(JSON.stringify({ order_id: orderId, ...result }, null, 2));

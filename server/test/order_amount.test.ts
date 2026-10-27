@@ -116,6 +116,21 @@ test('un pedido que necesita aprobación no se paga automáticamente', () => {
   assert.match(check.reason ?? '', /aprobación/);
 });
 
+test('un pedido que necesita aprobación se paga cuando el dueño lo aprueba', () => {
+  const check = verifyOrderAmount({
+    orderTotal: 75,
+    orderSupplierId: 'sup-1',
+    lines: [{ productUid: 'PRD-001', qty: 6 }],
+    products,
+    rules,
+    spentThisMonth: 0,
+    ownerApproved: true,
+  });
+
+  assert.equal(check.ok, true);
+  assert.equal(check.total, 75);
+});
+
 test('un producto de otro proveedor invalida el pedido', () => {
   const check = verifyOrderAmount({
     orderTotal: 12.5,
