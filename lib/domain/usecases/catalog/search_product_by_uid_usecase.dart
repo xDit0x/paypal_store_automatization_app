@@ -8,13 +8,16 @@ class SearchProductByUidUsecase {
   final ProductRepository repository;
   SearchProductByUidUsecase({required this.repository});
 
-  Future<Either<AppError, Product>> call(String uid) async {
+  Future<Either<AppError, Product>> call(String storeId, String uid) async {
+    if (storeId.isEmpty) {
+      return const Left(AppError(AppErrorCode.storeNotFound));
+    }
     final normalized = uid.trim().toUpperCase();
     if (normalized.isEmpty) {
       return const Left(AppError(AppErrorCode.productUidMissing));
     }
 
-    final result = await repository.getByUid(normalized);
+    final result = await repository.getByUid(storeId, normalized);
     return result.fold(
       (error) => Left(error),
       (product) => product == null

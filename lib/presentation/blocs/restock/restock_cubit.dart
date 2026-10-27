@@ -112,7 +112,9 @@ class RestockCubit extends Cubit<RestockState> {
     }, (v) => v);
 
     // No hay un "listar todos los productos": se juntan los catálogos.
-    final catalogs = await Future.wait(suppliers.map((s) => getSupplierCatalog(s.id)));
+    final catalogs = await Future.wait(
+      suppliers.map((s) => getSupplierCatalog(store.id, s.id)),
+    );
     final products = <Product>[];
     for (final result in catalogs) {
       result.fold<void>(errors.add, products.addAll);
@@ -212,9 +214,13 @@ class RestockCubit extends Cubit<RestockState> {
     return error;
   }
 
-  /// Cambia el stock de un producto. Devuelve null si todo fue bien.
+  /// Cambia el stock de un producto en la tienda actual. Devuelve null si
+  /// todo fue bien.
   Future<AppError?> updateStock(String uid, int stock) async {
-    final result = await updateProductStock(uid, stock);
+    final store = state.store;
+    if (store == null) return const AppError(AppErrorCode.storeNotFound);
+
+    final result = await updateProductStock(store.id, uid, stock);
     return result.fold<AppError?>((error) => error, (_) {
       emit(state.copyWith(
         products: [

@@ -8,5 +8,6 @@ class GetLowStockProductsUsecase {
   final ProductRepository repository;
   GetLowStockProductsUsecase({required this.repository});
 
-  Future<Either<AppError, List<Product>>> call() => repository.getLowStock();
+  Future<Either<AppError, List<Product>>> call(String storeId) =>
+      repository.getLowStock(storeId);
 }

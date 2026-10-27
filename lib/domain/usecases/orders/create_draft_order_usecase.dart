@@ -45,7 +45,7 @@ class CreateDraftOrderUsecase {
     }
 
     final uids = {for (final line in lines) line.productUid}.toList();
-    final productsResult = await productRepository.getByUids(uids);
+    final productsResult = await productRepository.getByUids(storeId, uids);
     if (productsResult.isLeft()) {
       return Left(
         productsResult.fold(

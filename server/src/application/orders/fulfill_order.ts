@@ -99,10 +99,11 @@ async function loadOrderContext(orderId: string): Promise<OrderContext> {
 
 async function incrementStock(order: OrderRow): Promise<void> {
   for (const item of order.order_items ?? []) {
-    const { data: product, error } = await supabaseAdmin
-      .from('products')
+    const { data: current, error } = await supabaseAdmin
+      .from('store_products')
       .select('stock')
-      .eq('uid', item.product_uid)
+      .eq('store_id', order.store_id)
+      .eq('product_uid', item.product_uid)
       .maybeSingle();
 
     if (error) {
@@ -110,16 +111,48 @@ async function incrementStock(order: OrderRow): Promise<void> {
         `No se pudo leer el stock de ${item.product_uid}: ${error.message}`,
       );
     }
-    if (!product) continue;
 
-    const { error: updateError } = await supabaseAdmin
+    if (current) {
+      const { error: updateError } = await supabaseAdmin
+        .from('store_products')
+        .update({ stock: Number(current.stock) + item.qty })
+        .eq('store_id', order.store_id)
+        .eq('product_uid', item.product_uid);
+
+      if (updateError) {
+        throw new Error(
+          `No se pudo actualizar el stock de ${item.product_uid}: ${updateError.message}`,
+        );
+      }
+      continue;
+    }
+
+    // La tienda no tenía fila de inventario para este producto: se crea con
+    // el umbral del catálogo y la cantidad recibida.
+    const { data: product, error: productError } = await supabaseAdmin
       .from('products')
-      .update({ stock: Number(product.stock) + item.qty })
-      .eq('uid', item.product_uid);
+      .select('low_stock_threshold')
+      .eq('uid', item.product_uid)
+      .maybeSingle();
 
-    if (updateError) {
+    if (productError) {
       throw new Error(
-        `No se pudo actualizar el stock de ${item.product_uid}: ${updateError.message}`,
+        `No se pudo leer el catálogo de ${item.product_uid}: ${productError.message}`,
+      );
+    }
+
+    const { error: insertError } = await supabaseAdmin
+      .from('store_products')
+      .insert({
+        store_id: order.store_id,
+        product_uid: item.product_uid,
+        stock: item.qty,
+        low_stock_threshold: Number(product?.low_stock_threshold ?? 0),
+      });
+
+    if (insertError) {
+      throw new Error(
+        `No se pudo crear el stock de ${item.product_uid}: ${insertError.message}`,
       );
     }
   }

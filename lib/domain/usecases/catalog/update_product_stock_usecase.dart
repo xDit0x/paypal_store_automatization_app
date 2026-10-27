@@ -7,13 +7,20 @@ class UpdateProductStockUsecase {
   final ProductRepository repository;
   UpdateProductStockUsecase({required this.repository});
 
-  Future<Either<AppError, Unit>> call(String uid, int stock) {
+  Future<Either<AppError, Unit>> call(
+    String storeId,
+    String uid,
+    int stock,
+  ) {
+    if (storeId.isEmpty) {
+      return Future.value(const Left(AppError(AppErrorCode.storeNotFound)));
+    }
     if (uid.isEmpty) {
       return Future.value(const Left(AppError(AppErrorCode.productMissing)));
     }
     if (stock < 0) {
       return Future.value(const Left(AppError(AppErrorCode.stockNegative)));
     }
-    return repository.updateStock(uid, stock);
+    return repository.updateStock(storeId, uid, stock);
   }
 }

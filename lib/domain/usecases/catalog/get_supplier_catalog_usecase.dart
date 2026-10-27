@@ -8,6 +8,8 @@ class GetSupplierCatalogUsecase {
   final ProductRepository repository;
   GetSupplierCatalogUsecase({required this.repository});
 
-  Future<Either<AppError, List<Product>>> call(String supplierId) =>
-      repository.getBySupplier(supplierId);
+  Future<Either<AppError, List<Product>>> call(
+    String storeId,
+    String supplierId,
+  ) => repository.getBySupplier(storeId, supplierId);
 }

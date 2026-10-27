@@ -78,14 +78,29 @@ if (runsError) {
   fail('No se pudieron borrar las ejecuciones del agente', runsError);
 }
 
-for (const [uid, stock] of Object.entries(SEED_STOCK)) {
-  const { error } = await supabaseAdmin
-    .from('products')
-    .update({ stock })
-    .eq('uid', uid);
+let storesQuery = supabaseAdmin.from('stores').select('id');
+if (storeId) {
+  storesQuery = storesQuery.eq('id', storeId);
+}
+
+const { data: stores, error: storesError } = await storesQuery;
+if (storesError) {
+  fail('No se pudieron leer las tiendas', storesError);
+}
+
+const seedStock = Object.entries(SEED_STOCK);
+for (const store of stores ?? []) {
+  const { error } = await supabaseAdmin.from('store_products').upsert(
+    seedStock.map(([uid, stock]) => ({
+      store_id: store.id as string,
+      product_uid: uid,
+      stock,
+    })),
+    { onConflict: 'store_id,product_uid' },
+  );
 
   if (error) {
-    fail(`No se pudo restaurar el stock de ${uid}`, error);
+    fail(`No se pudo restaurar el stock de la tienda ${store.id}`, error);
   }
 }
 
@@ -93,8 +108,9 @@ console.log(
   JSON.stringify(
     {
       store_id: storeId ?? 'todas',
+      stores: (stores ?? []).length,
       orders_deleted: orderIds.length,
-      stock_restored: Object.keys(SEED_STOCK).length,
+      stock_restored: (stores ?? []).length * seedStock.length,
     },
     null,
     2,
