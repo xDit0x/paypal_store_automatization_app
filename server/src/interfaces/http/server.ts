@@ -4,6 +4,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { env } from '../../config/env.js';
 import { agentRoutes } from './routes/agent.js';
 import { catalogRoutes } from './routes/catalog.js';
+import { catalogSyncRoutes } from './routes/catalog_sync.js';
 import { healthRoutes } from './routes/health.js';
 import { orderRoutes } from './routes/orders.js';
 import { createRateLimiter } from './rate_limit.js';
@@ -52,6 +53,7 @@ export function buildServer(): FastifyInstance {
   app.register(agentRoutes);
   app.register(orderRoutes);
   app.register(catalogRoutes);
+  app.register(catalogSyncRoutes);
 
   return app;
 }

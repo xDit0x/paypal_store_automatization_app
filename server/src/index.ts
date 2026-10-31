@@ -1,6 +1,7 @@
 import { env, requireSupabaseEnv } from './config/env.js';
 import { buildServer } from './interfaces/http/server.js';
 import { startRestockScheduler } from './jobs/scheduled_restock.js';
+import { startCatalogSyncScheduler } from './jobs/scheduled_catalog_sync.js';
 
 // Falla al arrancar (y no en cada petición) si faltan las claves.
 requireSupabaseEnv();

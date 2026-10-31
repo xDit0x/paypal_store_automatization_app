@@ -16,6 +16,9 @@ export const env = {
   aiProvider: process.env.AI_PROVIDER ?? 'groq',
   aiModel: process.env.AI_MODEL ?? 'openai/gpt-oss-120b',
 
+  catalogSyncEnabled: (process.env.CATALOG_SYNC_ENABLED ?? 'true').toLowerCase() !== 'false',
+  catalogSyncIntervalMinutes: Number(process.env.CATALOG_SYNC_INTERVAL_MINUTES ?? 360),
+
   paypalClientId: process.env.PAYPAL_CLIENT_ID ?? '',
   paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET ?? '',
   paypalBaseUrl:

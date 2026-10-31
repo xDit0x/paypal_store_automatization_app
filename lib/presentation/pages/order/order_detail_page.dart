@@ -15,17 +15,26 @@ import 'package:store_automatization_app/presentation/widgets/restock/restock_ui
 
 /// Detalle de un pedido. Si está pendiente, permite aprobarlo y pagarlo
 /// con PayPal o rechazarlo.
-class OrderDetailPage extends StatelessWidget {
+class OrderDetailPage extends StatefulWidget {
   const OrderDetailPage({super.key, required this.orderId});
 
   final String orderId;
+
+  @override
+  State<OrderDetailPage> createState() => _OrderDetailPageState();
+}
+
+class _OrderDetailPageState extends State<OrderDetailPage> {
+  bool _isApproving = false;
 
   Future<void> _approve(
     BuildContext context,
     RestockState state,
     Order order,
   ) async {
-    final cubit = context.read<RestockCubit>();
+    setState(() => _isApproving = true);
+    try {
+      final cubit = context.read<RestockCubit>();
     final l10n = context.l10n;
     final supplier = state.supplierName(order.supplierId);
 
@@ -92,6 +101,9 @@ class OrderDetailPage extends StatelessWidget {
       tone: RSnackTone.success,
     );
     Navigator.of(context).maybePop();
+  } finally {
+      if (mounted) setState(() => _isApproving = false);
+    }
   }
 
   Future<void> _reject(
@@ -145,7 +157,7 @@ class OrderDetailPage extends StatelessWidget {
     final t = context.rt;
     final state = context.watch<RestockCubit>().state;
     final l10n = context.l10n;
-    final order = state.orderById(orderId);
+    final order = state.orderById(widget.orderId);
     final media = MediaQuery.of(context);
 
     if (order == null) {
@@ -330,8 +342,8 @@ class OrderDetailPage extends StatelessWidget {
                 decision.isBlocked
                     ? l10n.orderBlockedByRules
                     : l10n.actionApproveAndPay,
-                loading: busy,
-                onPressed: decision.isBlocked
+                loading: busy || _isApproving,
+                onPressed: (decision.isBlocked || busy || _isApproving)
                     ? null
                     : () => _approve(context, state, order),
               ),
@@ -339,7 +351,7 @@ class OrderDetailPage extends StatelessWidget {
               RSecondaryButton(
                 l10n.actionReject,
                 color: p.warning,
-                onPressed: busy ? null : () => _reject(context, state, order),
+                onPressed: (busy || _isApproving) ? null : () => _reject(context, state, order),
               ),
               const SizedBox(height: 10),
               Center(

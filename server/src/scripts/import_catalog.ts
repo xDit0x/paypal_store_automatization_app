@@ -23,7 +23,7 @@ async function main() {
     console.error('No se pudo leer archivo ni URL');
     process.exit(1);
   }
-  const result = await importCatalog({ storeId: args.supplier, type: 'json', content });
+  const result = await importCatalog({ supplierId: args.supplier, type: 'json', content });
   console.log('Resultado:', JSON.stringify(result, null, 2));
 }
 

@@ -7,61 +7,68 @@ export interface ImportResult {
   errors: string[];
 }
 
-export interface CatalogItem {
-  sku: string;
-  name: string;
-  price: number;
+export interface CatalogProductItem {
+  id?: string;
+  sku?: string;
+  product?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  unit_price?: number;
+  cost?: number;
+  currency?: string;
+  unit?: string;
+  active?: boolean;
 }
 
-function parseCsv(content: string): CatalogItem[] {
-  const lines = content.trim().split(/\r?\n/).filter((l) => l.trim() !== '');
-  if (lines.length === 0) return [];
-  const first = lines.at(0);
-  if (!first) return [];
-  const header = first.split(',').map((h) => h.trim().toLowerCase());
-  const items: CatalogItem[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines.at(i);
-    if (!line) continue;
-    const cols = line.split(',').map((c) => c.trim());
-    if (cols.length < 3) continue;
-    const sku = cols[0];
-    const name = cols[1];
-    const priceStr = cols[2];
-    if (!sku || !name || priceStr === undefined) continue;
-    const price = parseFloat(priceStr.replace(',', '.'));
-    if (isNaN(price)) continue;
-    items.push({ sku, name, price });
-  }
-  return items;
+export interface CatalogPayload {
+  supplier?: string;
+  currency?: string;
+  products?: CatalogProductItem[];
+  items?: CatalogProductItem[];
+  catalog?: CatalogProductItem[];
 }
 
-function parseJson(content: string): CatalogItem[] {
+function parseJson(content: string): { currency: string; items: CatalogProductItem[] } {
   try {
-    const parsed = JSON.parse(content);
-    const arr = Array.isArray(parsed) ? parsed : parsed?.items ?? parsed?.catalog ?? [];
-    if (!Array.isArray(arr)) return [];
-    const items: CatalogItem[] = [];
-    for (const row of arr) {
+    const parsed = JSON.parse(content) as CatalogPayload | CatalogProductItem[];
+    const rootCurrency = !Array.isArray(parsed) && typeof parsed === 'object' && parsed.currency ? String(parsed.currency).trim().toUpperCase() : 'EUR';
+    const rawList = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.products)
+      ? parsed.products
+      : Array.isArray(parsed?.items)
+      ? parsed.items
+      : Array.isArray(parsed?.catalog)
+      ? parsed.catalog
+      : [];
+
+    const items: CatalogProductItem[] = [];
+    for (const row of rawList) {
       if (!row || typeof row !== 'object') continue;
-      const sku = String(row.sku ?? row.uid ?? row.id ?? '').trim();
+      const sku = String(row.sku ?? row.id ?? '').trim();
       const name = String(row.name ?? row.product ?? '').trim();
-      const priceRaw = row.price ?? row.unit_price ?? row.cost ?? 0;
+      const description = row.description ? String(row.description).trim() : undefined;
+      const priceRaw = row.price ?? row.unit_price ?? 0;
       const price = parseFloat(String(priceRaw).replace(',', '.'));
+      const currency = row.currency ? String(row.currency).trim().toUpperCase() : rootCurrency;
+      const unit = row.unit ? String(row.unit).trim() : 'unidad';
+      const active = row.active !== false;
+
       if (!sku || !name || isNaN(price)) continue;
-      items.push({ sku, name, price });
+      items.push({ sku, name, description, price, currency, unit, active });
     }
-    return items;
+    return { currency: rootCurrency, items };
   } catch {
-    return [];
+    return { currency: 'EUR', items: [] };
   }
 }
 
 export async function importCatalog(options: {
-  storeId: string;
-  type: 'csv' | 'json';
-  file?: string;
-  content?: string;
+  supplierId?: string;
+  supplierCode?: string;
+  type: 'json' | 'csv';
+  content: string;
 }): Promise<ImportResult> {
   const result: ImportResult = {
     countCreated: 0,
@@ -70,65 +77,56 @@ export async function importCatalog(options: {
     errors: [],
   };
 
-  if (!options.storeId) {
-    result.errors.push('storeId es obligatorio');
-    return result;
-  }
-
-  const content = options.content ?? (options.file ? await readFile(options.file) : '');
+  const content = options.content;
   if (!content || typeof content !== 'string') {
     result.errors.push('Contenido vacío o no es texto');
     return result;
   }
 
-  let items: CatalogItem[] = [];
-  if (options.type === 'csv') {
-    items = parseCsv(content);
-  } else if (options.type === 'json') {
-    items = parseJson(content);
-  } else {
-    result.errors.push('Tipo no soportado: ' + options.type);
-    return result;
-  }
-
+  const { items } = parseJson(content);
   if (items.length === 0) {
-    result.errors.push('No se encontraron productos válidos');
+    result.errors.push('No se encontraron productos válidos en el JSON');
     return result;
   }
 
-  // Validaciones: SKU único, precio > 0
+  // Resolver proveedor por id o por code
+  let supplierId = options.supplierId;
+  const supplierCode = options.supplierCode?.trim().toLowerCase();
+
+  if (!supplierId && supplierCode) {
+    const { data, error } = await supabaseAdmin
+      .from('suppliers')
+      .select('id')
+      .eq('code', supplierCode)
+      .maybeSingle();
+    if (error || !data) {
+      result.errors.push(`Proveedor con código "${supplierCode}" no encontrado`);
+      return result;
+    }
+    supplierId = data.id;
+  }
+
+  if (!supplierId) {
+    result.errors.push('Falta supplierId o supplierCode');
+    return result;
+  }
+
+  // Validaciones
   const seen = new Set<string>();
   for (const item of items) {
-    if (seen.has(item.sku)) {
-      result.errors.push('SKU duplicado: ' + item.sku);
+    if (seen.has(item.sku!)) {
+      result.errors.push('SKU duplicado en el feed: ' + (item.sku ?? ''));
     }
-    seen.add(item.sku);
-    if (item.price <= 0) {
-      result.errors.push('Precio debe ser > 0 para SKU: ' + item.sku);
+    seen.add(item.sku!);
+    if ((item.price ?? 0) <= 0) {
+      result.errors.push('El precio debe ser > 0 para SKU: ' + (item.sku ?? ''));
     }
   }
   if (result.errors.length > 0) {
     return result;
   }
 
-  // Buscar supplier por storeId (interpretamos storeId como supplier_id para importación)
-  const supplierId = options.storeId;
-  const { data: supplierData, error: supplierError } = await supabaseAdmin
-    .from('suppliers')
-    .select('id, code')
-    .eq('id', supplierId)
-    .single();
-
-  if (supplierError || !supplierData) {
-    result.errors.push('Proveedor no encontrado: ' + supplierId);
-    return result;
-  }
-
-  // Actualizar suppliers.code — usamos el código derivado del proveedor o el que se pasa
-  const supplierCode = supplierData.code ?? 'provider';
-  await supabaseAdmin.from('suppliers').update({ code: supplierCode }).eq('id', supplierId);
-
-  // Obtener productos actuales del proveedor para comparar
+  // Leer productos existentes del proveedor
   const { data: existingProducts, error: existingError } = await supabaseAdmin
     .from('products')
     .select('uid, active')
@@ -136,10 +134,11 @@ export async function importCatalog(options: {
 
   if (existingError) {
     result.errors.push('Error leyendo productos existentes: ' + existingError.message);
+    return result;
   }
 
   const existingUids = new Set<string>((existingProducts ?? []).map((p) => p.uid));
-  const importedUids = new Set<string>(items.map((i) => i.sku));
+  const importedUids = new Set<string>(items.map((i) => i.sku ?? ''));
 
   // Upsert en products
   for (const item of items) {
@@ -147,22 +146,24 @@ export async function importCatalog(options: {
       uid: item.sku,
       supplier_id: supplierId,
       name: item.name,
+      description: item.description ?? null,
       price: item.price,
-      currency: 'EUR',
-      active: true,
+      currency: item.currency ?? 'EUR',
+      unit: item.unit ?? 'unidad',
+      active: item.active ?? true,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'uid' });
 
     if (upsertError) {
-      result.errors.push('Upsert fallido para ' + item.sku + ': ' + upsertError.message);
-    } else if (existingUids.has(item.sku)) {
+      result.errors.push(`Upsert fallido para ${item.sku ?? '??'}: ${upsertError.message}`);
+    } else if (existingUids.has(item.sku ?? '')) {
       result.countUpdated++;
     } else {
       result.countCreated++;
     }
   }
 
-  // Desactivar productos que ya no vienen (importación completa)
+  // Desactivar productos ausentes
   for (const uid of existingUids) {
     if (!importedUids.has(uid)) {
       const { error: deactError } = await supabaseAdmin
@@ -170,14 +171,14 @@ export async function importCatalog(options: {
         .update({ active: false, updated_at: new Date().toISOString() })
         .eq('uid', uid);
       if (deactError) {
-        result.errors.push('Desactivación fallida para ' + uid + ': ' + deactError.message);
+        result.errors.push(`Desactivación fallida para ${uid}: ${deactError.message}`);
       } else {
         result.countDeactivated++;
       }
     }
   }
 
-  // Registrar en catalog_imports
+  // Registrar auditoría
   await supabaseAdmin.from('catalog_imports').insert({
     supplier_id: supplierId,
     source: options.type,
@@ -192,13 +193,4 @@ export async function importCatalog(options: {
   });
 
   return result;
-}
-
-async function readFile(filePath: string): Promise<string> {
-  try {
-    const { readFileSync } = await import('fs');
-    return readFileSync(filePath, 'utf-8');
-  } catch {
-    return '';
-  }
 }
