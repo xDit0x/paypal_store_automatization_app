@@ -39,6 +39,10 @@ class CreateDraftOrderUsecase {
     OrderCreatorType createdByType = OrderCreatorType.user,
     String? createdById,
     String? agentRunId,
+
+    /// Fuerza que el pedido quede pendiente de aprobación aunque las reglas
+    /// lo autoaprueben. Se usa al comprar stock desde el catálogo.
+    bool forceApproval = false,
   }) async {
     if (lines.isEmpty) {
       return const Left(AppError(AppErrorCode.orderEmpty));
@@ -56,7 +60,10 @@ class CreateDraftOrderUsecase {
     }
     final products = productsResult.getOrElse(() => const <Product>[]);
 
-    final itemsResult = OrderBuilder.buildItems(lines: lines, products: products);
+    final itemsResult = OrderBuilder.buildItems(
+      lines: lines,
+      products: products,
+    );
     if (itemsResult.isLeft()) {
       return Left(
         itemsResult.fold(
@@ -93,7 +100,7 @@ class CreateDraftOrderUsecase {
       return const Left(AppError(AppErrorCode.orderBlocked));
     }
 
-    final status = decision.needsApproval
+    final status = (decision.needsApproval || forceApproval)
         ? OrderStatus.pendingApproval
         : OrderStatus.draft;
 

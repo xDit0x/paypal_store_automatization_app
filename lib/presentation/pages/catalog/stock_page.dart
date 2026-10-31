@@ -10,6 +10,7 @@ import 'package:store_automatization_app/core/configs/theme/restock_palette.dart
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/pages/catalog/catalog_page.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
 
@@ -81,6 +82,18 @@ class _StockPageState extends State<StockPage> {
 
         return [
           RLargeTitle(l10n.tabStock),
+          const SizedBox(height: 12),
+          RInsetGroup(
+            children: [
+              RListRow(
+                title: l10n.catalogAddProducts,
+                subtitle: Text(l10n.catalogAddProductsHint, style: t.footnote),
+                trailing: RChevron(color: p.accent),
+                onTap: () =>
+                    pushRestockPage<void>(context, const CatalogPage()),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           CupertinoSearchTextField(
             placeholder: l10n.stockSearchPlaceholder,

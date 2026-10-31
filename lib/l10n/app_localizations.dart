@@ -380,6 +380,120 @@ abstract class AppLocalizations {
   /// **'Buscar por nombre o UID'**
   String get stockSearchPlaceholder;
 
+  /// No description provided for @catalogSearchPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por nombre o UID'**
+  String get catalogSearchPlaceholder;
+
+  /// No description provided for @catalogFilterAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get catalogFilterAll;
+
+  /// No description provided for @catalogEmptyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay productos'**
+  String get catalogEmptyTitle;
+
+  /// No description provided for @catalogEmptyHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Prueba con otro nombre o cambia de proveedor.'**
+  String get catalogEmptyHint;
+
+  /// No description provided for @catalogTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Catálogo de proveedores'**
+  String get catalogTitle;
+
+  /// No description provided for @catalogAddProducts.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir productos al stock'**
+  String get catalogAddProducts;
+
+  /// No description provided for @catalogAddProductsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Busca en el catálogo de tus proveedores'**
+  String get catalogAddProductsHint;
+
+  /// No description provided for @catalogAddToStock.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir'**
+  String get catalogAddToStock;
+
+  /// No description provided for @catalogQuantity.
+  ///
+  /// In es, this message translates to:
+  /// **'Cantidad'**
+  String get catalogQuantity;
+
+  /// No description provided for @catalogAddToCart.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir al carrito'**
+  String get catalogAddToCart;
+
+  /// No description provided for @catalogCartTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Carrito'**
+  String get catalogCartTitle;
+
+  /// No description provided for @catalogCartTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Total'**
+  String get catalogCartTotal;
+
+  /// No description provided for @catalogViewCart.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver carrito'**
+  String get catalogViewCart;
+
+  /// No description provided for @catalogOrdersPerSupplier.
+  ///
+  /// In es, this message translates to:
+  /// **'Se creará un pedido por proveedor.'**
+  String get catalogOrdersPerSupplier;
+
+  /// No description provided for @catalogOrdersCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 pedido creado} other{{count} pedidos creados, uno por proveedor}}'**
+  String catalogOrdersCreated(int count);
+
+  /// No description provided for @catalogCartQuantity.
+  ///
+  /// In es, this message translates to:
+  /// **'{qty} ud.'**
+  String catalogCartQuantity(int qty);
+
+  /// No description provided for @catalogCartItems.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 artículo} other{{count} artículos}}'**
+  String catalogCartItems(int count);
+
+  /// No description provided for @catalogOrderButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Tramitar pedido'**
+  String get catalogOrderButton;
+
+  /// No description provided for @catalogOrderCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Pedido creado. Apruébalo para pagar y sumar el stock.'**
+  String get catalogOrderCreated;
+
   /// No description provided for @stockFilterAll.
   ///
   /// In es, this message translates to:
@@ -539,13 +653,13 @@ abstract class AppLocalizations {
   /// No description provided for @statusDraft.
   ///
   /// In es, this message translates to:
-  /// **'Borrador'**
+  /// **'Por aprobar'**
   String get statusDraft;
 
   /// No description provided for @statusPendingApproval.
   ///
   /// In es, this message translates to:
-  /// **'Por aprobar'**
+  /// **'Nuevo stock por aprobar'**
   String get statusPendingApproval;
 
   /// No description provided for @statusApproved.
@@ -757,6 +871,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo pagar'**
   String get orderPaymentFailed;
+
+  /// No description provided for @orderPriceChangedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'El precio ha cambiado'**
+  String get orderPriceChangedTitle;
+
+  /// No description provided for @orderPriceChangedMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'El nuevo total es {newTotal} (antes {previousTotal}). Se cobrará el precio vigente del proveedor.'**
+  String orderPriceChangedMessage(String newTotal, String previousTotal);
+
+  /// No description provided for @actionPayNewTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagar {amount}'**
+  String actionPayNewTotal(String amount);
 
   /// No description provided for @orderRejectQuestion.
   ///
@@ -1662,6 +1794,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo rechazar el pedido'**
   String get errorOrderRejectFailed;
+
+  /// No description provided for @errorOrderAmountFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo comprobar el importe del pedido'**
+  String get errorOrderAmountFailed;
 
   /// No description provided for @errorOrderMissing.
   ///

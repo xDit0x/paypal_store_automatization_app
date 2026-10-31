@@ -7,7 +7,9 @@ import 'package:store_automatization_app/domain/entities/agent_run.dart';
 import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/app_user.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
+import 'package:store_automatization_app/domain/entities/order_amount_review.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
+import 'package:store_automatization_app/domain/entities/catalog_product.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
 import 'package:store_automatization_app/domain/entities/store.dart';
@@ -416,6 +418,40 @@ class PreviewProductRepository implements ProductRepository {
       Right(db.products.where((p) => p.isLowStock).toList());
 
   @override
+  Future<Either<AppError, List<CatalogProduct>>> searchCatalog({
+    String? storeId,
+    String? query,
+    String? supplierId,
+  }) async => Right(
+    db.products
+        .map(
+          (p) => CatalogProduct(
+            id: p.id,
+            uid: p.uid,
+            supplierId: p.supplierId,
+            supplierName: p.supplierId,
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            currency: p.currency,
+            stock: p.stock,
+            lowStockThreshold: p.lowStockThreshold,
+            inInventory: false,
+            unit: p.unit,
+            imageUrl: p.imageUrl,
+            active: p.active,
+          ),
+        )
+        .where(
+          (cp) =>
+              query == null ||
+              cp.name.toLowerCase().contains(query.toLowerCase()),
+        )
+        .where((cp) => supplierId == null || cp.supplierId == supplierId)
+        .toList(),
+  );
+
+  @override
   Future<Either<AppError, Unit>> updateStock(
     String storeId,
     String uid,
@@ -516,6 +552,22 @@ class PreviewOrderRepository implements OrderRepository {
     if (i < 0) return const Left(AppError(AppErrorCode.orderNotFound));
     db.orders[i] = db.orders[i].copyWith(status: OrderStatus.rejected);
     return const Right(unit);
+  }
+
+  @override
+  Future<Either<AppError, OrderAmountReview>> reviewAmount(
+    String orderId,
+  ) async {
+    final order = db.orders.where((o) => o.id == orderId).toList();
+    if (order.isEmpty) {
+      return const Left(AppError(AppErrorCode.orderNotFound));
+    }
+    return Right(
+      OrderAmountReview(
+        total: order.first.total,
+        previousTotal: order.first.total,
+      ),
+    );
   }
 }
 

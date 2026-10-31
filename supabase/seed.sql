@@ -1,28 +1,31 @@
 -- Datos de demostración para Restock.
 -- La tienda se crea automáticamente al registrar un usuario (trigger handle_new_user).
 
-insert into public.suppliers (id, name, paypal_email, category, active)
+insert into public.suppliers (id, name, paypal_email, category, active, code)
 values
   (
     '11111111-1111-4111-8111-111111111111',
     'Distribuidora Andina',
     'pagos@andina.example',
     'Abarrotes',
-    true
+    true,
+    'andina'
   ),
   (
     '22222222-2222-4222-8222-222222222222',
     'Café Global',
     'pagos@cafeglobal.example',
     'Bebidas',
-    true
+    true,
+    'cafeglobal'
   ),
   (
     '33333333-3333-4333-8333-333333333333',
     'Limpieza Total',
     'pagos@limpiezatotal.example',
     'Limpieza',
-    true
+    true,
+    'limpiezatotal'
   )
 on conflict (id) do nothing;
 

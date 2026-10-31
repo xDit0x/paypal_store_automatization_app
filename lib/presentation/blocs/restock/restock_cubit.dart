@@ -7,6 +7,8 @@ import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/domain/entities/agent_run.dart';
 import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
+import 'package:store_automatization_app/domain/entities/order_amount_review.dart';
+import 'package:store_automatization_app/domain/entities/catalog_product.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
 import 'package:store_automatization_app/domain/entities/store.dart';
@@ -15,11 +17,15 @@ import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_us
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
+import 'package:store_automatization_app/domain/services/order_builder.dart';
+import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/reject_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/review_order_amount_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
@@ -38,8 +44,17 @@ class RestockCubit extends Cubit<RestockState> {
   final UpdateProductStockUsecase updateProductStock;
   final GetAgentRunsUsecase getAgentRuns;
   final RunAgentUsecase runAgentUsecase;
+  final SearchCatalogUsecase? searchCatalogUsecase;
   final ApproveOrderUsecase approveOrder;
   final RejectOrderUsecase rejectOrder;
+
+  /// Consulta el importe vigente antes de cobrar. Opcional para no romper la
+  /// vista previa ni los tests que no lo ejercitan.
+  final ReviewOrderAmountUsecase? reviewOrderAmountUsecase;
+
+  /// Crea el pedido del carrito del catálogo. Opcional para no romper la vista
+  /// previa ni los tests que no ejercitan la compra.
+  final CreateDraftOrderUsecase? createDraftOrder;
 
   /// Cambios en tiempo real de la tienda. Opcional: sin él (vista previa,
   /// tests) la app solo se actualiza al cargar o tras una acción.
@@ -70,8 +85,11 @@ class RestockCubit extends Cubit<RestockState> {
     required this.updateProductStock,
     required this.getAgentRuns,
     required this.runAgentUsecase,
+    this.searchCatalogUsecase,
     required this.approveOrder,
     required this.rejectOrder,
+    this.reviewOrderAmountUsecase,
+    this.createDraftOrder,
     this.watchStoreChanges,
     AppLocalizations Function()? l10n,
   }) : _l10n = l10n ?? (() => l10nFor(deviceLocale())),
@@ -131,23 +149,27 @@ class RestockCubit extends Cubit<RestockState> {
     for (final result in catalogs) {
       result.fold<void>(errors.add, products.addAll);
     }
-    products.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    products.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
 
     final chat = state.chat.isEmpty ? _chatFromRuns(runs) : state.chat;
 
-    emit(state.copyWith(
-      status: RestockStatus.ready,
-      store: store,
-      rules: rules,
-      spentThisMonth: spent,
-      orders: orders,
-      suppliers: {for (final s in suppliers) s.id: s},
-      products: products.isEmpty ? state.products : products,
-      agentRuns: runs,
-      chat: chat,
-      error: errors.isEmpty ? null : errors.first,
-      clearError: errors.isEmpty,
-    ));
+    emit(
+      state.copyWith(
+        status: RestockStatus.ready,
+        store: store,
+        rules: rules,
+        spentThisMonth: spent,
+        orders: orders,
+        suppliers: {for (final s in suppliers) s.id: s},
+        products: products.isEmpty ? state.products : products,
+        agentRuns: runs,
+        chat: chat,
+        error: errors.isEmpty ? null : errors.first,
+        clearError: errors.isEmpty,
+      ),
+    );
 
     _watch(store.id);
   }
@@ -190,7 +212,13 @@ class RestockCubit extends Cubit<RestockState> {
 
     final chat = [...state.chat];
     if (fromChat) {
-      chat.add(ChatEntry(fromUser: true, text: l10n.agentChatTrigger, at: DateTime.now()));
+      chat.add(
+        ChatEntry(
+          fromUser: true,
+          text: l10n.agentChatTrigger,
+          at: DateTime.now(),
+        ),
+      );
     }
     emit(state.copyWith(agentRunning: true, chat: chat));
 
@@ -201,14 +229,21 @@ class RestockCubit extends Cubit<RestockState> {
         failed = true;
         return l10n.describeDetail(error);
       },
-      (r) => r.message.isNotEmpty ? r.message : describeAgentDecision(l10n, r.decision),
+      (r) => r.message.isNotEmpty
+          ? r.message
+          : describeAgentDecision(l10n, r.decision),
     );
     lastRunFailed = failed;
 
-    emit(state.copyWith(
-      agentRunning: false,
-      chat: [...state.chat, ChatEntry(fromUser: false, text: message, at: DateTime.now())],
-    ));
+    emit(
+      state.copyWith(
+        agentRunning: false,
+        chat: [
+          ...state.chat,
+          ChatEntry(fromUser: false, text: message, at: DateTime.now()),
+        ],
+      ),
+    );
     await load();
     return message;
   }
@@ -219,25 +254,29 @@ class RestockCubit extends Cubit<RestockState> {
     final clean = text.trim();
     if (clean.isEmpty) return;
     final now = DateTime.now();
-    emit(state.copyWith(chat: [
-      ...state.chat,
-      ChatEntry(fromUser: true, text: clean, at: now),
-      ChatEntry(
-        fromUser: false,
-        text: l10n.agentChatFallback,
-        at: now,
+    emit(
+      state.copyWith(
+        chat: [
+          ...state.chat,
+          ChatEntry(fromUser: true, text: clean, at: now),
+          ChatEntry(fromUser: false, text: l10n.agentChatFallback, at: now),
+        ],
       ),
-    ]));
+    );
   }
 
   /// Pregunta que se responde con los datos ya cargados (sin servidor).
   void addExchange(String question, String answer) {
     final now = DateTime.now();
-    emit(state.copyWith(chat: [
-      ...state.chat,
-      ChatEntry(fromUser: true, text: question, at: now),
-      ChatEntry(fromUser: false, text: answer, at: now),
-    ]));
+    emit(
+      state.copyWith(
+        chat: [
+          ...state.chat,
+          ChatEntry(fromUser: true, text: question, at: now),
+          ChatEntry(fromUser: false, text: answer, at: now),
+        ],
+      ),
+    );
   }
 
   /// Devuelve null si todo fue bien, o el error.
@@ -259,6 +298,14 @@ class RestockCubit extends Cubit<RestockState> {
     return error;
   }
 
+  /// Importe que se pagaría ahora. `null` si no se pudo consultar.
+  Future<OrderAmountReview?> reviewOrderAmount(String orderId) async {
+    final usecase = reviewOrderAmountUsecase;
+    if (usecase == null) return null;
+    final result = await usecase(orderId);
+    return result.fold<OrderAmountReview?>((_) => null, (review) => review);
+  }
+
   /// Cambia el stock de un producto en la tienda actual. Devuelve null si
   /// todo fue bien.
   Future<AppError?> updateStock(String uid, int stock) async {
@@ -267,12 +314,14 @@ class RestockCubit extends Cubit<RestockState> {
 
     final result = await updateProductStock(store.id, uid, stock);
     return result.fold<AppError?>((error) => error, (_) {
-      emit(state.copyWith(
-        products: [
-          for (final product in state.products)
-            product.uid == uid ? product.copyWith(stock: stock) : product,
-        ],
-      ));
+      emit(
+        state.copyWith(
+          products: [
+            for (final product in state.products)
+              product.uid == uid ? product.copyWith(stock: stock) : product,
+          ],
+        ),
+      );
       return null;
     });
   }
@@ -288,8 +337,16 @@ class RestockCubit extends Cubit<RestockState> {
   }
 
   List<ChatEntry> _chatFromRuns(List<AgentRun> runs) {
-    final recent = runs.where((r) => r.decision != null && r.decision != 'running').take(4).toList()
-      ..sort((a, b) => (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0)));
+    final recent =
+        runs
+            .where((r) => r.decision != null && r.decision != 'running')
+            .take(4)
+            .toList()
+          ..sort(
+            (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
+              b.createdAt ?? DateTime(0),
+            ),
+          );
     return [
       for (final r in recent)
         ChatEntry(
@@ -304,6 +361,120 @@ class RestockCubit extends Cubit<RestockState> {
   Order? newestPending() {
     final pending = state.pendingOrders;
     return pending.isEmpty ? null : pending.first;
+  }
+
+  /// Busca en el catálogo global y guarda resultados en el estado.
+  Future<void> searchCatalog({String? query, String? supplierId}) async {
+    final store = state.store;
+    if (store == null || searchCatalogUsecase == null) return;
+    final result = await searchCatalogUsecase!.call(
+      storeId: store.id,
+      query: query,
+      supplierId: supplierId,
+    );
+    emit(
+      state.copyWith(
+        catalogResults: result.fold<List<CatalogProduct>>(
+          (_) => state.catalogResults,
+          (r) => r,
+        ),
+      ),
+    );
+  }
+
+  /// Añade [quantity] unidades de [product] al carrito.
+  ///
+  /// El carrito puede mezclar proveedores: al tramitarlo se crea un pedido
+  /// por cada uno.
+  void addToCart(CatalogProduct product, {int quantity = 1}) {
+    final qty = quantity < 1 ? 1 : quantity;
+    emit(
+      state.copyWith(
+        cart: [...state.cart, for (var i = 0; i < qty; i++) product],
+        clearCatalogError: true,
+      ),
+    );
+  }
+
+  /// Quita una unidad del producto [uid].
+  void removeFromCart(String uid) {
+    final index = state.cart.lastIndexWhere((c) => c.uid == uid);
+    if (index < 0) return;
+    final updated = List<CatalogProduct>.from(state.cart)..removeAt(index);
+    emit(state.copyWith(cart: updated));
+  }
+
+  int quantityInCart(String uid) =>
+      state.cart.where((c) => c.uid == uid).length;
+
+  void clearCart() => emit(state.copyWith(cart: const []));
+
+  /// Crea un pedido por cada proveedor del carrito. Devuelve los pedidos
+  /// creados; si uno falla, deja en el carrito solo las líneas pendientes.
+  Future<List<Order>> submitCart() async {
+    final store = state.store;
+    final cart = List<CatalogProduct>.from(state.cart);
+    final usecase = createDraftOrder;
+    if (store == null || cart.isEmpty || usecase == null) return const [];
+
+    // Agrupa por proveedor y, dentro de cada uno, por producto y cantidad.
+    final bySupplier = <String, Map<String, int>>{};
+    for (final product in cart) {
+      final lines = bySupplier.putIfAbsent(
+        product.supplierId,
+        () => <String, int>{},
+      );
+      lines.update(product.uid, (qty) => qty + 1, ifAbsent: () => 1);
+    }
+
+    emit(state.copyWith(placingOrder: true, clearCatalogError: true));
+    final created = <Order>[];
+    final succeededSuppliers = <String>{};
+    AppError? failure;
+    var spent = state.spentThisMonth;
+
+    for (final entry in bySupplier.entries) {
+      final lines = [
+        for (final line in entry.value.entries)
+          DraftOrderLine(productUid: line.key, qty: line.value),
+      ];
+      final result = await usecase(
+        storeId: store.id,
+        supplierId: entry.key,
+        lines: lines,
+        rules: state.rules,
+        spentThisMonth: spent,
+        // Una compra manual de stock queda por aprobar aunque las reglas la
+        // autoaprueben: el dueño confirma el pedido antes de pagar.
+        forceApproval: true,
+      );
+      final (order, error) = result.fold<(Order?, AppError?)>(
+        (error) => (null, error),
+        (value) => (value.order, null),
+      );
+      if (error != null) {
+        failure = error;
+        break;
+      }
+      created.add(order!);
+      succeededSuppliers.add(entry.key);
+      spent += order.total;
+    }
+
+    final remaining = [
+      for (final product in cart)
+        if (!succeededSuppliers.contains(product.supplierId)) product,
+    ];
+
+    emit(
+      state.copyWith(
+        cart: remaining,
+        placingOrder: false,
+        catalogError: failure,
+      ),
+    );
+    if (created.isNotEmpty) unawaited(load());
+    return created;
   }
 }
 

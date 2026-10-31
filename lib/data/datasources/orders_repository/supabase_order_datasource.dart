@@ -18,12 +18,19 @@ class SupabaseOrderDatasource {
   }
 
   Future<Map<String, dynamic>?> getById(String id) async {
-    return _client.from('orders').select(_orderSelect).eq('id', id).maybeSingle();
+    return _client
+        .from('orders')
+        .select(_orderSelect)
+        .eq('id', id)
+        .maybeSingle();
   }
 
   Future<Map<String, dynamic>> insertOrder(Map<String, dynamic> row) async {
-    final result =
-        await _client.from('orders').insert(row).select(_orderSelect).single();
+    final result = await _client
+        .from('orders')
+        .insert(row)
+        .select(_orderSelect)
+        .single();
     return Map<String, dynamic>.from(result);
   }
 
@@ -47,6 +54,13 @@ class SupabaseOrderDatasource {
 
   Future<void> approve(String orderId) async {
     await _dio.post<Map<String, dynamic>>('/orders/$orderId/approve', data: {});
+  }
+
+  Future<Map<String, dynamic>> reviewAmount(String orderId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/orders/$orderId/amount',
+    );
+    return response.data ?? const {};
   }
 
   Future<void> reject(String orderId) async {

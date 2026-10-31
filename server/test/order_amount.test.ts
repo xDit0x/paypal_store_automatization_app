@@ -60,7 +60,7 @@ test('una cantidad inválida invalida el pedido', () => {
   assert.match(result.reason ?? '', /Cantidad inválida/);
 });
 
-test('un importe manipulado no pasa la comprobación', () => {
+test('un importe desactualizado se recalcula con el catálogo vigente', () => {
   const check = verifyOrderAmount({
     orderTotal: 0.01,
     orderSupplierId: 'sup-1',
@@ -70,8 +70,25 @@ test('un importe manipulado no pasa la comprobación', () => {
     spentThisMonth: 0,
   });
 
-  assert.equal(check.ok, false);
-  assert.match(check.reason ?? '', /no coincide con el catálogo/);
+  // No se rechaza: se paga el precio del momento y se avisa del cambio.
+  assert.equal(check.ok, true);
+  assert.equal(check.total, 27.2);
+  assert.equal(check.previousTotal, 0.01);
+  assert.equal(check.changed, true);
+});
+
+test('un importe correcto no marca cambio', () => {
+  const check = verifyOrderAmount({
+    orderTotal: 27.2,
+    orderSupplierId: 'sup-1',
+    lines,
+    products,
+    rules,
+    spentThisMonth: 0,
+  });
+
+  assert.equal(check.ok, true);
+  assert.equal(check.changed, false);
 });
 
 test('un importe correcto y dentro de las reglas pasa la comprobación', () => {

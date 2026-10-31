@@ -68,6 +68,40 @@
   "homeStockReview": "Revisión del stock",
 
   "stockSearchPlaceholder": "Buscar por nombre o UID",
+  "catalogSearchPlaceholder": "Buscar por nombre o UID",
+  "catalogFilterAll": "Todos",
+  "catalogEmptyTitle": "No hay productos",
+  "catalogEmptyHint": "Prueba con otro nombre o cambia de proveedor.",
+  "catalogTitle": "Catálogo de proveedores",
+  "catalogAddProducts": "Añadir productos al stock",
+  "catalogAddProductsHint": "Busca en el catálogo de tus proveedores",
+  "catalogAddToStock": "Añadir",
+  "catalogQuantity": "Cantidad",
+  "catalogAddToCart": "Añadir al carrito",
+  "catalogCartTitle": "Carrito",
+  "catalogCartTotal": "Total",
+  "catalogViewCart": "Ver carrito",
+  "catalogOrdersPerSupplier": "Se creará un pedido por proveedor.",
+  "catalogOrdersCreated": "{count, plural, =1{1 pedido creado} other{{count} pedidos creados, uno por proveedor}}",
+  "@catalogOrdersCreated": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "catalogCartQuantity": "{qty} ud.",
+  "@catalogCartQuantity": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "catalogCartItems": "{count, plural, =1{1 artículo} other{{count} artículos}}",
+  "@catalogCartItems": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "catalogOrderButton": "Tramitar pedido",
+  "catalogOrderCreated": "Pedido creado. Apruébalo para pagar y sumar el stock.",
   "stockFilterAll": "Todos",
   "stockFilterLow": "Bajo mínimo",
   "stockFilterTransit": "En camino",
@@ -138,8 +172,8 @@
   "ordersCreatedByAgentWord": "agente",
   "ordersCreatedByYouWord": "tú",
 
-  "statusDraft": "Borrador",
-  "statusPendingApproval": "Por aprobar",
+  "statusDraft": "Por aprobar",
+  "statusPendingApproval": "Nuevo stock por aprobar",
   "statusApproved": "Aprobado",
   "statusPaying": "Pagando…",
   "statusPaid": "Pagado con PayPal",
@@ -230,6 +264,20 @@
     }
   },
   "orderPaymentFailed": "No se pudo pagar",
+  "orderPriceChangedTitle": "El precio ha cambiado",
+  "orderPriceChangedMessage": "El nuevo total es {newTotal} (antes {previousTotal}). Se cobrará el precio vigente del proveedor.",
+  "@orderPriceChangedMessage": {
+    "placeholders": {
+      "newTotal": { "type": "String" },
+      "previousTotal": { "type": "String" }
+    }
+  },
+  "actionPayNewTotal": "Pagar {amount}",
+  "@actionPayNewTotal": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
   "orderRejectQuestion": "¿Rechazar el pedido?",
   "orderRejectMessage": "El agente no pagará a {supplier}.",
   "@orderRejectMessage": {
@@ -475,6 +523,7 @@
   "errorOrderSpentFailed": "No se pudo calcular el gasto mensual",
   "errorOrderApproveFailed": "No se pudo aprobar el pedido",
   "errorOrderRejectFailed": "No se pudo rechazar el pedido",
+  "errorOrderAmountFailed": "No se pudo comprobar el importe del pedido",
   "errorOrderMissing": "Falta el pedido.",
   "errorOrderNotFound": "Ese pedido ya no existe.",
   "errorOrderEmpty": "El pedido no tiene líneas.",

@@ -16,11 +16,14 @@ import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_ca
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/reject_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/review_order_amount_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/watch_store_changes_usecase.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
@@ -64,12 +67,17 @@ class RestockShell extends StatelessWidget {
     getSuppliers: sl<GetSuppliersUsecase>(),
     getSupplierCatalog: sl<GetSupplierCatalogUsecase>(),
     updateProductStock: sl<UpdateProductStockUsecase>(),
+    searchCatalogUsecase: sl<SearchCatalogUsecase>(),
+    createDraftOrder: sl<CreateDraftOrderUsecase>(),
     getAgentRuns: sl<GetAgentRunsUsecase>(),
     runAgentUsecase: sl<RunAgentUsecase>(),
     // Estos dos casos de uso son nuevos; se crean aquí para no tocar
     // service_locator.dart. Se pueden registrar allí más adelante.
     approveOrder: ApproveOrderUsecase(repository: sl<OrderRepository>()),
     rejectOrder: RejectOrderUsecase(repository: sl<OrderRepository>()),
+    reviewOrderAmountUsecase: ReviewOrderAmountUsecase(
+      repository: sl<OrderRepository>(),
+    ),
     // Tiempo real: la app se actualiza sola cuando cambian pedidos o stock.
     watchStoreChanges: WatchStoreChangesUsecase(
       repository: SupabaseStoreChangesRepository(

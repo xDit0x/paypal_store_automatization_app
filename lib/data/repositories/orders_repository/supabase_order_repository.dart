@@ -6,6 +6,7 @@ import 'package:store_automatization_app/data/models/order_model.dart';
 import 'package:store_automatization_app/data/support/app_error_log.dart';
 import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
+import 'package:store_automatization_app/domain/entities/order_amount_review.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
 
@@ -45,7 +46,10 @@ class SupabaseOrderRepository implements OrderRepository {
     String? agentRunId,
   }) async {
     try {
-      final subtotal = items.fold<double>(0, (sum, item) => sum + item.lineTotal);
+      final subtotal = items.fold<double>(
+        0,
+        (sum, item) => sum + item.lineTotal,
+      );
 
       final row = await _datasource.insertOrder({
         'store_id': storeId,
@@ -110,6 +114,30 @@ class SupabaseOrderRepository implements OrderRepository {
       return Left(
         logError(
           AppErrorCode.orderRejectFailed,
+          error,
+          detail: serverMessage(error),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<AppError, OrderAmountReview>> reviewAmount(
+    String orderId,
+  ) async {
+    try {
+      final row = await _datasource.reviewAmount(orderId);
+      return Right(
+        OrderAmountReview(
+          total: (row['total'] as num?)?.toDouble() ?? 0,
+          previousTotal: (row['previous_total'] as num?)?.toDouble() ?? 0,
+          changed: row['changed'] == true,
+        ),
+      );
+    } catch (error) {
+      return Left(
+        logError(
+          AppErrorCode.orderAmountFailed,
           error,
           detail: serverMessage(error),
         ),

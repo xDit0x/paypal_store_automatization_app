@@ -23,11 +23,15 @@ import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.da
 import 'package:store_automatization_app/domain/usecases/auth/watch_auth_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/evaluate_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/reject_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/review_order_amount_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
@@ -76,11 +80,18 @@ class PreviewApp extends StatelessWidget {
         repository: PreviewSupplierRepository(db),
       ),
       getSupplierCatalog: GetSupplierCatalogUsecase(repository: products),
+      searchCatalogUsecase: SearchCatalogUsecase(repository: products),
+      createDraftOrder: CreateDraftOrderUsecase(
+        productRepository: products,
+        orderRepository: orders,
+        evaluateSpendingRules: EvaluateSpendingRulesUsecase(),
+      ),
       updateProductStock: UpdateProductStockUsecase(repository: products),
       getAgentRuns: GetAgentRunsUsecase(repository: agent),
       runAgentUsecase: RunAgentUsecase(repository: agent),
       approveOrder: ApproveOrderUsecase(repository: orders),
       rejectOrder: RejectOrderUsecase(repository: orders),
+      reviewOrderAmountUsecase: ReviewOrderAmountUsecase(repository: orders),
     );
   }
 

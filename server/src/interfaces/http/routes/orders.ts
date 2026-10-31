@@ -1,7 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 
 import { fulfillOrder } from '../../../application/orders/fulfill_order.js';
-import { guardOrderAmount } from '../../../application/orders/guard_order_amount.js';
+import {
+  guardOrderAmount,
+  previewOrderAmount,
+} from '../../../application/orders/guard_order_amount.js';
 import { supabaseAdmin } from '../../../infrastructure/supabase/supabase_client.js';
 import { authenticate } from '../auth.js';
 import { createRateLimiter } from '../rate_limit.js';
@@ -118,6 +121,39 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  app.get<{ Params: { id: string } }>(
+    '/orders/:id/amount',
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) {
+        return reply.code(401).send({ error: 'Sesión no válida.' });
+      }
+
+      try {
+        const owned = await loadOwnedOrder(request.params.id, user.id);
+        if (!owned) {
+          return reply.code(404).send({ error: 'Pedido no encontrado.' });
+        }
+
+        // Importe que se pagaría ahora, con el catálogo vigente.
+        const review = await previewOrderAmount(owned.id);
+        return reply.send({
+          order_id: owned.id,
+          total: review.total,
+          previous_total: review.previousTotal,
+          changed: review.changed,
+        });
+      } catch (error) {
+        return reply.code(409).send({
+          error:
+            error instanceof Error
+              ? error.message
+              : 'No se pudo calcular el importe del pedido.',
+        });
+      }
+    },
+  );
+
   app.post<{ Params: { id: string } }>(
     '/orders/:id/approve',
     async (request, reply) => {
@@ -146,11 +182,13 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         }
 
         // Antes de aprobar se comprueba el importe contra el catálogo y las
-        // reglas vigentes: si no cuadra, no se paga.
+        // reglas vigentes. Si el proveedor cambió el precio, aquí se
+        // actualizan las líneas y el total al precio del momento.
+        let amount;
         try {
           // El dueño está aprobando: el umbral de aprobación ya no bloquea,
           // pero el importe, el máximo por pedido y el tope mensual sí.
-          await guardOrderAmount(order.id, { ownerApproved: true });
+          amount = await guardOrderAmount(order.id, { ownerApproved: true });
         } catch (error) {
           return reply.code(409).send({
             error:
@@ -174,7 +212,13 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         }
 
         const fulfillment = await fulfillOrder(order.id, { ownerApproved: true });
-        return reply.send({ order_id: order.id, ...fulfillment });
+        return reply.send({
+          order_id: order.id,
+          total: amount.total,
+          previous_total: amount.previousTotal,
+          total_changed: amount.changed,
+          ...fulfillment,
+        });
       } catch (error) {
         request.log.error(error);
         return reply.code(502).send({

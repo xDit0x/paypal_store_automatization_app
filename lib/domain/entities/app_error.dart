@@ -76,6 +76,7 @@ enum AppErrorCode {
   orderSpentFailed,
   orderApproveFailed,
   orderRejectFailed,
+  orderAmountFailed,
   orderMissing,
   orderNotFound,
   orderEmpty,

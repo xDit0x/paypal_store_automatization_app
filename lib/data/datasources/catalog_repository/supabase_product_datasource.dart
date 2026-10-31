@@ -45,12 +45,23 @@ class SupabaseProductDatasource {
     List<String> uids,
   ) async {
     if (uids.isEmpty) return const [];
+    // Consulta el catálogo global (products) para permitir pedidos de
+    // productos que aún no están en stock de la tienda.
     final rows = await _client
-        .from('store_products')
-        .select(_inventorySelect)
-        .eq('store_id', storeId)
-        .inFilter('product_uid', uids);
-    return rows.map(_flatten).toList();
+        .from('products')
+        .select(
+          'id, uid, supplier_id, name, description, price, currency, stock, low_stock_threshold, unit, image_url, active, suppliers!inner(name)',
+        )
+        .inFilter('uid', uids)
+        .eq('active', true);
+    return rows.map((r) {
+      final map = Map<String, dynamic>.from(r as Map);
+      final sup = (r['suppliers'] as Map?) ?? {};
+      map['supplier_name'] = sup['name'] ?? 'Proveedor';
+      map['supplier_id'] = r['supplier_id'];
+      map['in_inventory'] = false;
+      return map;
+    }).toList();
   }
 
   Future<List<Map<String, dynamic>>> getLowStock(String storeId) async {
@@ -70,6 +81,67 @@ class SupabaseProductDatasource {
           ),
         );
     return products;
+  }
+
+  Future<List<Map<String, dynamic>>> searchCatalog({
+    required String storeId,
+    String? query,
+    String? supplierId,
+  }) async {
+    var queryBuilder = _client
+        .from('products')
+        .select(
+          'id, uid, supplier_id, name, description, price, currency, stock, '
+          'low_stock_threshold, unit, image_url, active, suppliers!inner(name)',
+        )
+        .eq('active', true);
+    if (supplierId != null && supplierId.isNotEmpty) {
+      queryBuilder = queryBuilder.eq('supplier_id', supplierId);
+    }
+    if (query != null && query.trim().isNotEmpty) {
+      // Se quitan los caracteres que rompen la sintaxis del filtro `or`.
+      final q = query
+          .trim()
+          .toLowerCase()
+          .replaceAll(RegExp(r'[,()%]'), ' ')
+          .trim();
+      if (q.isNotEmpty) {
+        queryBuilder = queryBuilder.or('name.ilike.%$q%,uid.ilike.%$q%');
+      }
+    }
+    final rows = await queryBuilder;
+
+    // Stock de esta tienda: `store_products` guarda el stock por tienda.
+    final uids = [for (final row in rows) row['uid'] as String];
+    final inventory = <String, Map<String, dynamic>>{};
+    if (uids.isNotEmpty) {
+      final stockRows = await _client
+          .from('store_products')
+          .select('product_uid, stock, low_stock_threshold')
+          .eq('store_id', storeId)
+          .inFilter('product_uid', uids);
+      for (final row in stockRows) {
+        inventory[row['product_uid'] as String] = row;
+      }
+    }
+
+    return rows.map((r) {
+      final map = Map<String, dynamic>.from(r as Map);
+      final sup = (r['suppliers'] as Map?) ?? {};
+      final uid = r['uid'] as String;
+      final stock = inventory[uid];
+      map['supplier_name'] = sup['name'] ?? 'Proveedor';
+      map['in_inventory'] = stock != null;
+      if (stock != null) {
+        map['stock'] = stock['stock'];
+        map['low_stock_threshold'] = stock['low_stock_threshold'];
+      }
+      return map;
+    }).toList()..sort(
+      (a, b) => (a['name'] as String).toLowerCase().compareTo(
+        (b['name'] as String).toLowerCase(),
+      ),
+    );
   }
 
   /// El catálogo solo se escribe con service_role, así que pasa por la API.

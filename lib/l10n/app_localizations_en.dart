@@ -158,6 +158,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stockSearchPlaceholder => 'Search by name or UID';
 
   @override
+  String get catalogSearchPlaceholder => 'Search by name or UID';
+
+  @override
+  String get catalogFilterAll => 'All';
+
+  @override
+  String get catalogEmptyTitle => 'No products';
+
+  @override
+  String get catalogEmptyHint => 'Try another name or change supplier.';
+
+  @override
+  String get catalogTitle => 'Supplier catalogue';
+
+  @override
+  String get catalogAddProducts => 'Add products to stock';
+
+  @override
+  String get catalogAddProductsHint => 'Search your suppliers\' catalogue';
+
+  @override
+  String get catalogAddToStock => 'Add';
+
+  @override
+  String get catalogQuantity => 'Quantity';
+
+  @override
+  String get catalogAddToCart => 'Add to cart';
+
+  @override
+  String get catalogCartTitle => 'Cart';
+
+  @override
+  String get catalogCartTotal => 'Total';
+
+  @override
+  String get catalogViewCart => 'View cart';
+
+  @override
+  String get catalogOrdersPerSupplier =>
+      'One order will be created per supplier.';
+
+  @override
+  String catalogOrdersCreated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders created, one per supplier',
+      one: '1 order created',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String catalogCartQuantity(int qty) {
+    return '$qty unit(s)';
+  }
+
+  @override
+  String catalogCartItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get catalogOrderButton => 'Place order';
+
+  @override
+  String get catalogOrderCreated =>
+      'Order created. Approve it to pay and add the stock.';
+
+  @override
   String get stockFilterAll => 'All';
 
   @override
@@ -259,10 +336,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ordersCreatedByYouWord => 'you';
 
   @override
-  String get statusDraft => 'Draft';
+  String get statusDraft => 'To approve';
 
   @override
-  String get statusPendingApproval => 'To approve';
+  String get statusPendingApproval => 'New stock to approve';
 
   @override
   String get statusApproved => 'Approved';
@@ -390,6 +467,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderPaymentFailed => 'Could not pay';
+
+  @override
+  String get orderPriceChangedTitle => 'The price has changed';
+
+  @override
+  String orderPriceChangedMessage(String newTotal, String previousTotal) {
+    return 'The new total is $newTotal (previously $previousTotal). The supplier\'s current price will be charged.';
+  }
+
+  @override
+  String actionPayNewTotal(String amount) {
+    return 'Pay $amount';
+  }
 
   @override
   String get orderRejectQuestion => 'Reject the order?';
@@ -910,6 +1000,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorOrderRejectFailed => 'Could not reject the order';
+
+  @override
+  String get errorOrderAmountFailed => 'Could not check the order amount';
 
   @override
   String get errorOrderMissing => 'The order is missing.';

@@ -4,8 +4,31 @@ import 'package:store_automatization_app/data/datasources/catalog_repository/sup
 import 'package:store_automatization_app/data/models/product_model.dart';
 import 'package:store_automatization_app/data/support/app_error_log.dart';
 import 'package:store_automatization_app/domain/entities/app_error.dart';
+import 'package:store_automatization_app/domain/entities/catalog_product.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/repositories/product_repository/product_repository.dart';
+
+class CatalogProductModel {
+  const CatalogProductModel._();
+  static CatalogProduct fromMap(Map<String, dynamic> map) {
+    return CatalogProduct(
+      id: map['id'] as String,
+      uid: map['uid'] as String,
+      supplierId: map['supplier_id'] as String,
+      supplierName: map['supplier_name'] as String? ?? 'Proveedor',
+      name: map['name'] as String? ?? 'Producto',
+      description: map['description'] as String?,
+      price: (map['price'] as num?)?.toDouble() ?? 0,
+      currency: map['currency'] as String? ?? 'EUR',
+      stock: (map['stock'] as num?)?.toInt(),
+      lowStockThreshold: (map['low_stock_threshold'] as num?)?.toInt(),
+      inInventory: map['in_inventory'] == true || (map['stock'] != null && (map['stock'] as num?)!.toInt() > 0),
+      unit: map['unit'] as String? ?? 'unidad',
+      imageUrl: map['image_url'] as String?,
+      active: map['active'] == true || map['active'] == null,
+    );
+  }
+}
 
 class SupabaseProductRepository implements ProductRepository {
   final SupabaseProductDatasource _datasource;
@@ -57,6 +80,24 @@ class SupabaseProductRepository implements ProductRepository {
       return Right(rows.map(ProductModel.fromMap).toList());
     } catch (error) {
       return Left(logError(AppErrorCode.lowStockLoadFailed, error));
+    }
+  }
+
+  @override
+  Future<Either<AppError, List<CatalogProduct>>> searchCatalog({
+    required String storeId,
+    String? query,
+    String? supplierId,
+  }) async {
+    try {
+      final rows = await _datasource.searchCatalog(
+        storeId: storeId,
+        query: query,
+        supplierId: supplierId,
+      );
+      return Right(rows.map(CatalogProductModel.fromMap).toList());
+    } catch (error) {
+      return Left(logError(AppErrorCode.catalogLoadFailed, error));
     }
   }
 

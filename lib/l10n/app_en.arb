@@ -68,6 +68,40 @@
   "homeStockReview": "Stock review",
 
   "stockSearchPlaceholder": "Search by name or UID",
+  "catalogSearchPlaceholder": "Search by name or UID",
+  "catalogFilterAll": "All",
+  "catalogEmptyTitle": "No products",
+  "catalogEmptyHint": "Try another name or change supplier.",
+  "catalogTitle": "Supplier catalogue",
+  "catalogAddProducts": "Add products to stock",
+  "catalogAddProductsHint": "Search your suppliers' catalogue",
+  "catalogAddToStock": "Add",
+  "catalogQuantity": "Quantity",
+  "catalogAddToCart": "Add to cart",
+  "catalogCartTitle": "Cart",
+  "catalogCartTotal": "Total",
+  "catalogViewCart": "View cart",
+  "catalogOrdersPerSupplier": "One order will be created per supplier.",
+  "catalogOrdersCreated": "{count, plural, =1{1 order created} other{{count} orders created, one per supplier}}",
+  "@catalogOrdersCreated": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "catalogCartQuantity": "{qty} unit(s)",
+  "@catalogCartQuantity": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "catalogCartItems": "{count, plural, =1{1 item} other{{count} items}}",
+  "@catalogCartItems": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "catalogOrderButton": "Place order",
+  "catalogOrderCreated": "Order created. Approve it to pay and add the stock.",
   "stockFilterAll": "All",
   "stockFilterLow": "Low stock",
   "stockFilterTransit": "On the way",
@@ -138,8 +172,8 @@
   "ordersCreatedByAgentWord": "agent",
   "ordersCreatedByYouWord": "you",
 
-  "statusDraft": "Draft",
-  "statusPendingApproval": "To approve",
+  "statusDraft": "To approve",
+  "statusPendingApproval": "New stock to approve",
   "statusApproved": "Approved",
   "statusPaying": "Paying…",
   "statusPaid": "Paid with PayPal",
@@ -229,6 +263,20 @@
     }
   },
   "orderPaymentFailed": "Could not pay",
+  "orderPriceChangedTitle": "The price has changed",
+  "orderPriceChangedMessage": "The new total is {newTotal} (previously {previousTotal}). The supplier's current price will be charged.",
+  "@orderPriceChangedMessage": {
+    "placeholders": {
+      "newTotal": { "type": "String" },
+      "previousTotal": { "type": "String" }
+    }
+  },
+  "actionPayNewTotal": "Pay {amount}",
+  "@actionPayNewTotal": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
   "orderRejectQuestion": "Reject the order?",
   "orderRejectMessage": "The agent will not pay {supplier}.",
   "@orderRejectMessage": {
@@ -475,6 +523,7 @@
   "errorOrderSpentFailed": "Could not work out this month's spending",
   "errorOrderApproveFailed": "Could not approve the order",
   "errorOrderRejectFailed": "Could not reject the order",
+  "errorOrderAmountFailed": "Could not check the order amount",
   "errorOrderMissing": "The order is missing.",
   "errorOrderNotFound": "That order no longer exists.",
   "errorOrderEmpty": "The order has no lines.",

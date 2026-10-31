@@ -159,6 +159,84 @@ class AppLocalizationsEs extends AppLocalizations {
   String get stockSearchPlaceholder => 'Buscar por nombre o UID';
 
   @override
+  String get catalogSearchPlaceholder => 'Buscar por nombre o UID';
+
+  @override
+  String get catalogFilterAll => 'Todos';
+
+  @override
+  String get catalogEmptyTitle => 'No hay productos';
+
+  @override
+  String get catalogEmptyHint =>
+      'Prueba con otro nombre o cambia de proveedor.';
+
+  @override
+  String get catalogTitle => 'Catálogo de proveedores';
+
+  @override
+  String get catalogAddProducts => 'Añadir productos al stock';
+
+  @override
+  String get catalogAddProductsHint =>
+      'Busca en el catálogo de tus proveedores';
+
+  @override
+  String get catalogAddToStock => 'Añadir';
+
+  @override
+  String get catalogQuantity => 'Cantidad';
+
+  @override
+  String get catalogAddToCart => 'Añadir al carrito';
+
+  @override
+  String get catalogCartTitle => 'Carrito';
+
+  @override
+  String get catalogCartTotal => 'Total';
+
+  @override
+  String get catalogViewCart => 'Ver carrito';
+
+  @override
+  String get catalogOrdersPerSupplier => 'Se creará un pedido por proveedor.';
+
+  @override
+  String catalogOrdersCreated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pedidos creados, uno por proveedor',
+      one: '1 pedido creado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String catalogCartQuantity(int qty) {
+    return '$qty ud.';
+  }
+
+  @override
+  String catalogCartItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artículos',
+      one: '1 artículo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get catalogOrderButton => 'Tramitar pedido';
+
+  @override
+  String get catalogOrderCreated =>
+      'Pedido creado. Apruébalo para pagar y sumar el stock.';
+
+  @override
   String get stockFilterAll => 'Todos';
 
   @override
@@ -260,10 +338,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get ordersCreatedByYouWord => 'tú';
 
   @override
-  String get statusDraft => 'Borrador';
+  String get statusDraft => 'Por aprobar';
 
   @override
-  String get statusPendingApproval => 'Por aprobar';
+  String get statusPendingApproval => 'Nuevo stock por aprobar';
 
   @override
   String get statusApproved => 'Aprobado';
@@ -392,6 +470,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get orderPaymentFailed => 'No se pudo pagar';
+
+  @override
+  String get orderPriceChangedTitle => 'El precio ha cambiado';
+
+  @override
+  String orderPriceChangedMessage(String newTotal, String previousTotal) {
+    return 'El nuevo total es $newTotal (antes $previousTotal). Se cobrará el precio vigente del proveedor.';
+  }
+
+  @override
+  String actionPayNewTotal(String amount) {
+    return 'Pagar $amount';
+  }
 
   @override
   String get orderRejectQuestion => '¿Rechazar el pedido?';
@@ -916,6 +1007,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get errorOrderRejectFailed => 'No se pudo rechazar el pedido';
+
+  @override
+  String get errorOrderAmountFailed =>
+      'No se pudo comprobar el importe del pedido';
 
   @override
   String get errorOrderMissing => 'Falta el pedido.';

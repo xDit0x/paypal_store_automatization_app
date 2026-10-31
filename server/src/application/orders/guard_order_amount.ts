@@ -22,6 +22,10 @@ export interface CatalogPrice {
 export interface AmountCheck {
   ok: boolean;
   total: number;
+  /** Total guardado antes de recalcular. */
+  previousTotal: number;
+  /** El total guardado no coincide con el del catálogo. */
+  changed: boolean;
   reason?: string;
 }
 
@@ -59,8 +63,11 @@ export function computeOrderTotal(
 }
 
 /**
- * Comprueba que el importe guardado coincide con el del catálogo y que el
- * pedido sigue respetando las reglas de gasto vigentes.
+ * Recalcula el importe con el catálogo vigente y comprueba las reglas.
+ *
+ * El importe guardado en `orders.total` puede haberse quedado atrás porque el
+ * proveedor cambió sus precios: no invalida el pedido, solo marca `changed`
+ * para que el servidor actualice las líneas y la app avise antes de cobrar.
  */
 export function verifyOrderAmount(params: {
   orderTotal: number;
@@ -74,39 +81,33 @@ export function verifyOrderAmount(params: {
   ownerApproved?: boolean;
 }): AmountCheck {
   const tolerance = params.tolerance ?? 0.01;
+  const previousTotal = Number(params.orderTotal);
+  const fail = (reason: string): AmountCheck => ({
+    ok: false,
+    total: 0,
+    previousTotal,
+    changed: false,
+    reason,
+  });
 
   for (const line of params.lines) {
     const product = params.products.find((p) => p.uid === line.productUid);
     if (!product) {
-      return {
-        ok: false,
-        total: 0,
-        reason: `El producto ${line.productUid} no está en el catálogo.`,
-      };
+      return fail(`El producto ${line.productUid} no está en el catálogo.`);
     }
     if (product.supplierId !== params.orderSupplierId) {
-      return {
-        ok: false,
-        total: 0,
-        reason: `El producto ${product.name} no pertenece al proveedor del pedido.`,
-      };
+      return fail(
+        `El producto ${product.name} no pertenece al proveedor del pedido.`,
+      );
     }
   }
 
   const computed = computeOrderTotal(params.lines, params.products);
   if (computed.reason) {
-    return { ok: false, total: 0, reason: computed.reason };
+    return fail(computed.reason);
   }
 
-  if (Math.abs(computed.total - Number(params.orderTotal)) > tolerance) {
-    return {
-      ok: false,
-      total: computed.total,
-      reason:
-        'El importe del pedido no coincide con el catálogo. ' +
-        'Revísalo y vuelve a aprobarlo.',
-    };
-  }
+  const changed = Math.abs(computed.total - previousTotal) > tolerance;
 
   const decision = evaluateSpendingRules({
     rules: params.rules,
@@ -117,21 +118,23 @@ export function verifyOrderAmount(params: {
 
   if (decision.status === 'blocked') {
     return {
-      ok: false,
+      ...fail(
+        decision.reason ?? 'El pedido está bloqueado por las reglas de gasto.',
+      ),
       total: computed.total,
-      reason: decision.reason ?? 'El pedido está bloqueado por las reglas de gasto.',
+      changed,
     };
   }
 
   if (decision.status === 'requires_approval' && !params.ownerApproved) {
     return {
-      ok: false,
+      ...fail('El pedido necesita tu aprobación antes de pagarlo.'),
       total: computed.total,
-      reason: 'El pedido necesita tu aprobación antes de pagarlo.',
+      changed,
     };
   }
 
-  return { ok: true, total: computed.total };
+  return { ok: true, total: computed.total, previousTotal, changed };
 }
 
 interface OrderAmountRow {
@@ -142,14 +145,21 @@ interface OrderAmountRow {
   order_items: { product_uid: string; qty: number }[] | null;
 }
 
-/**
- * Comprobación server-side antes de mover dinero: recalcula el importe desde
- * el catálogo y reevalúa las reglas de gasto de la tienda.
- */
-export async function guardOrderAmount(
-  orderId: string,
-  options: { ownerApproved?: boolean } = {},
-): Promise<{ total: number }> {
+interface OrderAmountData {
+  order: OrderAmountRow;
+  lines: OrderAmountLine[];
+  products: CatalogPrice[];
+  rules: SpendingRules;
+  spentThisMonth: number;
+}
+
+export interface AmountReview {
+  total: number;
+  previousTotal: number;
+  changed: boolean;
+}
+
+async function loadOrderAmountData(orderId: string): Promise<OrderAmountData> {
   const { data, error } = await supabaseAdmin
     .from('orders')
     .select('id, store_id, supplier_id, total, order_items(product_uid, qty)')
@@ -208,13 +218,100 @@ export async function guardOrderAmount(
   }
 
   const spentThisMonth = await getSpentThisMonth(order.store_id);
-  const check = verifyOrderAmount({
-    orderTotal: Number(order.total),
-    orderSupplierId: order.supplier_id,
+
+  return {
+    order,
     lines,
     products,
     rules: mapSpendingRules(rulesRow ?? {}),
     spentThisMonth,
+  };
+}
+
+/**
+ * Actualiza las líneas y el total del pedido con los precios del catálogo del
+ * momento del pago. Solo lo llama el servidor (service_role): el trigger
+ * `protect_order_amount` bloquea estas escrituras desde el cliente.
+ */
+async function applyCurrentPrices(
+  data: OrderAmountData,
+): Promise<void> {
+  const catalog = new Map(data.products.map((product) => [product.uid, product]));
+
+  for (const line of data.lines) {
+    const product = catalog.get(line.productUid);
+    if (!product) continue;
+    const { error } = await supabaseAdmin
+      .from('order_items')
+      .update({ name: product.name, unit_price: Number(product.price) })
+      .eq('order_id', data.order.id)
+      .eq('product_uid', line.productUid);
+    if (error) {
+      throw new Error(
+        `No se pudo actualizar la línea ${line.productUid}: ${error.message}`,
+      );
+    }
+  }
+
+  const subtotal = data.lines.reduce((sum, line) => {
+    const product = catalog.get(line.productUid);
+    return sum + Number(product?.price ?? 0) * line.qty;
+  }, 0);
+  const total = Number(subtotal.toFixed(2));
+
+  const { error } = await supabaseAdmin
+    .from('orders')
+    .update({ subtotal: total, total })
+    .eq('id', data.order.id);
+  if (error) {
+    throw new Error(`No se pudo actualizar el importe del pedido: ${error.message}`);
+  }
+}
+
+/**
+ * Consulta el importe que se pagaría ahora mismo, sin mover dinero ni tocar el
+ * pedido. La app lo usa para avisar si el proveedor cambió el precio.
+ */
+export async function previewOrderAmount(orderId: string): Promise<AmountReview> {
+  const data = await loadOrderAmountData(orderId);
+  const check = verifyOrderAmount({
+    orderTotal: Number(data.order.total),
+    orderSupplierId: data.order.supplier_id,
+    lines: data.lines,
+    products: data.products,
+    rules: data.rules,
+    spentThisMonth: data.spentThisMonth,
+    ownerApproved: true,
+  });
+
+  if (!check.ok) {
+    throw new Error(check.reason ?? 'El pedido no se puede pagar.');
+  }
+
+  return {
+    total: check.total,
+    previousTotal: check.previousTotal,
+    changed: check.changed,
+  };
+}
+
+/**
+ * Comprobación server-side antes de mover dinero: recalcula el importe desde
+ * el catálogo, actualiza las líneas si el precio cambió y reevalúa las reglas
+ * de gasto de la tienda.
+ */
+export async function guardOrderAmount(
+  orderId: string,
+  options: { ownerApproved?: boolean } = {},
+): Promise<AmountReview> {
+  const data = await loadOrderAmountData(orderId);
+  const check = verifyOrderAmount({
+    orderTotal: Number(data.order.total),
+    orderSupplierId: data.order.supplier_id,
+    lines: data.lines,
+    products: data.products,
+    rules: data.rules,
+    spentThisMonth: data.spentThisMonth,
     ownerApproved: options.ownerApproved ?? false,
   });
 
@@ -222,5 +319,13 @@ export async function guardOrderAmount(
     throw new Error(check.reason ?? 'El pedido no supera la comprobación de importe.');
   }
 
-  return { total: check.total };
+  if (check.changed) {
+    await applyCurrentPrices(data);
+  }
+
+  return {
+    total: check.total,
+    previousTotal: check.previousTotal,
+    changed: check.changed,
+  };
 }

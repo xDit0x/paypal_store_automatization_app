@@ -28,6 +28,43 @@ class OrderDetailPage extends StatelessWidget {
     final cubit = context.read<RestockCubit>();
     final l10n = context.l10n;
     final supplier = state.supplierName(order.supplierId);
+
+    // El proveedor pudo cambiar el precio desde que se creó el pedido: se
+    // consulta el importe vigente y, si cambió, se muestra antes de cobrar.
+    final review = await cubit.reviewOrderAmount(order.id);
+    if (!context.mounted) return;
+    if (review != null && review.changed) {
+      final proceed = await showCupertinoDialog<bool>(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: Text(l10n.orderPriceChangedTitle),
+          content: Text(
+            l10n.orderPriceChangedMessage(
+              l10n.euros(review.total, state.currency),
+              l10n.euros(review.previousTotal, state.currency),
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.actionCancel),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(
+                l10n.actionPayNewTotal(
+                  l10n.euros(review.total, state.currency),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !context.mounted) return;
+    }
+
+    final total = review?.total ?? order.total;
     final error = await cubit.approve(order.id);
     if (!context.mounted) return;
     if (error != null) {
@@ -50,7 +87,7 @@ class OrderDetailPage extends StatelessWidget {
     HapticFeedback.mediumImpact();
     showRestockSnack(
       context,
-      l10n.orderPaymentSentMessage(l10n.euros(order.total, state.currency), supplier),
+      l10n.orderPaymentSentMessage(l10n.euros(total, state.currency), supplier),
       title: l10n.orderPaymentSent,
       tone: RSnackTone.success,
     );

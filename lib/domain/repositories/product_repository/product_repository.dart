@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import 'package:store_automatization_app/domain/entities/app_error.dart';
+import 'package:store_automatization_app/domain/entities/catalog_product.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 
 /// El catálogo (productos y precios) es común a todas las tiendas, pero el
@@ -21,4 +22,9 @@ abstract class ProductRepository {
     String uid,
     int stock,
   );
+  Future<Either<AppError, List<CatalogProduct>>> searchCatalog({
+    required String storeId,
+    String? query,
+    String? supplierId,
+  });
 }

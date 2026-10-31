@@ -4,6 +4,7 @@ import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
 import 'package:store_automatization_app/domain/entities/store.dart';
+import 'package:store_automatization_app/domain/entities/catalog_product.dart';
 import 'package:store_automatization_app/domain/entities/supplier.dart';
 
 enum RestockStatus { initial, loading, ready, failure }
@@ -14,7 +15,11 @@ class ChatEntry {
   final String text;
   final DateTime at;
 
-  const ChatEntry({required this.fromUser, required this.text, required this.at});
+  const ChatEntry({
+    required this.fromUser,
+    required this.text,
+    required this.at,
+  });
 }
 
 /// Estado de las pantallas principales de Restock (Inicio, Stock, Pedidos,
@@ -32,6 +37,10 @@ class RestockState {
   final List<ChatEntry> chat;
   final bool agentRunning;
   final String? busyOrderId;
+  final List<CatalogProduct> cart;
+  final List<CatalogProduct> catalogResults;
+  final bool placingOrder;
+  final AppError? catalogError;
 
   const RestockState({
     this.status = RestockStatus.initial,
@@ -46,17 +55,25 @@ class RestockState {
     this.chat = const [],
     this.agentRunning = false,
     this.busyOrderId,
+    this.cart = const [],
+    this.catalogResults = const [],
+    this.placingOrder = false,
+    this.catalogError,
   });
 
-  bool get isLoading => status == RestockStatus.initial || status == RestockStatus.loading;
+  bool get isLoading =>
+      status == RestockStatus.initial || status == RestockStatus.loading;
   String get currency => store?.currency ?? 'EUR';
 
   double get monthlyLimit => rules.monthlyLimit;
-  double get remaining => (monthlyLimit - spentThisMonth).clamp(0, double.infinity).toDouble();
-  double get budgetProgress =>
-      monthlyLimit <= 0 ? 0 : (spentThisMonth / monthlyLimit).clamp(0, 1).toDouble();
+  double get remaining =>
+      (monthlyLimit - spentThisMonth).clamp(0, double.infinity).toDouble();
+  double get budgetProgress => monthlyLimit <= 0
+      ? 0
+      : (spentThisMonth / monthlyLimit).clamp(0, 1).toDouble();
 
-  String supplierName(String supplierId) => suppliers[supplierId]?.name ?? 'Proveedor';
+  String supplierName(String supplierId) =>
+      suppliers[supplierId]?.name ?? 'Proveedor';
 
   List<Order> get pendingOrders =>
       orders.where((o) => o.status == OrderStatus.pendingApproval).toList();
@@ -73,10 +90,10 @@ class RestockState {
   };
 
   Set<String> get uidsInTransit => {
-        for (final o in orders)
-          if (_inTransitStatuses.contains(o.status))
-            for (final item in o.items) item.productUid,
-      };
+    for (final o in orders)
+      if (_inTransitStatuses.contains(o.status))
+        for (final item in o.items) item.productUid,
+  };
 
   bool isInTransit(Product p) => uidsInTransit.contains(p.uid);
 
@@ -86,14 +103,17 @@ class RestockState {
     return list;
   }
 
-  static double _ratio(Product p) =>
-      p.lowStockThreshold <= 0 ? p.stock.toDouble() : p.stock / p.lowStockThreshold;
+  static double _ratio(Product p) => p.lowStockThreshold <= 0
+      ? p.stock.toDouble()
+      : p.stock / p.lowStockThreshold;
 
   /// Pedido más reciente pagado y aún no cerrado: el que se comprueba
   /// con el albarán.
   Order? get latestDelivery {
     for (final o in orders) {
-      if (o.status == OrderStatus.paid || o.status == OrderStatus.invoiced) return o;
+      if (o.status == OrderStatus.paid || o.status == OrderStatus.invoiced) {
+        return o;
+      }
     }
     return null;
   }
@@ -114,10 +134,10 @@ class RestockState {
 
   /// Evalúa un pedido con las mismas reglas que usa el dominio.
   SpendingDecision evaluate(Order order) => rules.evaluate(
-        orderTotal: order.total,
-        spentThisMonth: spentThisMonth,
-        supplierId: order.supplierId,
-      );
+    orderTotal: order.total,
+    spentThisMonth: spentThisMonth,
+    supplierId: order.supplierId,
+  );
 
   RestockState copyWith({
     RestockStatus? status,
@@ -134,6 +154,11 @@ class RestockState {
     bool? agentRunning,
     String? busyOrderId,
     bool clearBusyOrder = false,
+    List<CatalogProduct>? cart,
+    List<CatalogProduct>? catalogResults,
+    bool? placingOrder,
+    AppError? catalogError,
+    bool clearCatalogError = false,
   }) {
     return RestockState(
       status: status ?? this.status,
@@ -148,6 +173,12 @@ class RestockState {
       chat: chat ?? this.chat,
       agentRunning: agentRunning ?? this.agentRunning,
       busyOrderId: clearBusyOrder ? null : (busyOrderId ?? this.busyOrderId),
+      cart: cart ?? this.cart,
+      catalogResults: catalogResults ?? this.catalogResults,
+      placingOrder: placingOrder ?? this.placingOrder,
+      catalogError: clearCatalogError
+          ? null
+          : (catalogError ?? this.catalogError),
     );
   }
 }

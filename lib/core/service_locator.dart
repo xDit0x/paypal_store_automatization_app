@@ -38,6 +38,7 @@ import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.da
 import 'package:store_automatization_app/domain/usecases/auth/watch_auth_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_low_stock_products_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/search_product_by_uid_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
@@ -139,6 +140,9 @@ Future<void> initializeDependencies() async {
   );
   sl.registerLazySingleton(
     () => SearchProductByUidUsecase(repository: sl<ProductRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => SearchCatalogUsecase(repository: sl<ProductRepository>()),
   );
   sl.registerLazySingleton(
     () => GetLowStockProductsUsecase(repository: sl<ProductRepository>()),

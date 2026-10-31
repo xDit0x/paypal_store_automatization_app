@@ -2,8 +2,10 @@ import 'package:dartz/dartz.dart' hide Order;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:store_automatization_app/domain/entities/order.dart';
+import 'package:store_automatization_app/domain/entities/order_amount_review.dart';
 import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
+import 'package:store_automatization_app/domain/entities/catalog_product.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
 import 'package:store_automatization_app/domain/repositories/product_repository/product_repository.dart';
@@ -46,6 +48,13 @@ class _FakeProductRepository implements ProductRepository {
   Future<Either<AppError, List<Product>>> getLowStock(String storeId) async {
     return Right(products.where((product) => product.isLowStock).toList());
   }
+
+  @override
+  Future<Either<AppError, List<CatalogProduct>>> searchCatalog({
+    String? storeId,
+    String? query,
+    String? supplierId,
+  }) async => Right([]);
 
   @override
   Future<Either<AppError, Unit>> updateStock(
@@ -117,6 +126,13 @@ class _FakeOrderRepository implements OrderRepository {
   Future<Either<AppError, Unit>> reject(String orderId) async {
     return const Left(AppError(AppErrorCode.orderCreateFailed));
   }
+
+  @override
+  Future<Either<AppError, OrderAmountReview>> reviewAmount(
+    String orderId,
+  ) async {
+    return const Left(AppError(AppErrorCode.orderCreateFailed));
+  }
 }
 
 void main() {
@@ -155,6 +171,21 @@ void main() {
     expect(value.order.total, 20);
     expect(orderRepository.lastStatus, OrderStatus.draft);
     expect(orderRepository.lastItems?.single.qty, 2);
+  });
+
+  test('la compra manual queda por aprobar aunque se autoapruebe', () async {
+    final result = await usecase(
+      storeId: 'store-1',
+      supplierId: 'sup-1',
+      lines: const [DraftOrderLine(productUid: 'LECHE-001', qty: 2)],
+      forceApproval: true,
+    );
+
+    final value = result.getOrElse(
+      () => throw StateError('esperaba un pedido'),
+    );
+    expect(value.decision.needsApproval, isFalse);
+    expect(orderRepository.lastStatus, OrderStatus.pendingApproval);
   });
 
   test(

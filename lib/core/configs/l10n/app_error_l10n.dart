@@ -47,6 +47,7 @@ extension AppErrorL10n on AppLocalizations {
     AppErrorCode.orderSpentFailed => errorOrderSpentFailed,
     AppErrorCode.orderApproveFailed => errorOrderApproveFailed,
     AppErrorCode.orderRejectFailed => errorOrderRejectFailed,
+    AppErrorCode.orderAmountFailed => errorOrderAmountFailed,
     AppErrorCode.orderMissing => errorOrderMissing,
     AppErrorCode.orderNotFound => errorOrderNotFound,
     AppErrorCode.orderEmpty => errorOrderEmpty,

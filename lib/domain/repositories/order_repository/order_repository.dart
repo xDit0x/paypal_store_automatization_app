@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart' hide Order;
 
 import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
+import 'package:store_automatization_app/domain/entities/order_amount_review.dart';
 import 'package:store_automatization_app/domain/entities/order_item.dart';
 
 abstract class OrderRepository {
@@ -20,4 +21,7 @@ abstract class OrderRepository {
   Future<Either<AppError, double>> getSpentThisMonth(String storeId);
   Future<Either<AppError, Unit>> approve(String orderId);
   Future<Either<AppError, Unit>> reject(String orderId);
+
+  /// Importe que se pagaría ahora, con el precio vigente del catálogo.
+  Future<Either<AppError, OrderAmountReview>> reviewAmount(String orderId);
 }

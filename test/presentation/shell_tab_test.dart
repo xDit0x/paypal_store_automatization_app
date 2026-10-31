@@ -186,6 +186,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(_page(tester), 1);
 
+    // Desde Stock se puede abrir el catálogo de proveedores para comprar.
+    expect(find.text('Añadir productos al stock'), findsOneWidget);
+    await tester.tap(find.text('Añadir productos al stock'));
+    await tester.pumpAndSettle();
+    expect(find.text('Catálogo de proveedores'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
     // Simula que el shell se vuelve a crear (cambio de tema, re-emisión de
     // autenticación, etc.): la pestaña activa debe conservarse.
     await tester.pumpWidget(
