@@ -28,6 +28,7 @@ import 'package:store_automatization_app/domain/usecases/store/get_current_store
 import 'package:store_automatization_app/domain/usecases/store/watch_store_changes_usecase.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/agent/assistant_page.dart';
+
 import 'package:store_automatization_app/presentation/pages/catalog/stock_page.dart';
 import 'package:store_automatization_app/presentation/pages/home/home_page.dart';
 import 'package:store_automatization_app/presentation/pages/orders/orders_page.dart';

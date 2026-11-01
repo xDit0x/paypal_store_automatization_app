@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
+  DeliveryLine,
   captureDelivery,
   confirmAuthorization,
   refundOrder,
@@ -291,6 +292,9 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
       }
     },
   );
+  app.post<{ Params: { id: string } }>(
+    '/orders/:id/reject',
+    async (request, reply) => {
       const user = await authenticate(request);
       if (!user) {
         return reply.code(401).send({ error: 'Sesión no válida.' });

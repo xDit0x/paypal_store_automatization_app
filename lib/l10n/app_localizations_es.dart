@@ -365,6 +365,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statusPaymentFailed => 'Pago fallido';
 
   @override
+  String get statusAuthorized => 'Autorizado';
+
+  @override
+  String get statusPartiallyDelivered => 'Entregado parcialmente';
+
+  @override
+  String get statusDelivered => 'Entregado';
+
+  @override
+  String get statusClaimed => 'Reclamado';
+
+  @override
+  String get statusRefunded => 'Reembolsado';
+
+  @override
   String reasonOverMaxPerOrder(String amount) {
     return 'Supera el máximo de $amount por pedido';
   }

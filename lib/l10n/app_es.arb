@@ -181,6 +181,11 @@
   "statusCompleted": "Completado",
   "statusRejected": "Rechazado",
   "statusPaymentFailed": "Pago fallido",
+  "statusAuthorized": "Autorizado",
+  "statusPartiallyDelivered": "Entregado parcialmente",
+  "statusDelivered": "Entregado",
+  "statusClaimed": "Reclamado",
+  "statusRefunded": "Reembolsado",
 
   "reasonOverMaxPerOrder": "Supera el máximo de {amount} por pedido",
   "@reasonOverMaxPerOrder": {

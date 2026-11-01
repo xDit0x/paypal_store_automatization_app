@@ -22,13 +22,16 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    final cubit = context.read<RestockCubit>();
-    final order = cubit.state.orderById(widget.orderId);
-    if (order != null) {
-      for (final item in order.items) {
-        _received[item.productUid] = item.qty;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_received.isEmpty) {
+      // Usamos context aquí, ya es seguro
+      final cubit = context.read<RestockCubit>();
+      final order = cubit.state.orderById(widget.orderId);
+      if (order != null) {
+        for (final item in order.items) {
+          _received[item.productUid] = item.qty;
+        }
       }
     }
   }
@@ -68,7 +71,10 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
           const SizedBox(height: 4),
           Text('Estado: ${order.status.value}'),
           const SizedBox(height: 12),
-          Text('Indica cuánto ha llegado de cada producto:', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Indica cuánto ha llegado de cada producto:',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           ...lines,
           const SizedBox(height: 16),
@@ -76,8 +82,16 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
             Text('Error: $_error', style: TextStyle(color: Colors.red)),
           ElevatedButton.icon(
             onPressed: _busy ? null : _onConfirm,
-            icon: _busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.check),
-            label: Text(_busy ? 'Confirmando...' : 'Confirmar entrega y cobrar'),
+            icon: _busy
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check),
+            label: Text(
+              _busy ? 'Confirmando...' : 'Confirmar entrega y cobrar',
+            ),
           ),
         ],
       ),
@@ -89,18 +103,14 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
     try {
       final dio = Dio();
       final body = {
-        'lines': _received.entries.map((e) => {
-          'productUid': e.key,
-          'qtyReceived': e.value,
-        }).toList(),
+        'lines': _received.entries
+            .map((e) => {'productUid': e.key, 'qtyReceived': e.value})
+            .toList(),
       };
 
       // El endpoint real está detrás del backend; usamos el host de desarrollo.
       const baseUrl = 'http://localhost:3000';
-      await dio.post(
-        '$baseUrl/orders/${widget.orderId}/capture',
-        data: body,
-      );
+      await dio.post('$baseUrl/orders/${widget.orderId}/capture', data: body);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -143,9 +153,15 @@ class _LineRow extends StatelessWidget {
                   Text(name, style: Theme.of(context).textTheme.titleSmall),
                   Text('Esperado: $expected  ·  Recibido: $qty'),
                   if ((qty - expected) < 0)
-                    Text('Faltan ${(expected - qty)}', style: TextStyle(color: Colors.orange)),
+                    Text(
+                      'Faltan ${(expected - qty)}',
+                      style: TextStyle(color: Colors.orange),
+                    ),
                   if ((qty - expected) > 0)
-                    Text('Sobran ${qty - expected}', style: TextStyle(color: Colors.green)),
+                    Text(
+                      'Sobran ${qty - expected}',
+                      style: TextStyle(color: Colors.green),
+                    ),
                 ],
               ),
             ),
