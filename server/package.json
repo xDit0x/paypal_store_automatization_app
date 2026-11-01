@@ -11,7 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test test/*.test.ts",
+    "test": "tsx --import ./test/setup_env.ts --test test/*.test.ts",
     "check:groq": "tsx src/scripts/check-groq.ts",
     "check:supabase": "tsx src/scripts/check-supabase.ts",
     "check:paypal": "tsx src/scripts/check-paypal.ts",

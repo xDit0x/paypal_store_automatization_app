@@ -34,8 +34,14 @@ void main() {
     expect(es.shortDate(d), 'lun, 19 oct');
     expect(en.shortDate(d), 'Mon, Oct 19');
 
-    expect(es.currentMonthName(), 'octubre');
-    expect(en.currentMonthName(), 'October');
+    // El mes actual cambia con la fecha: se compara con el mes de hoy.
+    const esMonths = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+      'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const enMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+      'August', 'September', 'October', 'November', 'December'];
+    final month = DateTime.now().month - 1;
+    expect(es.currentMonthName(), esMonths[month]);
+    expect(en.currentMonthName(), enMonths[month]);
   });
 
   test('"Hoy" y "Ayer" se traducen', () {

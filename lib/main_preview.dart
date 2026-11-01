@@ -36,11 +36,13 @@ import 'package:store_automatization_app/domain/usecases/settings/get_spending_r
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
 import 'package:store_automatization_app/l10n/app_localizations.dart';
+import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/shell/restock_shell.dart';
+import 'package:store_automatization_app/preview/preview_assistant_repository.dart';
 import 'package:store_automatization_app/preview/preview_repositories.dart';
 
 Future<void> main() async {
@@ -131,7 +133,11 @@ class PreviewApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: mode,
-            home: RestockShell(createCubit: _restockCubit),
+            home: RestockShell(
+              createCubit: _restockCubit,
+              createAssistantCubit: () =>
+                  AssistantCubit(repository: PreviewAssistantRepository()),
+            ),
           ),
         ),
       ),

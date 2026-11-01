@@ -69,7 +69,7 @@ void main() {
         expect(
           peak,
           sound == RSound.soft ? greaterThan(2000) : greaterThan(3000),
-          reason: '$sound sale mudo (${peak} / 32767)',
+          reason: '$sound sale mudo ($peak / 32767)',
         );
         expect(peak, lessThan(32767), reason: '$sound satura');
         // Sin esto el altavoz chasquea al empezar y al cortar.

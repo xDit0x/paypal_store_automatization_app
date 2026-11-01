@@ -5,14 +5,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:store_automatization_app/common/helpers/restock_format.dart';
 import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
 import 'package:store_automatization_app/core/audio/restock_sounds.dart';
+import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/voice/voice_service.dart';
+import 'package:store_automatization_app/domain/entities/market.dart';
+import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/widgets/market/adopt_sheet.dart';
+import 'package:store_automatization_app/presentation/widgets/market/market_results.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
 import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
 
-/// Pestaña Asistente: conversación con el agente de reposición.
+/// Pestaña Asistente: el agente de reposición y el asistente de compras
+/// (estudio de mercado), por texto o por voz.
 class AssistantPage extends StatefulWidget {
   const AssistantPage({super.key});
 
@@ -20,16 +27,33 @@ class AssistantPage extends StatefulWidget {
   State<AssistantPage> createState() => _AssistantPageState();
 }
 
+/// Un elemento de la conversación: viene del agente (RestockCubit) o del
+/// asistente de compras (AssistantCubit). Se ordenan por hora.
+class _Item {
+  const _Item({required this.fromUser, required this.text, required this.at, this.entry});
+
+  final bool fromUser;
+  final String text;
+  final DateTime at;
+  final AssistantEntry? entry;
+}
+
 class _AssistantPageState extends State<AssistantPage> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  bool _listening = false;
+  bool _voiceSent = false;
 
   @override
   void dispose() {
+    VoiceService.instance.stopListening();
+    VoiceService.instance.stopSpeaking();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
   }
+
+  String get _lang => Localizations.localeOf(context).languageCode;
 
   void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -45,8 +69,11 @@ class _AssistantPageState extends State<AssistantPage> {
   Future<void> _runAgent() async {
     if (context.read<RestockCubit>().state.agentRunning) return;
     _scrollToEnd();
-    await context.read<RestockCubit>().runAgent(fromChat: true);
+    final message = await context.read<RestockCubit>().runAgent(fromChat: true);
     RestockSounds.instance.play(RSound.message);
+    if (mounted && context.read<AssistantCubit>().state.speakReplies) {
+      VoiceService.instance.speak(message, _lang);
+    }
     _scrollToEnd();
   }
 
@@ -79,14 +106,115 @@ class _AssistantPageState extends State<AssistantPage> {
     _scrollToEnd();
   }
 
-  void _send() {
-    if (context.read<RestockCubit>().state.agentRunning) return;
-    final text = _input.text;
-    if (text.trim().isEmpty) return;
+  Future<void> _sendText(String text, {bool viaVoice = false}) async {
+    final store = context.read<RestockCubit>().state.store;
+    final assistant = context.read<AssistantCubit>();
+    if (store == null || assistant.state.sending || text.trim().isEmpty) return;
+
     RestockSounds.instance.play(RSound.tap);
-    context.read<RestockCubit>().ask(text);
     _input.clear();
     _scrollToEnd();
+    final reply = await assistant.send(store.id, text, viaVoice: viaVoice);
+    if (!mounted) return;
+    RestockSounds.instance.play(RSound.message);
+    if (reply != null && (viaVoice || assistant.state.speakReplies)) {
+      VoiceService.instance.speak(reply.text, _lang);
+    }
+    _scrollToEnd();
+  }
+
+  void _send() => _sendText(_input.text);
+
+  Future<void> _toggleMic() async {
+    final voice = VoiceService.instance;
+    if (_listening) {
+      await voice.stopListening();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+
+    _voiceSent = false;
+    setState(() => _listening = true);
+    final ok = await voice.listen(
+      languageCode: _lang,
+      onText: (text, isFinal) {
+        if (!mounted) return;
+        _input.text = text;
+        _input.selection = TextSelection.collapsed(offset: text.length);
+        if (isFinal && !_voiceSent && text.trim().isNotEmpty) {
+          _voiceSent = true;
+          setState(() => _listening = false);
+          _sendText(text, viaVoice: true);
+        }
+      },
+      onDone: () {
+        if (mounted && _listening) setState(() => _listening = false);
+      },
+      onError: (error) {
+        if (!mounted) return;
+        setState(() => _listening = false);
+        _voiceError(error);
+      },
+    );
+    if (!ok && mounted) {
+      setState(() => _listening = false);
+      _voiceError(voice.lastError);
+    }
+  }
+
+  /// Explica por qué no funcionó el micrófono.
+  void _voiceError(String? code) {
+    final l10n = context.l10n;
+    final message = switch (code) {
+      'error_no_match' || 'error_speech_timeout' => l10n.marketVoiceNoSpeech,
+      null => l10n.marketVoiceUnavailable,
+      _ => '${l10n.marketVoiceUnavailable} ($code)',
+    };
+    showRestockSnack(context, message, tone: RSnackTone.warning);
+  }
+
+  Future<void> _choose(MarketResearch research, MarketOption option) async {
+    final store = context.read<RestockCubit>().state.store;
+    if (store == null) return;
+    final choice = await showAdoptSheet(context, option: option, monthlyQuantity: research.monthlyQuantity);
+    if (choice == null || !mounted) return;
+
+    final assistant = context.read<AssistantCubit>();
+    final restock = context.read<RestockCubit>();
+    final l10n = context.l10n;
+    final result = await assistant.adopt(
+      storeId: store.id,
+      research: research,
+      option: option,
+      quantity: choice.quantity,
+      placeOrder: choice.placeOrder,
+    );
+    if (!mounted) return;
+
+    result.fold(
+      (error) => showRestockSnack(context, l10n.describeDetail(error), tone: RSnackTone.warning),
+      (adopted) {
+        final order = adopted.order;
+        final lines = [
+          l10n.marketAdoptDone(adopted.productName, adopted.supplierName),
+          if (order != null && order.blocked) l10n.marketAdoptBlocked(order.reason ?? ''),
+          if (order != null && order.paid) l10n.marketAdoptPaid(l10n.euros(order.total, adopted.currency)),
+          if (order != null && !order.blocked && !order.paid)
+            l10n.marketAdoptOrderCreated(l10n.euros(order.total, adopted.currency)),
+        ];
+        final note = lines.join(' ');
+        assistant.addNote(note);
+        showRestockSnack(
+          context,
+          note.replaceAll('**', ''),
+          title: l10n.marketAdoptSuccessTitle,
+          tone: order != null && order.blocked ? RSnackTone.warning : RSnackTone.success,
+        );
+        if (assistant.state.speakReplies) VoiceService.instance.speak(note, _lang);
+        restock.load();
+        _scrollToEnd();
+      },
+    );
   }
 
   @override
@@ -95,18 +223,52 @@ class _AssistantPageState extends State<AssistantPage> {
     final t = context.rt;
     final l10n = context.l10n;
     final state = context.watch<RestockCubit>().state;
+    final assistant = context.watch<AssistantCubit>().state;
     final media = MediaQuery.of(context);
     final keyboard = media.viewInsets.bottom;
     final bottom = keyboard > 0 ? keyboard + 12 : CarouselNavBar.height + 22 + media.padding.bottom + 18;
+    final busy = state.agentRunning || assistant.sending;
 
-    final chat = state.chat;
-    final itemCount = 1 + chat.length + (state.agentRunning ? 1 : 0);
+    final items = <_Item>[
+      for (final c in state.chat) _Item(fromUser: c.fromUser, text: c.text, at: c.at),
+      for (final e in assistant.entries)
+        _Item(
+          fromUser: e.fromUser,
+          text: e.error != null ? l10n.describeDetail(e.error!) : e.text,
+          at: e.at,
+          entry: e,
+        ),
+    ]..sort((a, b) => a.at.compareTo(b.at));
+
+    // Respuestas rápidas: solo las de la última respuesta del asistente.
+    final last = assistant.entries.isEmpty ? null : assistant.entries.last;
+    final quickReplies = !busy && last != null && !last.fromUser ? last.quickReplies : const <String>[];
+    final lastUserVoice = assistant.entries.lastWhere(
+      (e) => e.fromUser,
+      orElse: () => AssistantEntry(fromUser: true, text: '', at: DateTime(0)),
+    ).viaVoice;
+
+    final itemCount = 2 + items.length + (busy ? 1 : 0);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(16, media.padding.top + 16, 16, bottom),
       child: Column(
         children: [
-          RLargeTitle(l10n.assistantTitle, subtitle: l10n.assistantSubtitle),
+          RLargeTitle(
+            l10n.assistantTitle,
+            subtitle: l10n.assistantSubtitle,
+            trailing: RRoundIconButton(
+              icon: assistant.speakReplies ? CupertinoIcons.speaker_2_fill : CupertinoIcons.speaker_slash,
+              label: assistant.speakReplies ? l10n.marketSpeakOff : l10n.marketSpeakOn,
+              size: 40,
+              filled: assistant.speakReplies,
+              onTap: () {
+                RestockSounds.instance.play(RSound.tap);
+                if (assistant.speakReplies) VoiceService.instance.stopSpeaking();
+                context.read<AssistantCubit>().toggleSpeak();
+              },
+            ),
+          ),
           const SizedBox(height: 14),
           Expanded(
             child: ListView.separated(
@@ -114,17 +276,31 @@ class _AssistantPageState extends State<AssistantPage> {
               itemCount: itemCount,
               separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, i) {
-                if (i == 0) {
-                  return _Bubble(
-                    fromUser: false,
-                    text: l10n.assistantGreeting,
+                if (i == 0) return _Bubble(fromUser: false, text: l10n.assistantGreeting);
+                if (i == 1) return _Bubble(fromUser: false, text: l10n.marketGreeting);
+                final index = i - 2;
+                if (index < items.length) {
+                  final item = items[index];
+                  final market = item.entry?.market;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _Bubble(fromUser: item.fromUser, text: item.text, time: item.at),
+                      if (market != null &&
+                          (market.options.isNotEmpty || market.webLeads.isNotEmpty)) ...[
+                        const SizedBox(height: 10),
+                        MarketResults(
+                          research: market,
+                          busyOfferId: assistant.adoptingOfferId,
+                          onChoose: (option) => _choose(market, option),
+                        ),
+                      ],
+                    ],
                   );
                 }
-                if (i <= chat.length) {
-                  final entry = chat[i - 1];
-                  return _Bubble(fromUser: entry.fromUser, text: entry.text, time: entry.at);
-                }
-                return const _TypingBubble();
+                return _TypingBubble(
+                  text: assistant.sending ? l10n.marketThinking : l10n.assistantTyping,
+                );
               },
             ),
           ),
@@ -133,17 +309,36 @@ class _AssistantPageState extends State<AssistantPage> {
             height: 36,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              children: [
-                _Chip(
-                  label: l10n.assistantChipReview,
-                  icon: CupertinoIcons.sparkles,
-                  onTap: state.agentRunning || state.store == null ? null : _runAgent,
-                ),
-                const SizedBox(width: 8),
-                _Chip(label: l10n.assistantChipPending, onTap: () => _askPending(state)),
-                const SizedBox(width: 8),
-                _Chip(label: l10n.assistantChipSpent, onTap: () => _askSpent(state)),
-              ],
+              children: quickReplies.isNotEmpty
+                  ? [
+                      for (final reply in quickReplies) ...[
+                        _Chip(
+                          label: reply,
+                          highlighted: true,
+                          onTap: () => _sendText(reply, viaVoice: lastUserVoice),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ]
+                  : [
+                      _Chip(
+                        label: l10n.marketChipNewProduct,
+                        icon: CupertinoIcons.globe,
+                        onTap: busy || state.store == null
+                            ? null
+                            : () => _sendText(l10n.marketNewProductPrompt),
+                      ),
+                      const SizedBox(width: 8),
+                      _Chip(
+                        label: l10n.assistantChipReview,
+                        icon: CupertinoIcons.sparkles,
+                        onTap: busy || state.store == null ? null : _runAgent,
+                      ),
+                      const SizedBox(width: 8),
+                      _Chip(label: l10n.assistantChipPending, onTap: () => _askPending(state)),
+                      const SizedBox(width: 8),
+                      _Chip(label: l10n.assistantChipSpent, onTap: () => _askSpent(state)),
+                    ],
             ),
           ),
           const SizedBox(height: 12),
@@ -152,7 +347,7 @@ class _AssistantPageState extends State<AssistantPage> {
             decoration: BoxDecoration(
               color: p.surface,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: p.border),
+              border: Border.all(color: _listening ? p.accent : p.border, width: _listening ? 1.5 : 1),
             ),
             child: Row(
               children: [
@@ -162,15 +357,26 @@ class _AssistantPageState extends State<AssistantPage> {
                     onSubmitted: (_) => _send(),
                     textInputAction: TextInputAction.send,
                     style: t.body,
-                    decoration: restockPlainInput(context, l10n.assistantInputHint),
+                    decoration: restockPlainInput(
+                      context,
+                      _listening ? l10n.marketListening : l10n.assistantInputHint,
+                    ),
                   ),
                 ),
+                RRoundIconButton(
+                  icon: _listening ? CupertinoIcons.stop_fill : CupertinoIcons.mic_fill,
+                  label: _listening ? l10n.marketMicStop : l10n.marketMicStart,
+                  size: 40,
+                  filled: _listening,
+                  onTap: busy && !_listening ? null : _toggleMic,
+                ),
+                const SizedBox(width: 6),
                 RRoundIconButton(
                   icon: CupertinoIcons.arrow_up,
                   label: l10n.assistantSend,
                   size: 40,
                   filled: true,
-                  onTap: _send,
+                  onTap: busy ? null : _send,
                 ),
               ],
             ),
@@ -238,7 +444,9 @@ class _Bubble extends StatelessWidget {
 }
 
 class _TypingBubble extends StatelessWidget {
-  const _TypingBubble();
+  const _TypingBubble({required this.text});
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +461,7 @@ class _TypingBubble extends StatelessWidget {
           children: [
             const CupertinoActivityIndicator(radius: 8),
             const SizedBox(width: 8),
-            Text(context.l10n.assistantTyping, style: TextStyle(fontSize: 15, color: p.inkSecondary)),
+            Text(text, style: TextStyle(fontSize: 15, color: p.inkSecondary)),
           ],
         ),
       ),
@@ -262,11 +470,14 @@ class _TypingBubble extends StatelessWidget {
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.onTap, this.icon});
+  const _Chip({required this.label, required this.onTap, this.icon, this.highlighted = false});
 
   final String label;
   final IconData? icon;
   final VoidCallback? onTap;
+
+  /// Respuesta rápida que propone el asistente.
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -275,8 +486,8 @@ class _Chip extends StatelessWidget {
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: Material(
-        color: p.surface,
-        shape: StadiumBorder(side: BorderSide(color: p.border)),
+        color: highlighted ? p.blueSoft : p.surface,
+        shape: StadiumBorder(side: BorderSide(color: highlighted ? p.accent : p.border)),
         child: InkWell(
           customBorder: const StadiumBorder(),
           onTap: onTap,

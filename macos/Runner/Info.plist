@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Stocky usa el micrófono para que puedas hablar con el asistente de compras.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Stocky convierte tu voz en texto para entender qué producto quieres añadir.</string>
 </dict>
 </plist>

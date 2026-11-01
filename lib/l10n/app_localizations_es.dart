@@ -1108,4 +1108,164 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get errorPreviewNoSignOut => 'En la vista previa no se cierra sesión.';
+
+  @override
+  String get marketGreeting =>
+      'También busco distribuidores para productos nuevos: dime qué quieres vender, por voz o escribiendo, y te comparo precios de varios países.';
+
+  @override
+  String get marketChipNewProduct => 'Añadir un producto nuevo';
+
+  @override
+  String get marketNewProductPrompt =>
+      'Quiero añadir un producto nuevo a mi tienda';
+
+  @override
+  String get marketThinking => 'Pensando…';
+
+  @override
+  String get marketListening => 'Te escucho…';
+
+  @override
+  String get marketMicStart => 'Hablar';
+
+  @override
+  String get marketMicStop => 'Dejar de escuchar';
+
+  @override
+  String get marketVoiceUnavailable =>
+      'El micrófono no está disponible. Revisa el permiso en los ajustes del dispositivo.';
+
+  @override
+  String get marketSpeakOn => 'Leer respuestas en voz alta';
+
+  @override
+  String get marketSpeakOff => 'Dejar de leer respuestas';
+
+  @override
+  String marketCompared(int offers, int countries) {
+    return 'Comparé $offers ofertas de $countries países';
+  }
+
+  @override
+  String get marketNotFound =>
+      'No encontré distribuidores para ese producto. Prueba a describirlo de otra forma.';
+
+  @override
+  String get marketTagCheapest => 'Más barato';
+
+  @override
+  String get marketTagFastest => 'Más rápido';
+
+  @override
+  String get marketTagBestRated => 'Mejor valorado';
+
+  @override
+  String get marketTagOverBudget => 'Por encima de tu precio';
+
+  @override
+  String marketPerUnit(String unit) {
+    return 'por $unit';
+  }
+
+  @override
+  String marketOrderQty(int qty, String unit) {
+    return 'Pedido de $qty $unit';
+  }
+
+  @override
+  String marketMinPack(int min, int pack) {
+    return 'Mínimo $min · de $pack en $pack';
+  }
+
+  @override
+  String get marketGoods => 'Producto';
+
+  @override
+  String get marketShipping => 'Envío';
+
+  @override
+  String get marketShippingFree => 'Gratis';
+
+  @override
+  String get marketDuties => 'Aranceles';
+
+  @override
+  String get marketTotal => 'Total en tu tienda';
+
+  @override
+  String marketLeadDays(int days) {
+    return 'Llega en $days días';
+  }
+
+  @override
+  String marketOriginalPrice(String price) {
+    return 'Precio de origen: $price';
+  }
+
+  @override
+  String get marketOutsideEu => 'Fuera de la UE: incluye aranceles';
+
+  @override
+  String get marketChoose => 'Elegir este distribuidor';
+
+  @override
+  String get marketWebTitle => 'También en internet';
+
+  @override
+  String get marketWebHint => 'Encontrados en la web, sin precio verificado.';
+
+  @override
+  String get marketFxFallback => 'Tipos de cambio aproximados.';
+
+  @override
+  String marketAdoptTitle(String product) {
+    return 'Añadir $product';
+  }
+
+  @override
+  String marketAdoptFrom(String distributor) {
+    return 'De $distributor';
+  }
+
+  @override
+  String get marketAdoptQuantity => 'Unidades al mes';
+
+  @override
+  String get marketAdoptOrderNow => 'Hacer el primer pedido ahora';
+
+  @override
+  String marketAdoptOrderHint(String total) {
+    return 'Se paga con PayPal (unos $total) si cumple tus reglas de gasto.';
+  }
+
+  @override
+  String get marketAdoptConfirm => 'Añadir a mi tienda';
+
+  @override
+  String marketAdoptDone(String product, String supplier) {
+    return '**$product** ya está en tu stock, de **$supplier**.';
+  }
+
+  @override
+  String marketAdoptPaid(String total) {
+    return 'Primer pedido pagado con PayPal: **$total**.';
+  }
+
+  @override
+  String marketAdoptOrderCreated(String total) {
+    return 'Primer pedido creado por **$total**. Lo verás en Pedidos.';
+  }
+
+  @override
+  String marketAdoptBlocked(String reason) {
+    return 'No hice el pedido: $reason';
+  }
+
+  @override
+  String get marketAdoptSuccessTitle => 'Producto añadido';
+
+  @override
+  String get marketVoiceNoSpeech =>
+      'No te he oído. Toca el micrófono y habla cerca del dispositivo.';
 }

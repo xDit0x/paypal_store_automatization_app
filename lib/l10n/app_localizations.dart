@@ -1974,6 +1974,264 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'En la vista previa no se cierra sesión.'**
   String get errorPreviewNoSignOut;
+
+  /// No description provided for @marketGreeting.
+  ///
+  /// In es, this message translates to:
+  /// **'También busco distribuidores para productos nuevos: dime qué quieres vender, por voz o escribiendo, y te comparo precios de varios países.'**
+  String get marketGreeting;
+
+  /// No description provided for @marketChipNewProduct.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir un producto nuevo'**
+  String get marketChipNewProduct;
+
+  /// No description provided for @marketNewProductPrompt.
+  ///
+  /// In es, this message translates to:
+  /// **'Quiero añadir un producto nuevo a mi tienda'**
+  String get marketNewProductPrompt;
+
+  /// No description provided for @marketThinking.
+  ///
+  /// In es, this message translates to:
+  /// **'Pensando…'**
+  String get marketThinking;
+
+  /// No description provided for @marketListening.
+  ///
+  /// In es, this message translates to:
+  /// **'Te escucho…'**
+  String get marketListening;
+
+  /// No description provided for @marketMicStart.
+  ///
+  /// In es, this message translates to:
+  /// **'Hablar'**
+  String get marketMicStart;
+
+  /// No description provided for @marketMicStop.
+  ///
+  /// In es, this message translates to:
+  /// **'Dejar de escuchar'**
+  String get marketMicStop;
+
+  /// No description provided for @marketVoiceUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'El micrófono no está disponible. Revisa el permiso en los ajustes del dispositivo.'**
+  String get marketVoiceUnavailable;
+
+  /// No description provided for @marketSpeakOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Leer respuestas en voz alta'**
+  String get marketSpeakOn;
+
+  /// No description provided for @marketSpeakOff.
+  ///
+  /// In es, this message translates to:
+  /// **'Dejar de leer respuestas'**
+  String get marketSpeakOff;
+
+  /// No description provided for @marketCompared.
+  ///
+  /// In es, this message translates to:
+  /// **'Comparé {offers} ofertas de {countries} países'**
+  String marketCompared(int offers, int countries);
+
+  /// No description provided for @marketNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontré distribuidores para ese producto. Prueba a describirlo de otra forma.'**
+  String get marketNotFound;
+
+  /// No description provided for @marketTagCheapest.
+  ///
+  /// In es, this message translates to:
+  /// **'Más barato'**
+  String get marketTagCheapest;
+
+  /// No description provided for @marketTagFastest.
+  ///
+  /// In es, this message translates to:
+  /// **'Más rápido'**
+  String get marketTagFastest;
+
+  /// No description provided for @marketTagBestRated.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejor valorado'**
+  String get marketTagBestRated;
+
+  /// No description provided for @marketTagOverBudget.
+  ///
+  /// In es, this message translates to:
+  /// **'Por encima de tu precio'**
+  String get marketTagOverBudget;
+
+  /// No description provided for @marketPerUnit.
+  ///
+  /// In es, this message translates to:
+  /// **'por {unit}'**
+  String marketPerUnit(String unit);
+
+  /// No description provided for @marketOrderQty.
+  ///
+  /// In es, this message translates to:
+  /// **'Pedido de {qty} {unit}'**
+  String marketOrderQty(int qty, String unit);
+
+  /// No description provided for @marketMinPack.
+  ///
+  /// In es, this message translates to:
+  /// **'Mínimo {min} · de {pack} en {pack}'**
+  String marketMinPack(int min, int pack);
+
+  /// No description provided for @marketGoods.
+  ///
+  /// In es, this message translates to:
+  /// **'Producto'**
+  String get marketGoods;
+
+  /// No description provided for @marketShipping.
+  ///
+  /// In es, this message translates to:
+  /// **'Envío'**
+  String get marketShipping;
+
+  /// No description provided for @marketShippingFree.
+  ///
+  /// In es, this message translates to:
+  /// **'Gratis'**
+  String get marketShippingFree;
+
+  /// No description provided for @marketDuties.
+  ///
+  /// In es, this message translates to:
+  /// **'Aranceles'**
+  String get marketDuties;
+
+  /// No description provided for @marketTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Total en tu tienda'**
+  String get marketTotal;
+
+  /// No description provided for @marketLeadDays.
+  ///
+  /// In es, this message translates to:
+  /// **'Llega en {days} días'**
+  String marketLeadDays(int days);
+
+  /// No description provided for @marketOriginalPrice.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio de origen: {price}'**
+  String marketOriginalPrice(String price);
+
+  /// No description provided for @marketOutsideEu.
+  ///
+  /// In es, this message translates to:
+  /// **'Fuera de la UE: incluye aranceles'**
+  String get marketOutsideEu;
+
+  /// No description provided for @marketChoose.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir este distribuidor'**
+  String get marketChoose;
+
+  /// No description provided for @marketWebTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'También en internet'**
+  String get marketWebTitle;
+
+  /// No description provided for @marketWebHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Encontrados en la web, sin precio verificado.'**
+  String get marketWebHint;
+
+  /// No description provided for @marketFxFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipos de cambio aproximados.'**
+  String get marketFxFallback;
+
+  /// No description provided for @marketAdoptTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir {product}'**
+  String marketAdoptTitle(String product);
+
+  /// No description provided for @marketAdoptFrom.
+  ///
+  /// In es, this message translates to:
+  /// **'De {distributor}'**
+  String marketAdoptFrom(String distributor);
+
+  /// No description provided for @marketAdoptQuantity.
+  ///
+  /// In es, this message translates to:
+  /// **'Unidades al mes'**
+  String get marketAdoptQuantity;
+
+  /// No description provided for @marketAdoptOrderNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Hacer el primer pedido ahora'**
+  String get marketAdoptOrderNow;
+
+  /// No description provided for @marketAdoptOrderHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Se paga con PayPal (unos {total}) si cumple tus reglas de gasto.'**
+  String marketAdoptOrderHint(String total);
+
+  /// No description provided for @marketAdoptConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir a mi tienda'**
+  String get marketAdoptConfirm;
+
+  /// No description provided for @marketAdoptDone.
+  ///
+  /// In es, this message translates to:
+  /// **'**{product}** ya está en tu stock, de **{supplier}**.'**
+  String marketAdoptDone(String product, String supplier);
+
+  /// No description provided for @marketAdoptPaid.
+  ///
+  /// In es, this message translates to:
+  /// **'Primer pedido pagado con PayPal: **{total}**.'**
+  String marketAdoptPaid(String total);
+
+  /// No description provided for @marketAdoptOrderCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Primer pedido creado por **{total}**. Lo verás en Pedidos.'**
+  String marketAdoptOrderCreated(String total);
+
+  /// No description provided for @marketAdoptBlocked.
+  ///
+  /// In es, this message translates to:
+  /// **'No hice el pedido: {reason}'**
+  String marketAdoptBlocked(String reason);
+
+  /// No description provided for @marketAdoptSuccessTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Producto añadido'**
+  String get marketAdoptSuccessTitle;
+
+  /// No description provided for @marketVoiceNoSpeech.
+  ///
+  /// In es, this message translates to:
+  /// **'No te he oído. Toca el micrófono y habla cerca del dispositivo.'**
+  String get marketVoiceNoSpeech;
 }
 
 class _AppLocalizationsDelegate
