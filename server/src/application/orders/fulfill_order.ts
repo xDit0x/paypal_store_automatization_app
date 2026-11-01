@@ -2,6 +2,10 @@ import { createAndSendInvoice } from '../paypal/invoices.js';
 import { paypalConfigured } from '../paypal/paypal_client.js';
 import { sendPayout } from '../paypal/payouts.js';
 import { supabaseAdmin } from '../../infrastructure/supabase/supabase_client.js';
+import {
+  sendPaymentFailedEmail,
+  sendPurchaseOrderEmail,
+} from '../../infrastructure/email/purchase_order_email.js';
 import { guardOrderAmount } from './guard_order_amount.js';
 
 interface OrderRow {
@@ -16,6 +20,7 @@ interface OrderRow {
 }
 
 interface StoreRow {
+  name: string;
   currency: string;
   paypal_merchant_email: string | null;
   notification_email: string | null;
@@ -73,7 +78,7 @@ async function loadOrderContext(orderId: string): Promise<OrderContext> {
   const [{ data: storeData }, { data: supplierData }] = await Promise.all([
     supabaseAdmin
       .from('stores')
-      .select('currency, paypal_merchant_email, notification_email')
+      .select('name, currency, paypal_merchant_email, notification_email')
       .eq('id', order.store_id)
       .maybeSingle(),
     supabaseAdmin
@@ -275,6 +280,46 @@ export async function fulfillOrder(
 
       payment = { payoutId: payout.batchId, status: payout.status };
 
+      // Aviso al proveedor (y copia al dueño) solo cuando el pago ha salido
+      // bien. Un fallo aquí no debe tumbar el pedido: se registra como aviso.
+      try {
+        const items = order.order_items ?? [];
+        const notified = await sendPurchaseOrderEmail({
+          orderNumber: `RS-${order.id.slice(0, 8).toUpperCase()}`,
+          supplierName: supplier.name,
+          storeName: store.name,
+          currency: store.currency,
+          total,
+          payoutId: payout.batchId,
+          payoutStatus: payout.status,
+          lines: items.map((item) => ({
+            name: item.name,
+            qty: item.qty,
+            unitPrice: Number(item.unit_price),
+            lineTotal: Number(item.unit_price) * item.qty,
+          })),
+          supplierEmail: supplier.paypal_email,
+          ownerEmail: store.notification_email,
+        });
+
+        if (!notified.supplierSent) {
+          warnings.push(
+            'El proveedor no tiene email de contacto: no se le pudo avisar del pedido.',
+          );
+        }
+        if (!notified.ownerSent) {
+          warnings.push(
+            'La tienda no tiene notification_email: no se envió copia al dueño.',
+          );
+        }
+      } catch (error) {
+        warnings.push(
+          `El pago salió, pero no se pudo enviar el email de compra: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+
       try {
         await incrementStock(order);
       } catch (error) {
@@ -290,6 +335,25 @@ export async function fulfillOrder(
         status: 'payment_failed',
         payment_status: message,
       });
+
+      // El proveedor no debe recibir nada si el pago falla: solo se avisa al
+      // dueño de la tienda.
+      try {
+        await sendPaymentFailedEmail({
+          orderNumber: `RS-${order.id.slice(0, 8).toUpperCase()}`,
+          supplierName: supplier.name,
+          storeName: store.name,
+          reason: message,
+          ownerEmail: store.notification_email,
+        });
+      } catch (notifyError) {
+        warnings.push(
+          `No se pudo avisar del fallo de pago: ${
+            notifyError instanceof Error ? notifyError.message : String(notifyError)
+          }`,
+        );
+      }
+
       throw error;
     }
   } else {
