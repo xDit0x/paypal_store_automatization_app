@@ -144,6 +144,14 @@ class SupabaseProductDatasource {
     );
   }
 
+  Future<void> deleteProduct(String uid) async {
+    try {
+      await _client.from('products').update({'active': false}).eq('uid', uid);
+    } catch (error) {
+      throw Exception('No se pudo eliminar: $error');
+    }
+  }
+
   /// El catálogo solo se escribe con service_role, así que pasa por la API.
   Future<void> updateStock(String storeId, String uid, int stock) async {
     try {

@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:store_automatization_app/core/service_locator.dart';
+import 'package:store_automatization_app/domain/repositories/product_repository/product_repository.dart';
+
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/domain/entities/agent_run.dart';
@@ -324,6 +327,27 @@ class StockyCubit extends Cubit<StockyState> {
       );
       return null;
     });
+  }
+
+  Future<AppError?> deleteProduct(String uid) async {
+    try {
+      final repo = sl<ProductRepository>();
+      final result = await repo.deleteProduct(uid);
+      final error = result.fold<AppError?>((e) => e, (_) => null);
+      if (error == null) {
+        emit(
+          state.copyWith(
+            products: [
+              for (final product in state.products)
+                product.uid == uid ? product.copyWith(active: false, stock: 0) : product,
+            ],
+          ),
+        );
+      }
+      return error;
+    } catch (error) {
+      return AppError(AppErrorCode.catalogLoadFailed, detail: error.toString());
+    }
   }
 
   Future<AppError?> saveRules(SpendingRules rules) async {

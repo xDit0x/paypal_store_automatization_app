@@ -22,6 +22,7 @@ abstract class ProductRepository {
     String uid,
     int stock,
   );
+  Future<Either<AppError, Unit>> deleteProduct(String uid);
   Future<Either<AppError, List<CatalogProduct>>> searchCatalog({
     required String storeId,
     String? query,

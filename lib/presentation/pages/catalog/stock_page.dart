@@ -13,8 +13,9 @@ import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.
 import 'package:store_automatization_app/presentation/pages/catalog/catalog_page.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
+import 'package:store_automatization_app/core/audio/stocky_sounds.dart';
 
-enum _Filter { all, low, transit }
+enum _Filter { active, outOfStock, eliminated, low, transit, all }
 
 /// Pestaña Stock: todos los productos de los catálogos, con búsqueda por
 /// nombre o UID y filtro.
@@ -38,9 +39,12 @@ class _StockPageState extends State<StockPage> {
           p.name.toLowerCase().contains(q) ||
           p.uid.toLowerCase().contains(q);
       final matchesFilter = switch (_filter) {
-        _Filter.all => true,
+        _Filter.active => p.active,
         _Filter.low => p.isLowStock,
         _Filter.transit => state.isInTransit(p),
+        _Filter.outOfStock => p.active && p.stock <= 0,
+        _Filter.eliminated => !p.active,
+        _Filter.all => p.active,
       };
       final matchesSupplier =
           _supplierFilter == null ||
@@ -58,6 +62,7 @@ class _StockPageState extends State<StockPage> {
       isScrollControlled: true,
       builder: (_) => _StockEditorSheet(
         product: product,
+        cubit: cubit,
         onSave: (stock) => cubit.updateStock(product.uid, stock),
       ),
     );
@@ -126,6 +131,10 @@ class _StockPageState extends State<StockPage> {
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Text(l10n.stockFilterTransit, style: segmentStyle),
                 ),
+                _Filter.outOfStock: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Text('Agotado', style: segmentStyle),
+                ),
               },
               onValueChanged: (value) =>
                   setState(() => _filter = value ?? _Filter.all),
@@ -154,7 +163,7 @@ class _StockPageState extends State<StockPage> {
             ),
           ),
           const SizedBox(height: 16),
-          if (products.isEmpty)
+          if (products.isEmpty && !state.products.any((p) => !p.active))
             REmptyState(
               icon: CupertinoIcons.cube_box,
               title: state.products.isEmpty
@@ -162,7 +171,7 @@ class _StockPageState extends State<StockPage> {
                   : l10n.stockEmptyFilterTitle,
               message: state.products.isEmpty ? l10n.stockEmptyMessage : null,
             )
-          else
+          else ...[
             RInsetGroup(
               children: [
                 for (final product in products)
@@ -173,7 +182,30 @@ class _StockPageState extends State<StockPage> {
                   ),
               ],
             ),
-          if (products.isNotEmpty) ...[
+            if (state.products.any((p) => !p.active))
+              Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  title: const Text('Eliminados', style: TextStyle(color: Colors.red)),
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  initiallyExpanded: true,
+                  tilePadding: EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    RInsetGroup(
+                      children: [
+                        for (final product in state.products.where((p) => !p.active))
+                          _ProductRow(
+                            product: product,
+                            state: state,
+                            onTap: () => _editStock(context, product),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (products.isNotEmpty || state.products.any((p) => !p.active)) ...[
             const SizedBox(height: 10),
             Center(
               child: Text(
@@ -284,10 +316,10 @@ class _ProductRow extends StatelessWidget {
 
 /// Hoja para editar el stock de un producto: botones − / + y campo numérico.
 class _StockEditorSheet extends StatefulWidget {
-  const _StockEditorSheet({required this.product, required this.onSave});
+  const _StockEditorSheet({required this.product, required this.onSave, this.cubit});
 
   final Product product;
-
+  final StockyCubit? cubit;
   /// Devuelve null si se guardó bien, o el error.
   final Future<AppError?> Function(int stock) onSave;
 
@@ -330,39 +362,22 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
   }
 
   Future<void> _confirmDelete() async {
+    final cubit = widget.cubit!;
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: context.rp.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Acción irreversible',
-          style: context.rt.title2.copyWith(color: context.rp.warning),
-        ),
-        content: Text(
-          'Seguro que desea eliminar este producto del control de su stock?',
-          style: context.rt.body.copyWith(color: context.rp.inkSecondary),
-        ),
+        title: Text('Acción irreversible', style: context.rt.title2.copyWith(color: context.rp.warning)),
+        content: Text('¿Eliminar producto del control de su stock?', style: context.rt.body.copyWith(color: context.rp.inkSecondary)),
         actions: [
           TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: context.rp.ink,
-              backgroundColor: context.rp.fill,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+            style: TextButton.styleFrom(foregroundColor: context.rp.ink, backgroundColor: context.rp.fill, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(context.l10n.actionCancel),
           ),
           TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: context.rp.onAccent,
-              backgroundColor: context.rp.accent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+            style: TextButton.styleFrom(foregroundColor: context.rp.onAccent, backgroundColor: context.rp.accent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Eliminar'),
           ),
@@ -371,15 +386,20 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
     );
     if (ok == true && mounted) {
       setState(() => _saving = true);
-      final error = await widget.onSave(0);
-      if (!mounted) return;
-      if (error == null) {
-        Navigator.of(context).pop(0);
-      } else {
-        setState(() {
-          _saving = false;
-          _error = error;
-        });
+      try {
+        final error = await cubit.deleteProduct(widget.product.uid);
+        if (!mounted) return;
+        if (error != null) {
+          setState(() => _saving = false);
+        } else {
+          if (StockySounds.instance.enabled) {
+            await StockySounds.instance.warmUp();
+            if (mounted) StockySounds.instance.play(RSound.tap);
+          }
+          if (mounted) Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) setState(() => _saving = false);
       }
     }
   }

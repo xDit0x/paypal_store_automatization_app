@@ -84,6 +84,16 @@ class SupabaseProductRepository implements ProductRepository {
   }
 
   @override
+  Future<Either<AppError, Unit>> deleteProduct(String uid) async {
+    try {
+      await _datasource.deleteProduct(uid);
+      return const Right(unit);
+    } catch (error) {
+      return Left(logError(AppErrorCode.catalogLoadFailed, error));
+    }
+  }
+
+  @override
   Future<Either<AppError, List<CatalogProduct>>> searchCatalog({
     required String storeId,
     String? query,

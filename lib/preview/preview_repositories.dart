@@ -322,6 +322,8 @@ class PreviewAuthRepository implements AuthRepository {
       const Right(unit);
 }
 
+
+
 class PreviewStoreRepository implements StoreRepository {
   PreviewStoreRepository(this.db);
   final PreviewDb db;
@@ -463,6 +465,9 @@ class PreviewProductRepository implements ProductRepository {
     db.products[index] = db.products[index].copyWith(stock: stock);
     return const Right(unit);
   }
+
+  @override
+  Future<Either<AppError, Unit>> deleteProduct(String uid) async => const Right(unit);
 }
 
 class PreviewOrderRepository implements OrderRepository {

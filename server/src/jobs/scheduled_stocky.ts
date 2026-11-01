@@ -1,7 +1,7 @@
 import { runAgent } from '../application/agent/run_agent.js';
 import { getStoreForOwner } from '../application/stores/store_service.js';
 import { supabaseAdmin } from '../infrastructure/supabase/supabase_client.js';
-import { dueSlot, parseSchedule, zonedTime } from './restock_schedule.js';
+import { dueSlot, parseSchedule, zonedTime } from './stocky_schedule.js';
 
 interface JobLogger {
   info(obj: unknown, msg?: string): void;
