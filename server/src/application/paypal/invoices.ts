@@ -11,22 +11,23 @@ export interface InvoiceResult {
   status: string;
 }
 
-export async function createAndSendInvoice(params: {
+export function buildInvoiceBody(params: {
   invoiceNumber: string;
   currency: string;
   recipientEmail: string;
-  merchantEmail: string;
+  invoicerEmail: string;
   note: string;
   lines: InvoiceLine[];
-}): Promise<InvoiceResult> {
-  const body = {
+}) {
+  return {
     detail: {
       invoice_number: params.invoiceNumber,
       currency_code: params.currency,
       note: params.note,
       payment_term: { term_type: 'DUE_ON_RECEIPT' },
     },
-    invoicer: { email_address: params.merchantEmail },
+    // El proveedor es quien emite (invoicer); la tienda quien recibe.
+    invoicer: { email_address: params.invoicerEmail },
     primary_recipients: [
       { billing_info: { email_address: params.recipientEmail } },
     ],
@@ -39,6 +40,19 @@ export async function createAndSendInvoice(params: {
       },
     })),
   };
+}
+
+export async function createAndSendInvoice(params: {
+  invoiceNumber: string;
+  currency: string;
+  /** Quien recibe la factura: la tienda. */
+  recipientEmail: string;
+  /** Quien emite la factura: el proveedor. */
+  invoicerEmail: string;
+  note: string;
+  lines: InvoiceLine[];
+}): Promise<InvoiceResult> {
+  const body = buildInvoiceBody(params);
 
   const created = await paypalRequest<{
     id?: string;

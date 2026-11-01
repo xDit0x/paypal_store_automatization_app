@@ -1,10 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 
-import { fulfillOrder } from '../../../application/orders/fulfill_order.js';
 import {
-  guardOrderAmount,
-  previewOrderAmount,
-} from '../../../application/orders/guard_order_amount.js';
+  DeliveryLine,
+  captureDelivery,
+  confirmAuthorization,
+  refundOrder,
+  startAuthorization,
+} from '../../../application/orders/escrow_flow.js';
+import { previewOrderAmount } from '../../../application/orders/guard_order_amount.js';
 import { supabaseAdmin } from '../../../infrastructure/supabase/supabase_client.js';
 import { authenticate } from '../auth.js';
 import { createRateLimiter } from '../rate_limit.js';
@@ -181,14 +184,12 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
             .send({ error: `El pedido está en estado "${order.status}".` });
         }
 
-        // Antes de aprobar se comprueba el importe contra el catálogo y las
-        // reglas vigentes. Si el proveedor cambió el precio, aquí se
-        // actualizan las líneas y el total al precio del momento.
-        let amount;
+        // Al aprobar no se cobra: se crea una autorización de PayPal y se
+        // devuelve el enlace para que el dueño la apruebe. El dinero queda
+        // retenido hasta que confirme la entrega.
+        let auth;
         try {
-          // El dueño está aprobando: el umbral de aprobación ya no bloquea,
-          // pero el importe, el máximo por pedido y el tope mensual sí.
-          amount = await guardOrderAmount(order.id, { ownerApproved: true });
+          auth = await startAuthorization(order.id, { ownerApproved: true });
         } catch (error) {
           return reply.code(409).send({
             error:
@@ -201,7 +202,6 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         const { error } = await supabaseAdmin
           .from('orders')
           .update({
-            status: 'approved',
             approval_by: user.id,
             approval_at: new Date().toISOString(),
           })
@@ -211,13 +211,16 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
           throw new Error(`No se pudo aprobar el pedido: ${error.message}`);
         }
 
-        const fulfillment = await fulfillOrder(order.id, { ownerApproved: true });
         return reply.send({
           order_id: order.id,
-          total: amount.total,
-          previous_total: amount.previousTotal,
-          total_changed: amount.changed,
-          ...fulfillment,
+          total: auth.total,
+          previous_total: auth.previousTotal,
+          total_changed: auth.changed,
+          paypal_order_id: auth.paypalOrderId,
+          approve_url: auth.approveUrl,
+          payment_status: 'CREATED',
+          orderStatus: 'approved',
+          warnings: [],
         });
       } catch (error) {
         request.log.error(error);
@@ -228,6 +231,67 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  app.post<{ Params: { id: string }; Body: { paypal_order_id: string } }>(
+    '/orders/:id/confirm-auth',
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+
+      try {
+        const order = await loadOwnedOrder(request.params.id, user.id);
+        if (!order) return reply.code(404).send({ error: 'Pedido no encontrado.' });
+        if (order.status !== 'approved') {
+          return reply.code(409).send({ error: `El pedido está en estado "${order.status}".` });
+        }
+
+        const auth = await confirmAuthorization(order.id, request.body.paypal_order_id);
+        return reply.send({ order_id: order.id, ...auth });
+      } catch (error) {
+        request.log.error(error);
+        return reply.code(502).send({ error: 'No se pudo confirmar la autorización.' });
+      }
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: { lines: DeliveryLine[] } }>(
+    '/orders/:id/capture',
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+
+      try {
+        const order = await loadOwnedOrder(request.params.id, user.id);
+        if (!order) return reply.code(404).send({ error: 'Pedido no encontrado.' });
+        
+        const capture = await captureDelivery(order.id, request.body.lines);
+        return reply.send({ order_id: order.id, ...capture });
+      } catch (error) {
+        request.log.error(error);
+        return reply.code(502).send({ 
+          error: error instanceof Error ? error.message : 'No se pudo capturar el pago.' 
+        });
+      }
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: { amount?: number } }>(
+    '/orders/:id/refund',
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+
+      try {
+        const order = await loadOwnedOrder(request.params.id, user.id);
+        if (!order) return reply.code(404).send({ error: 'Pedido no encontrado.' });
+        
+        const refund = await refundOrder(order.id, request.body.amount);
+        return reply.send({ order_id: order.id, ...refund });
+      } catch (error) {
+        request.log.error(error);
+        return reply.code(502).send({ error: 'No se pudo reembolsar el pago.' });
+      }
+    },
+  );
   app.post<{ Params: { id: string } }>(
     '/orders/:id/reject',
     async (request, reply) => {

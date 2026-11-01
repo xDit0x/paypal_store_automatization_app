@@ -167,10 +167,14 @@ export async function sendInvoiceForOrder(
     throw new Error('PayPal no está configurado.');
   }
   if (!store.paypal_merchant_email) {
-    throw new Error('Falta paypal_merchant_email en la tienda.');
+    throw new Error(
+      'Falta el email de PayPal de la tienda para recibir la factura.',
+    );
   }
   if (!supplier.paypal_email) {
-    throw new Error('El proveedor no tiene email de PayPal.');
+    throw new Error(
+      'El proveedor no tiene email de PayPal para emitir la factura.',
+    );
   }
 
   // Los precios de la factura salen del catálogo, no de las líneas del
@@ -201,8 +205,9 @@ export async function sendInvoiceForOrder(
   const result = await createAndSendInvoice({
     invoiceNumber: number,
     currency: store.currency,
-    recipientEmail: supplier.paypal_email,
-    merchantEmail: store.paypal_merchant_email,
+    // El proveedor emite la factura y la tienda la recibe.
+    recipientEmail: store.paypal_merchant_email,
+    invoicerEmail: supplier.paypal_email,
     note: `Factura de reposición ${number}`,
     lines: items.map((item) => ({
       name: item.name,
@@ -218,7 +223,7 @@ export async function sendInvoiceForOrder(
         order_id: order.id,
         number,
         status: 'sent',
-        sent_to: supplier.paypal_email,
+        sent_to: store.paypal_merchant_email,
         sent_at: new Date().toISOString(),
       },
       { onConflict: 'order_id' },

@@ -163,7 +163,12 @@ enum RPillTone { warning, transit, info, neutral }
 
 /// Cápsula de estado: "Bajo mínimo", "En camino"...
 class RPill extends StatelessWidget {
-  const RPill(this.text, {super.key, this.tone = RPillTone.neutral});
+  const RPill(
+    this.text, {
+    super.key,
+    this.tone = RPillTone.neutral,
+    Future<Null> Function()? onPressed,
+  });
 
   final String text;
   final RPillTone tone;

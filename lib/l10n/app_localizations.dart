@@ -704,6 +704,36 @@ abstract class AppLocalizations {
   /// **'Pago fallido'**
   String get statusPaymentFailed;
 
+  /// No description provided for @statusAuthorized.
+  ///
+  /// In es, this message translates to:
+  /// **'Autorizado'**
+  String get statusAuthorized;
+
+  /// No description provided for @statusPartiallyDelivered.
+  ///
+  /// In es, this message translates to:
+  /// **'Entregado parcialmente'**
+  String get statusPartiallyDelivered;
+
+  /// No description provided for @statusDelivered.
+  ///
+  /// In es, this message translates to:
+  /// **'Entregado'**
+  String get statusDelivered;
+
+  /// No description provided for @statusClaimed.
+  ///
+  /// In es, this message translates to:
+  /// **'Reclamado'**
+  String get statusClaimed;
+
+  /// No description provided for @statusRefunded.
+  ///
+  /// In es, this message translates to:
+  /// **'Reembolsado'**
+  String get statusRefunded;
+
   /// No description provided for @reasonOverMaxPerOrder.
   ///
   /// In es, this message translates to:

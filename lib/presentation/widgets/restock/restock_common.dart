@@ -18,11 +18,16 @@ import 'package:store_automatization_app/presentation/widgets/restock/restock_ui
     switch (status) {
       OrderStatus.draft => (l10n.statusDraft, RPillTone.neutral),
       OrderStatus.pendingApproval => (l10n.statusPendingApproval, RPillTone.warning),
-      OrderStatus.approved => (l10n.statusApproved, RPillTone.info),
-      OrderStatus.paying => (l10n.statusPaying, RPillTone.info),
+      OrderStatus.approved => (l10n.statusApproved, RPillTone.warning),
+      OrderStatus.authorized => (l10n.statusAuthorized, RPillTone.transit),
+      OrderStatus.paying => (l10n.statusPaying, RPillTone.neutral),
       OrderStatus.paid => (l10n.statusPaid, RPillTone.info),
       OrderStatus.invoiced => (l10n.statusInvoiced, RPillTone.info),
       OrderStatus.completed => (l10n.statusCompleted, RPillTone.neutral),
+      OrderStatus.partiallyDelivered => (l10n.statusPartiallyDelivered, RPillTone.info),
+      OrderStatus.delivered => (l10n.statusDelivered, RPillTone.neutral),
+      OrderStatus.claimed => (l10n.statusClaimed, RPillTone.warning),
+      OrderStatus.refunded => (l10n.statusRefunded, RPillTone.neutral),
       OrderStatus.rejected => (l10n.statusRejected, RPillTone.neutral),
       OrderStatus.paymentFailed => (l10n.statusPaymentFailed, RPillTone.warning),
     };

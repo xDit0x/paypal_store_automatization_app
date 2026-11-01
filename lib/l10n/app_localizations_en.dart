@@ -363,6 +363,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusPaymentFailed => 'Payment failed';
 
   @override
+  String get statusAuthorized => 'Authorized';
+
+  @override
+  String get statusPartiallyDelivered => 'Partially delivered';
+
+  @override
+  String get statusDelivered => 'Delivered';
+
+  @override
+  String get statusClaimed => 'Claimed';
+
+  @override
+  String get statusRefunded => 'Refunded';
+
+  @override
   String reasonOverMaxPerOrder(String amount) {
     return 'Over the $amount per-order limit';
   }

@@ -23,6 +23,12 @@ export const env = {
   paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET ?? '',
   paypalBaseUrl:
     process.env.PAYPAL_BASE_URL ?? 'https://api-m.sandbox.paypal.com',
+
+  publicBaseUrl: process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000',
+  appUrl: process.env.APP_URL ?? 'http://localhost:8080',
+
+  resendApiKey: process.env.RESEND_API_KEY ?? '',
+  emailFrom: process.env.EMAIL_FROM ?? 'Restock <onboarding@resend.dev>',
 } as const;
 
 export function requireSupabaseEnv(): void {

@@ -1,19 +1,12 @@
-import 'package:flutter/cupertino.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
-import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
-import 'package:store_automatization_app/domain/entities/order_item.dart';
+import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
 
-/// Comprobar una entrega: lo pedido frente a lo que llegó.
-///
-/// TODO(backend): leer el albarán con un modelo con visión y guardar la
-/// recepción en el servidor. De momento las cantidades se ajustan a mano.
+/// Confirma la entrega de un pedido autorizado y captura el pago
+/// (total o parcial según lo recibido).
 class DeliveryCheckPage extends StatefulWidget {
   const DeliveryCheckPage({super.key, required this.orderId});
 
@@ -25,214 +18,171 @@ class DeliveryCheckPage extends StatefulWidget {
 
 class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
   final Map<String, int> _received = {};
+  bool _busy = false;
+  String? _error;
 
-  int _got(OrderItem item) => _received[item.productUid] ?? item.qty;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_received.isEmpty) {
+      // Usamos context aquí, ya es seguro
+      final cubit = context.read<RestockCubit>();
+      final order = cubit.state.orderById(widget.orderId);
+      if (order != null) {
+        for (final item in order.items) {
+          _received[item.productUid] = item.qty;
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final p = context.rp;
-    final t = context.rt;
-    final l10n = context.l10n;
     final state = context.watch<RestockCubit>().state;
     final order = state.orderById(widget.orderId);
-    final media = MediaQuery.of(context);
 
-    if (order == null) {
+    if (order == null || order.status != OrderStatus.authorized) {
       return Scaffold(
-        backgroundColor: p.background,
-        body: SafeArea(
-          child: Center(child: Text(l10n.orderUnavailable)),
-        ),
+        appBar: AppBar(title: const Text('Entrega')),
+        body: const Center(child: Text('Pedido no autorizado para entrega.')),
       );
     }
 
-    final c = state.currency;
-    final missing = order.items.where((i) => _got(i) < i.qty).toList();
-    final missingUnits = missing.fold<int>(0, (s, i) => s + (i.qty - _got(i)));
-    final missingValue = missing.fold<double>(
-      0,
-      (s, i) => s + (i.qty - _got(i)) * i.unitPrice,
-    );
+    final lines = order.items.map((item) {
+      final qty = _received[item.productUid] ?? item.qty;
+      final expected = item.qty;
+      return _LineRow(
+        name: item.name,
+        expected: expected,
+        qty: qty,
+        onChanged: (v) => setState(() => _received[item.productUid] = v),
+      );
+    }).toList();
 
     return Scaffold(
-      backgroundColor: p.background,
-      body: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          media.padding.top + 4,
-          16,
-          media.padding.bottom + 16,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            RBackLink(l10n.ordersTitle),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(top: 8),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.deliveryTitle(state.supplierName(order.supplierId)),
-                          style: t.title2,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.deliverySubtitle,
-                          style: t.subhead,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Material(
-                    color: p.fill,
-                    borderRadius: BorderRadius.circular(18),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: () => showRestockSnack(
-                        context,
-                        l10n.deliveryComingSoonMessage,
-                        title: l10n.deliveryComingSoon,
-                      ),
-                      child: SizedBox(
-                        height: 120,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(CupertinoIcons.camera, color: p.inkSecondary),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.deliveryPhoto,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: p.inkSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  RInsetGroup(
-                    children: [
-                      for (final item in order.items)
-                        Container(
-                          color: _got(item) < item.qty ? p.warningSoft : null,
-                          child: RListRow(
-                            title: item.name,
-                            subtitle: Text(
-                              _got(item) < item.qty
-                                  ? l10n.deliveryOrderedMissing(
-                                      item.qty,
-                                      item.qty - _got(item),
-                                    )
-                                  : l10n.deliveryOrderedComplete(item.qty),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: _got(item) < item.qty
-                                    ? p.warning
-                                    : p.inkSecondary,
-                              ),
-                            ),
-                            trailing: _Stepper(
-                              value: _got(item),
-                              max: item.qty,
-                              onChanged: (v) => setState(
-                                () => _received[item.productUid] = v,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
+      appBar: AppBar(title: Text('Entrega · ${order.id}')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Pedido ${order.id}',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 4),
+          Text('Estado: ${order.status.value}'),
+          const SizedBox(height: 12),
+          Text(
+            'Indica cuánto ha llegado de cada producto:',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          ...lines,
+          const SizedBox(height: 16),
+          if (_error != null)
+            Text('Error: $_error', style: TextStyle(color: Colors.red)),
+          ElevatedButton.icon(
+            onPressed: _busy ? null : _onConfirm,
+            icon: _busy
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check),
+            label: Text(
+              _busy ? 'Confirmando...' : 'Confirmar entrega y cobrar',
             ),
-            const SizedBox(height: 12),
-            RPrimaryButton(
-              l10n.actionConfirmDelivery,
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                showRestockSnack(
-                  context,
-                  l10n.deliveryRegisteredMessage,
-                  title: l10n.deliveryRegistered,
-                  tone: RSnackTone.success,
-                );
-                Navigator.of(context).maybePop();
-              },
-            ),
-            if (missing.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              RSecondaryButton(
-                l10n.deliveryClaim(
-                  missingUnits,
-                  l10n.euros(missingValue, c),
-                ),
-                color: p.warning,
-                onPressed: () => showRestockSnack(
-                  context,
-                  l10n.deliveryClaimMessage,
-                  title: l10n.deliveryClaimReady,
-                  tone: RSnackTone.warning,
-                ),
-              ),
-            ],
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+
+  Future<void> _onConfirm() async {
+    setState(() => _busy = true);
+    try {
+      final dio = Dio();
+      final body = {
+        'lines': _received.entries
+            .map((e) => {'productUid': e.key, 'qtyReceived': e.value})
+            .toList(),
+      };
+
+      // El endpoint real está detrás del backend; usamos el host de desarrollo.
+      const baseUrl = 'http://localhost:3000';
+      await dio.post('$baseUrl/orders/${widget.orderId}/capture', data: body);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Entrega confirmada. Pago capturado.')),
+        );
+        Navigator.of(context).maybePop();
+      }
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _busy = false);
+    }
+  }
 }
 
-class _Stepper extends StatelessWidget {
-  const _Stepper({
-    required this.value,
-    required this.max,
+class _LineRow extends StatelessWidget {
+  const _LineRow({
+    required this.name,
+    required this.expected,
+    required this.qty,
     required this.onChanged,
   });
 
-  final int value;
-  final int max;
+  final String name;
+  final int expected;
+  final int qty;
   final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final p = context.rp;
-    return Container(
-      decoration: BoxDecoration(
-        color: p.fill,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            tooltip: context.l10n.semanticsLess,
-            icon: Icon(CupertinoIcons.minus, size: 18, color: p.navy),
-            onPressed: value > 0 ? () => onChanged(value - 1) : null,
-          ),
-          SizedBox(
-            width: 28,
-            child: Text(
-              '$value',
-              textAlign: TextAlign.center,
-              style: context.rt.headline,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: Theme.of(context).textTheme.titleSmall),
+                  Text('Esperado: $expected  ·  Recibido: $qty'),
+                  if ((qty - expected) < 0)
+                    Text(
+                      'Faltan ${(expected - qty)}',
+                      style: TextStyle(color: Colors.orange),
+                    ),
+                  if ((qty - expected) > 0)
+                    Text(
+                      'Sobran ${qty - expected}',
+                      style: TextStyle(color: Colors.green),
+                    ),
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            tooltip: context.l10n.semanticsMore,
-            icon: Icon(CupertinoIcons.plus, size: 18, color: p.navy),
-            onPressed: value < max ? () => onChanged(value + 1) : null,
-          ),
-        ],
+            SizedBox(
+              width: 80,
+              child: TextField(
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                controller: TextEditingController(text: qty.toString()),
+                onChanged: (v) {
+                  final n = int.tryParse(v) ?? expected;
+                  onChanged(n.clamp(0, expected * 2));
+                },
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(vertical: 4),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -4,11 +4,16 @@ enum OrderStatus {
   draft('draft'),
   pendingApproval('pending_approval'),
   approved('approved'),
+  authorized('authorized'),
   paying('paying'),
   paid('paid'),
+  partiallyDelivered('partially_delivered'),
+  delivered('delivered'),
   invoiced('invoiced'),
   completed('completed'),
   rejected('rejected'),
+  claimed('claimed'),
+  refunded('refunded'),
   paymentFailed('payment_failed');
 
   final String value;
