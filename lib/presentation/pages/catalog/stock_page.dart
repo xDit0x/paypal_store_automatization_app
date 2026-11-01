@@ -28,6 +28,7 @@ class StockPage extends StatefulWidget {
 class _StockPageState extends State<StockPage> {
   _Filter _filter = _Filter.all;
   String _query = '';
+  String? _supplierFilter;
 
   List<Product> _visible(RestockState state) {
     final q = _query.trim().toLowerCase();
@@ -41,7 +42,11 @@ class _StockPageState extends State<StockPage> {
         _Filter.low => p.isLowStock,
         _Filter.transit => state.isInTransit(p),
       };
-      return p.active && matchesQuery && matchesFilter;
+      final matchesSupplier =
+          _supplierFilter == null ||
+          _supplierFilter == '' ||
+          p.supplierId == _supplierFilter;
+      return p.active && matchesQuery && matchesFilter && matchesSupplier;
     }).toList();
   }
 
@@ -124,6 +129,28 @@ class _StockPageState extends State<StockPage> {
               },
               onValueChanged: (value) =>
                   setState(() => _filter = value ?? _Filter.all),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: DropdownButton<String?>(
+              isExpanded: true,
+              value: _supplierFilter,
+              hint: const Text('Proveedor'),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('Todos')),
+                ...{
+                  for (final p in state.products)
+                    if (p.stock > 0) p.supplierId,
+                }.map(
+                  (s) => DropdownMenuItem(
+                    value: s,
+                    child: Text(state.supplierName(s)),
+                  ),
+                ),
+              ],
+              onChanged: (v) => setState(() => _supplierFilter = v),
             ),
           ),
           const SizedBox(height: 16),
@@ -302,6 +329,61 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
     });
   }
 
+  Future<void> _confirmDelete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: context.rp.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Acción irreversible',
+          style: context.rt.title2.copyWith(color: context.rp.warning),
+        ),
+        content: Text(
+          'Seguro que desea eliminar este producto del control de su stock?',
+          style: context.rt.body.copyWith(color: context.rp.inkSecondary),
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: context.rp.ink,
+              backgroundColor: context.rp.fill,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(context.l10n.actionCancel),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: context.rp.onAccent,
+              backgroundColor: context.rp.accent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      setState(() => _saving = true);
+      final error = await widget.onSave(0);
+      if (!mounted) return;
+      if (error == null) {
+        Navigator.of(context).pop(0);
+      } else {
+        setState(() {
+          _saving = false;
+          _error = error;
+        });
+      }
+    }
+  }
+
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
     setState(() {
@@ -353,17 +435,34 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                 ),
               ),
               const SizedBox(height: 18),
-              Text(widget.product.name, style: t.title3),
-              const SizedBox(height: 4),
-              Text(
-                l10n.stockEditorUid(
-                  widget.product.uid,
-                  widget.product.lowStockThreshold,
-                  widget.product.unit,
-                ),
-                style: t.footnote,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.product.name, style: t.title3),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.stockEditorUid(
+                            widget.product.uid,
+                            widget.product.lowStockThreshold,
+                            widget.product.unit,
+                          ),
+                          style: t.footnote,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(CupertinoIcons.delete_solid, color: p.warning),
+                    onPressed: _saving ? null : _confirmDelete,
+                    tooltip: 'Eliminar',
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   _StepButton(
