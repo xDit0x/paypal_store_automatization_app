@@ -1083,4 +1083,164 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorPreviewNoSignOut => 'The preview does not sign out.';
+
+  @override
+  String get marketGreeting =>
+      'I can also find distributors for new products: tell me what you want to sell, by voice or text, and I\'ll compare prices across countries.';
+
+  @override
+  String get marketChipNewProduct => 'Add a new product';
+
+  @override
+  String get marketNewProductPrompt =>
+      'I want to add a new product to my store';
+
+  @override
+  String get marketThinking => 'Thinking…';
+
+  @override
+  String get marketListening => 'Listening…';
+
+  @override
+  String get marketMicStart => 'Speak';
+
+  @override
+  String get marketMicStop => 'Stop listening';
+
+  @override
+  String get marketVoiceUnavailable =>
+      'The microphone isn\'t available. Check the permission in your device settings.';
+
+  @override
+  String get marketSpeakOn => 'Read replies aloud';
+
+  @override
+  String get marketSpeakOff => 'Stop reading replies';
+
+  @override
+  String marketCompared(int offers, int countries) {
+    return 'Compared $offers offers from $countries countries';
+  }
+
+  @override
+  String get marketNotFound =>
+      'I couldn\'t find distributors for that product. Try describing it differently.';
+
+  @override
+  String get marketTagCheapest => 'Cheapest';
+
+  @override
+  String get marketTagFastest => 'Fastest';
+
+  @override
+  String get marketTagBestRated => 'Top rated';
+
+  @override
+  String get marketTagOverBudget => 'Above your price';
+
+  @override
+  String marketPerUnit(String unit) {
+    return 'per $unit';
+  }
+
+  @override
+  String marketOrderQty(int qty, String unit) {
+    return 'Order of $qty $unit';
+  }
+
+  @override
+  String marketMinPack(int min, int pack) {
+    return 'Minimum $min · in packs of $pack';
+  }
+
+  @override
+  String get marketGoods => 'Product';
+
+  @override
+  String get marketShipping => 'Shipping';
+
+  @override
+  String get marketShippingFree => 'Free';
+
+  @override
+  String get marketDuties => 'Duties';
+
+  @override
+  String get marketTotal => 'Total delivered';
+
+  @override
+  String marketLeadDays(int days) {
+    return 'Arrives in $days days';
+  }
+
+  @override
+  String marketOriginalPrice(String price) {
+    return 'Source price: $price';
+  }
+
+  @override
+  String get marketOutsideEu => 'Outside the EU: duties included';
+
+  @override
+  String get marketChoose => 'Choose this distributor';
+
+  @override
+  String get marketWebTitle => 'Also on the web';
+
+  @override
+  String get marketWebHint => 'Found online, price not verified.';
+
+  @override
+  String get marketFxFallback => 'Approximate exchange rates.';
+
+  @override
+  String marketAdoptTitle(String product) {
+    return 'Add $product';
+  }
+
+  @override
+  String marketAdoptFrom(String distributor) {
+    return 'From $distributor';
+  }
+
+  @override
+  String get marketAdoptQuantity => 'Units per month';
+
+  @override
+  String get marketAdoptOrderNow => 'Place the first order now';
+
+  @override
+  String marketAdoptOrderHint(String total) {
+    return 'Paid with PayPal (about $total) if it fits your spending rules.';
+  }
+
+  @override
+  String get marketAdoptConfirm => 'Add to my store';
+
+  @override
+  String marketAdoptDone(String product, String supplier) {
+    return '**$product** is now in your stock, from **$supplier**.';
+  }
+
+  @override
+  String marketAdoptPaid(String total) {
+    return 'First order paid with PayPal: **$total**.';
+  }
+
+  @override
+  String marketAdoptOrderCreated(String total) {
+    return 'First order created for **$total**. You\'ll find it in Orders.';
+  }
+
+  @override
+  String marketAdoptBlocked(String reason) {
+    return 'I didn\'t place the order: $reason';
+  }
+
+  @override
+  String get marketAdoptSuccessTitle => 'Product added';
+
+  @override
+  String get marketVoiceNoSpeech =>
+      'I didn\'t hear you. Tap the microphone and speak close to the device.';
 }

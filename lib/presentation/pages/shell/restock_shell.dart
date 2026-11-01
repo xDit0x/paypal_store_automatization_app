@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show SupabaseClient;
 
@@ -8,6 +9,7 @@ import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
 import 'package:store_automatization_app/core/service_locator.dart';
 import 'package:store_automatization_app/data/datasources/store_repository/supabase_store_changes_datasource.dart';
+import 'package:store_automatization_app/data/repositories/assistant_repository/api_assistant_repository.dart';
 import 'package:store_automatization_app/data/repositories/store_repository/supabase_store_changes_repository.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
 import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_usecase.dart';
@@ -26,6 +28,7 @@ import 'package:store_automatization_app/domain/usecases/settings/update_spendin
 import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/watch_store_changes_usecase.dart';
+import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/agent/assistant_page.dart';
 import 'package:store_automatization_app/presentation/pages/catalog/stock_page.dart';
@@ -52,11 +55,14 @@ class ShellTabStore {
 }
 
 class RestockShell extends StatelessWidget {
-  const RestockShell({super.key, this.createCubit});
+  const RestockShell({super.key, this.createCubit, this.createAssistantCubit});
 
   /// Para la vista previa del diseño (lib/main_preview.dart): permite usar
   /// datos de ejemplo en vez de Supabase. En la app real es null.
   final RestockCubit Function()? createCubit;
+
+  /// Igual para el asistente de compras (estudio de mercado y voz).
+  final AssistantCubit Function()? createAssistantCubit;
 
   RestockCubit _defaultCubit(BuildContext context) => RestockCubit(
     getCurrentStore: sl<GetCurrentStoreUsecase>(),
@@ -91,9 +97,20 @@ class RestockShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<RestockCubit>(
-      create: (context) =>
-          (createCubit?.call() ?? _defaultCubit(context))..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<RestockCubit>(
+          create: (context) =>
+              (createCubit?.call() ?? _defaultCubit(context))..load(),
+        ),
+        // Vive en el shell para que la conversación no se pierda al cambiar
+        // de pestaña.
+        BlocProvider<AssistantCubit>(
+          create: (_) =>
+              createAssistantCubit?.call() ??
+              AssistantCubit(repository: ApiAssistantRepository(sl<Dio>())),
+        ),
+      ],
       child: ShellView(key: _shellKey),
     );
   }

@@ -1,0 +1,11 @@
+{
+  // Configuración solo para que VS Code revise los tests igual que el código
+  // (los tests se ejecutan con tsx, no se compilan a dist).
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["./**/*.ts", "../src/**/*.ts"]
+}

@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import { env } from '../../config/env.js';
 import { agentRoutes } from './routes/agent.js';
+import { assistantRoutes } from './routes/assistant.js';
 import { catalogRoutes } from './routes/catalog.js';
 import { catalogSyncRoutes } from './routes/catalog_sync.js';
 import { healthRoutes } from './routes/health.js';
@@ -51,6 +52,7 @@ export function buildServer(): FastifyInstance {
 
   app.register(healthRoutes);
   app.register(agentRoutes);
+  app.register(assistantRoutes);
   app.register(orderRoutes);
   app.register(catalogRoutes);
   app.register(catalogSyncRoutes);

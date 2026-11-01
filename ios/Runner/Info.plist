@@ -26,6 +26,17 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Stocky se conecta a su servidor en tu red local durante el desarrollo.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Stocky usa el micrófono para que puedas hablar con el asistente de compras.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Stocky convierte tu voz en texto para entender qué producto quieres añadir.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
