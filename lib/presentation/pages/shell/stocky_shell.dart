@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show SupabaseClient;
 
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/core/service_locator.dart';
 import 'package:store_automatization_app/data/datasources/store_repository/supabase_store_changes_datasource.dart';
 import 'package:store_automatization_app/data/repositories/assistant_repository/api_assistant_repository.dart';
@@ -29,13 +29,13 @@ import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/watch_store_changes_usecase.dart';
 import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/agent/assistant_page.dart';
 import 'package:store_automatization_app/presentation/pages/catalog/stock_page.dart';
 import 'package:store_automatization_app/presentation/pages/home/home_page.dart';
 import 'package:store_automatization_app/presentation/pages/orders/orders_page.dart';
 import 'package:store_automatization_app/presentation/pages/settings/rules_page.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
 
 /// App principal tras iniciar sesión: 5 pestañas en un PageView con la
 /// barra en carrusel flotando encima.
@@ -54,17 +54,17 @@ class ShellTabStore {
   set index(int value) => indexNotifier.value = value;
 }
 
-class RestockShell extends StatelessWidget {
-  const RestockShell({super.key, this.createCubit, this.createAssistantCubit});
+class StockyShell extends StatelessWidget {
+  const StockyShell({super.key, this.createCubit, this.createAssistantCubit});
 
   /// Para la vista previa del diseño (lib/main_preview.dart): permite usar
   /// datos de ejemplo en vez de Supabase. En la app real es null.
-  final RestockCubit Function()? createCubit;
+  final StockyCubit Function()? createCubit;
 
   /// Igual para el asistente de compras (estudio de mercado y voz).
   final AssistantCubit Function()? createAssistantCubit;
 
-  RestockCubit _defaultCubit(BuildContext context) => RestockCubit(
+  StockyCubit _defaultCubit(BuildContext context) => StockyCubit(
     getCurrentStore: sl<GetCurrentStoreUsecase>(),
     getSpendingRules: sl<GetSpendingRulesUsecase>(),
     updateSpendingRules: sl<UpdateSpendingRulesUsecase>(),
@@ -99,7 +99,7 @@ class RestockShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<RestockCubit>(
+        BlocProvider<StockyCubit>(
           create: (context) =>
               (createCubit?.call() ?? _defaultCubit(context))..load(),
         ),
@@ -155,7 +155,7 @@ class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
-      context.read<RestockCubit>().load();
+      context.read<StockyCubit>().load();
     }
   }
 

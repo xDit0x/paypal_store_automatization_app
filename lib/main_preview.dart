@@ -39,9 +39,9 @@ import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
-import 'package:store_automatization_app/presentation/pages/shell/restock_shell.dart';
+import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
 import 'package:store_automatization_app/preview/preview_assistant_repository.dart';
 import 'package:store_automatization_app/preview/preview_repositories.dart';
 
@@ -65,12 +65,12 @@ class PreviewApp extends StatelessWidget {
 
   final PreviewDb db;
 
-  RestockCubit _restockCubit() {
+  StockyCubit _stockyCubit() {
     final orders = PreviewOrderRepository(db);
     final products = PreviewProductRepository(db);
     final settings = PreviewSettingsRepository(db);
     final agent = PreviewAgentRepository(db);
-    return RestockCubit(
+    return StockyCubit(
       getCurrentStore: GetCurrentStoreUsecase(
         repository: PreviewStoreRepository(db),
       ),
@@ -125,7 +125,7 @@ class PreviewApp extends StatelessWidget {
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, mode) => BlocBuilder<LocaleCubit, Locale?>(
           builder: (context, locale) => MaterialApp(
-            title: 'Restock (vista previa)',
+            title: 'Stocky (vista previa)',
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -133,8 +133,8 @@ class PreviewApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: mode,
-            home: RestockShell(
-              createCubit: _restockCubit,
+            home: StockyShell(
+              createCubit: _stockyCubit,
               createAssistantCubit: () =>
                   AssistantCubit(repository: PreviewAssistantRepository()),
             ),

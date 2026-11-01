@@ -2,21 +2,21 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
-import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
-import 'package:store_automatization_app/core/audio/restock_sounds.dart';
+import 'package:store_automatization_app/common/helpers/stocky_format.dart';
+import 'package:store_automatization_app/common/helpers/stocky_markdown.dart';
+import 'package:store_automatization_app/core/audio/stocky_sounds.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/core/voice/voice_service.dart';
 import 'package:store_automatization_app/domain/entities/market.dart';
 import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/widgets/market/adopt_sheet.dart';
 import 'package:store_automatization_app/presentation/widgets/market/market_results.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Pestaña Asistente: el agente de reposición y el asistente de compras
 /// (estudio de mercado), por texto o por voz.
@@ -27,7 +27,7 @@ class AssistantPage extends StatefulWidget {
   State<AssistantPage> createState() => _AssistantPageState();
 }
 
-/// Un elemento de la conversación: viene del agente (RestockCubit) o del
+/// Un elemento de la conversación: viene del agente (StockyCubit) o del
 /// asistente de compras (AssistantCubit). Se ordenan por hora.
 class _Item {
   const _Item({required this.fromUser, required this.text, required this.at, this.entry});
@@ -67,17 +67,17 @@ class _AssistantPageState extends State<AssistantPage> {
   }
 
   Future<void> _runAgent() async {
-    if (context.read<RestockCubit>().state.agentRunning) return;
+    if (context.read<StockyCubit>().state.agentRunning) return;
     _scrollToEnd();
-    final message = await context.read<RestockCubit>().runAgent(fromChat: true);
-    RestockSounds.instance.play(RSound.message);
+    final message = await context.read<StockyCubit>().runAgent(fromChat: true);
+    StockySounds.instance.play(RSound.message);
     if (mounted && context.read<AssistantCubit>().state.speakReplies) {
       VoiceService.instance.speak(message, _lang);
     }
     _scrollToEnd();
   }
 
-  void _askPending(RestockState state) {
+  void _askPending(StockyState state) {
     final l10n = context.l10n;
     final pending = state.pendingOrders;
     final answer = pending.isEmpty
@@ -89,11 +89,11 @@ class _AssistantPageState extends State<AssistantPage> {
                     '**${state.supplierName(o.supplierId)}** (**${l10n.euros(o.total, state.currency)}**)')
                 .join(', '),
           );
-    context.read<RestockCubit>().addExchange(l10n.assistantPendingQuestion, answer);
+    context.read<StockyCubit>().addExchange(l10n.assistantPendingQuestion, answer);
     _scrollToEnd();
   }
 
-  void _askSpent(RestockState state) {
+  void _askSpent(StockyState state) {
     final l10n = context.l10n;
     final c = state.currency;
     final answer = l10n.assistantSpentAnswer(
@@ -102,21 +102,21 @@ class _AssistantPageState extends State<AssistantPage> {
       l10n.eurosShort(state.monthlyLimit, c),
       l10n.euros(state.remaining, c),
     );
-    context.read<RestockCubit>().addExchange(l10n.assistantSpentQuestion, answer);
+    context.read<StockyCubit>().addExchange(l10n.assistantSpentQuestion, answer);
     _scrollToEnd();
   }
 
   Future<void> _sendText(String text, {bool viaVoice = false}) async {
-    final store = context.read<RestockCubit>().state.store;
+    final store = context.read<StockyCubit>().state.store;
     final assistant = context.read<AssistantCubit>();
     if (store == null || assistant.state.sending || text.trim().isEmpty) return;
 
-    RestockSounds.instance.play(RSound.tap);
+    StockySounds.instance.play(RSound.tap);
     _input.clear();
     _scrollToEnd();
     final reply = await assistant.send(store.id, text, viaVoice: viaVoice);
     if (!mounted) return;
-    RestockSounds.instance.play(RSound.message);
+    StockySounds.instance.play(RSound.message);
     if (reply != null && (viaVoice || assistant.state.speakReplies)) {
       VoiceService.instance.speak(reply.text, _lang);
     }
@@ -170,17 +170,17 @@ class _AssistantPageState extends State<AssistantPage> {
       null => l10n.marketVoiceUnavailable,
       _ => '${l10n.marketVoiceUnavailable} ($code)',
     };
-    showRestockSnack(context, message, tone: RSnackTone.warning);
+    showStockySnack(context, message, tone: RSnackTone.warning);
   }
 
   Future<void> _choose(MarketResearch research, MarketOption option) async {
-    final store = context.read<RestockCubit>().state.store;
+    final store = context.read<StockyCubit>().state.store;
     if (store == null) return;
     final choice = await showAdoptSheet(context, option: option, monthlyQuantity: research.monthlyQuantity);
     if (choice == null || !mounted) return;
 
     final assistant = context.read<AssistantCubit>();
-    final restock = context.read<RestockCubit>();
+    final stocky = context.read<StockyCubit>();
     final l10n = context.l10n;
     final result = await assistant.adopt(
       storeId: store.id,
@@ -192,7 +192,7 @@ class _AssistantPageState extends State<AssistantPage> {
     if (!mounted) return;
 
     result.fold(
-      (error) => showRestockSnack(context, l10n.describeDetail(error), tone: RSnackTone.warning),
+      (error) => showStockySnack(context, l10n.describeDetail(error), tone: RSnackTone.warning),
       (adopted) {
         final order = adopted.order;
         final lines = [
@@ -204,14 +204,14 @@ class _AssistantPageState extends State<AssistantPage> {
         ];
         final note = lines.join(' ');
         assistant.addNote(note);
-        showRestockSnack(
+        showStockySnack(
           context,
           note.replaceAll('**', ''),
           title: l10n.marketAdoptSuccessTitle,
           tone: order != null && order.blocked ? RSnackTone.warning : RSnackTone.success,
         );
         if (assistant.state.speakReplies) VoiceService.instance.speak(note, _lang);
-        restock.load();
+        stocky.load();
         _scrollToEnd();
       },
     );
@@ -222,7 +222,7 @@ class _AssistantPageState extends State<AssistantPage> {
     final p = context.rp;
     final t = context.rt;
     final l10n = context.l10n;
-    final state = context.watch<RestockCubit>().state;
+    final state = context.watch<StockyCubit>().state;
     final assistant = context.watch<AssistantCubit>().state;
     final media = MediaQuery.of(context);
     final keyboard = media.viewInsets.bottom;
@@ -263,7 +263,7 @@ class _AssistantPageState extends State<AssistantPage> {
               size: 40,
               filled: assistant.speakReplies,
               onTap: () {
-                RestockSounds.instance.play(RSound.tap);
+                StockySounds.instance.play(RSound.tap);
                 if (assistant.speakReplies) VoiceService.instance.stopSpeaking();
                 context.read<AssistantCubit>().toggleSpeak();
               },
@@ -357,7 +357,7 @@ class _AssistantPageState extends State<AssistantPage> {
                     onSubmitted: (_) => _send(),
                     textInputAction: TextInputAction.send,
                     style: t.body,
-                    decoration: restockPlainInput(
+                    decoration: stockyPlainInput(
                       context,
                       _listening ? l10n.marketListening : l10n.assistantInputHint,
                     ),
