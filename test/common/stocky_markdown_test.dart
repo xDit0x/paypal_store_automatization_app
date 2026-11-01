@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
+import 'package:store_automatization_app/common/helpers/stocky_markdown.dart';
 
 void main() {
   const base = TextStyle(fontSize: 16, color: Color(0xFF000000));

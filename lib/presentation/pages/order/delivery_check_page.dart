@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/domain/entities/order.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 
 /// Confirma la entrega de un pedido autorizado y captura el pago
 /// (total o parcial según lo recibido).
@@ -26,7 +26,7 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
     super.didChangeDependencies();
     if (_received.isEmpty) {
       // Usamos context aquí, ya es seguro
-      final cubit = context.read<RestockCubit>();
+      final cubit = context.read<StockyCubit>();
       final order = cubit.state.orderById(widget.orderId);
       if (order != null) {
         for (final item in order.items) {
@@ -38,7 +38,7 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<RestockCubit>().state;
+    final state = context.watch<StockyCubit>().state;
     final order = state.orderById(widget.orderId);
 
     if (order == null || order.status != OrderStatus.authorized) {

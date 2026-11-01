@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In es, this message translates to:
-  /// **'Restock'**
+  /// **'Stocky'**
   String get appName;
 
   /// No description provided for @appTagline.
@@ -1468,7 +1468,7 @@ abstract class AppLocalizations {
   /// No description provided for @authFirstTime.
   ///
   /// In es, this message translates to:
-  /// **'¿Primera vez en Restock?'**
+  /// **'¿Primera vez en Stocky?'**
   String get authFirstTime;
 
   /// No description provided for @authFirstTimeBody.

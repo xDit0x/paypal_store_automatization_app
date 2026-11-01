@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Detalle de un pedido. Si está pendiente, permite aprobarlo y pagarlo
 /// con PayPal o rechazarlo.
@@ -29,12 +29,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> _approve(
     BuildContext context,
-    RestockState state,
+    StockyState state,
     Order order,
   ) async {
     setState(() => _isApproving = true);
     try {
-      final cubit = context.read<RestockCubit>();
+      final cubit = context.read<StockyCubit>();
     final l10n = context.l10n;
     final supplier = state.supplierName(order.supplierId);
 
@@ -94,7 +94,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       return;
     }
     HapticFeedback.mediumImpact();
-    showRestockSnack(
+    showStockySnack(
       context,
       l10n.orderPaymentSentMessage(l10n.euros(total, state.currency), supplier),
       title: l10n.orderPaymentSent,
@@ -108,7 +108,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> _reject(
     BuildContext context,
-    RestockState state,
+    StockyState state,
     Order order,
   ) async {
     final l10n = context.l10n;
@@ -132,16 +132,16 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    final error = await context.read<RestockCubit>().reject(order.id);
+    final error = await context.read<StockyCubit>().reject(order.id);
     if (!context.mounted) return;
     if (error != null) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.describeDetail(error),
         tone: RSnackTone.warning,
       );
     } else {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.orderRejectMessage(supplier),
         title: l10n.orderRejected,
@@ -155,7 +155,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   Widget build(BuildContext context) {
     final p = context.rp;
     final t = context.rt;
-    final state = context.watch<RestockCubit>().state;
+    final state = context.watch<StockyCubit>().state;
     final l10n = context.l10n;
     final order = state.orderById(widget.orderId);
     final media = MediaQuery.of(context);
@@ -374,7 +374,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 class _BudgetImpact extends StatelessWidget {
   const _BudgetImpact({required this.state, required this.order});
 
-  final RestockState state;
+  final StockyState state;
   final Order order;
 
   @override

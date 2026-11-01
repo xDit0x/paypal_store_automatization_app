@@ -19,7 +19,7 @@ class SupabaseStoreChangesDatasource {
 
     controller = StreamController<void>.broadcast(
       onListen: () {
-        var created = _client.channel('restock-store-$storeId');
+        var created = _client.channel('stocky-store-$storeId');
         for (final table in _tables) {
           created = created.onPostgresChanges(
             event: PostgresChangeEvent.all,

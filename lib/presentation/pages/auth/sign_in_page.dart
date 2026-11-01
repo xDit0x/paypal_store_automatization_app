@@ -4,13 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_state.dart';
 import 'package:store_automatization_app/presentation/pages/auth/auth_widgets.dart';
 import 'package:store_automatization_app/presentation/pages/auth/register_page.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Inicio de sesión con el estilo de la app: marca, tarjeta con los campos
 /// y los avisos flotantes nuevos.
@@ -47,7 +47,7 @@ class _SignInPageState extends State<SignInPage> {
         final error = state.error;
         if (error == null) return;
         if (error.code == AppErrorCode.authEmailNotConfirmed) {
-          showRestockSnack(
+          showStockySnack(
             context,
             l10n.describeDetail(error),
             tone: RSnackTone.warning,
@@ -56,7 +56,7 @@ class _SignInPageState extends State<SignInPage> {
           );
           return;
         }
-        showRestockSnack(
+        showStockySnack(
           context,
           l10n.describeDetail(error),
           tone: RSnackTone.warning,
@@ -77,7 +77,7 @@ class _SignInPageState extends State<SignInPage> {
                     const Center(child: RBrandMark()),
                     const SizedBox(height: 18),
                     Text(
-                      'Restock',
+                      'Stocky',
                       textAlign: TextAlign.center,
                       style: t.largeTitle,
                     ),
@@ -162,7 +162,7 @@ class _SignInPageState extends State<SignInPage> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.authMissingFieldsBody,
         title: l10n.authMissingFields,
@@ -186,7 +186,7 @@ class _SignInPageState extends State<SignInPage> {
     final l10n = context.l10n;
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.authMissingEmailBody,
         title: l10n.authMissingEmail,
@@ -197,7 +197,7 @@ class _SignInPageState extends State<SignInPage> {
 
     final sent = await context.read<AuthCubit>().resendConfirmationEmail(email);
     if (!mounted) return;
-    showRestockSnack(
+    showStockySnack(
       context,
       sent ? l10n.authResendEmailSentBody : l10n.errorAuthResendConfirmFailed,
       title: sent ? l10n.authResendEmailSent : l10n.authCreateFailed,
@@ -209,7 +209,7 @@ class _SignInPageState extends State<SignInPage> {
     final l10n = context.l10n;
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.authMissingEmailBody,
         title: l10n.authMissingEmail,
@@ -220,7 +220,7 @@ class _SignInPageState extends State<SignInPage> {
 
     await context.read<AuthCubit>().sendResetPasswordEmail(email);
     if (!mounted) return;
-    showRestockSnack(
+    showStockySnack(
       context,
       l10n.authEmailSentBody,
       title: l10n.authEmailSent,

@@ -28,7 +28,7 @@ export const env = {
   appUrl: process.env.APP_URL ?? 'http://localhost:8080',
 
   resendApiKey: process.env.RESEND_API_KEY ?? '',
-  emailFrom: process.env.EMAIL_FROM ?? 'Restock <onboarding@resend.dev>',
+  emailFrom: process.env.EMAIL_FROM ?? 'Stocky <onboarding@resend.dev>',
 } as const;
 
 export function requireSupabaseEnv(): void {

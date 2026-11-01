@@ -7,7 +7,7 @@ import 'package:store_automatization_app/domain/entities/store.dart';
 import 'package:store_automatization_app/domain/entities/catalog_product.dart';
 import 'package:store_automatization_app/domain/entities/supplier.dart';
 
-enum RestockStatus { initial, loading, ready, failure }
+enum StockyStatus { initial, loading, ready, failure }
 
 /// Mensaje de la pantalla Asistente.
 class ChatEntry {
@@ -22,10 +22,10 @@ class ChatEntry {
   });
 }
 
-/// Estado de las pantallas principales de Restock (Inicio, Stock, Pedidos,
+/// Estado de las pantallas principales de Stocky (Inicio, Stock, Pedidos,
 /// Reglas y Asistente). Se carga una vez y se refresca tras cada acción.
-class RestockState {
-  final RestockStatus status;
+class StockyState {
+  final StockyStatus status;
   final AppError? error;
   final Store? store;
   final SpendingRules rules;
@@ -42,8 +42,8 @@ class RestockState {
   final bool placingOrder;
   final AppError? catalogError;
 
-  const RestockState({
-    this.status = RestockStatus.initial,
+  const StockyState({
+    this.status = StockyStatus.initial,
     this.error,
     this.store,
     this.rules = const SpendingRules(),
@@ -62,7 +62,7 @@ class RestockState {
   });
 
   bool get isLoading =>
-      status == RestockStatus.initial || status == RestockStatus.loading;
+      status == StockyStatus.initial || status == StockyStatus.loading;
   String get currency => store?.currency ?? 'EUR';
 
   double get monthlyLimit => rules.monthlyLimit;
@@ -139,8 +139,8 @@ class RestockState {
     supplierId: order.supplierId,
   );
 
-  RestockState copyWith({
-    RestockStatus? status,
+  StockyState copyWith({
+    StockyStatus? status,
     AppError? error,
     bool clearError = false,
     Store? store,
@@ -160,7 +160,7 @@ class RestockState {
     AppError? catalogError,
     bool clearCatalogError = false,
   }) {
-    return RestockState(
+    return StockyState(
       status: status ?? this.status,
       error: clearError ? null : (error ?? this.error),
       store: store ?? this.store,

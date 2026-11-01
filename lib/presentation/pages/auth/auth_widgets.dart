@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 
 import 'package:store_automatization_app/core/configs/assets/app_assets.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 
-/// Marca de la app: el icono real de Restock, recortado como una teja.
+/// Marca de la app: el icono real de Stocky, recortado como una teja.
 class RBrandMark extends StatelessWidget {
   const RBrandMark({super.key, this.size = 64});
 
@@ -38,7 +38,7 @@ class RBrandMark extends StatelessWidget {
           height: size,
           fit: BoxFit.cover,
           filterQuality: FilterQuality.high,
-          // Debajo ya está el texto "Restock": no hace falta que el lector
+          // Debajo ya está el texto "Stocky": no hace falta que el lector
           // de pantalla lo diga dos veces.
           excludeFromSemantics: true,
         ),
@@ -103,7 +103,7 @@ class RAuthField extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                   color: readOnly ? p.inkSecondary : null,
                 ),
-                decoration: restockPlainInput(context, hint ?? ''),
+                decoration: stockyPlainInput(context, hint ?? ''),
               ),
             ),
             ...?suffix == null ? null : [suffix!],

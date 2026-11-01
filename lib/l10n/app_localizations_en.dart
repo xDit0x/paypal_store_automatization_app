@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Restock';
+  String get appName => 'Stocky';
 
   @override
   String get appTagline => 'Automatic orders with AI + PayPal';
@@ -136,7 +136,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeAgentTitle => 'Restocking agent';
+  String get homeAgentTitle => 'Stockying agent';
 
   @override
   String get homeAgentDescription =>
@@ -561,7 +561,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantTitle => 'Assistant';
 
   @override
-  String get assistantSubtitle => 'Your restocking agent';
+  String get assistantSubtitle => 'Your stockying agent';
 
   @override
   String get assistantGreeting =>
@@ -808,18 +808,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'We sent you another confirmation email. Check your inbox or spam folder.';
 
   @override
-  String get authFirstTime => 'First time in Restock?';
+  String get authFirstTime => 'First time in Stocky?';
 
   @override
   String get authFirstTimeBody =>
-      'Create your store and let the agent restock it.';
+      'Create your store and let the agent stocky it.';
 
   @override
   String get authCreateTitle => 'Create account';
 
   @override
   String get authCreateSubtitle =>
-      'Create your store and start restocking in seconds';
+      'Create your store and start stockying in seconds';
 
   @override
   String get authCreateFailed => 'Could not create the account';
@@ -856,7 +856,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get decisionOrderCreated =>
-      'I prepared a restocking order with your low stock.';
+      'I prepared a stockying order with your low stock.';
 
   @override
   String get decisionNoAction =>

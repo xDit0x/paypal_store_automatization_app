@@ -5,12 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_state.dart';
 import 'package:store_automatization_app/presentation/pages/auth/auth_widgets.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Alta de cuenta: nombre de la tienda, correo y contraseña.
 class RegisterPage extends StatefulWidget {
@@ -73,7 +73,7 @@ class _RegisterPageState extends State<RegisterPage> {
     final l10n = context.l10n;
     final sent = await context.read<AuthCubit>().resendConfirmationEmail(email);
     if (!mounted) return;
-    showRestockSnack(
+    showStockySnack(
       context,
       sent ? l10n.authResendEmailSentBody : l10n.errorAuthResendConfirmFailed,
       title: sent ? l10n.authResendEmailSent : l10n.authCreateFailed,
@@ -103,7 +103,7 @@ class _RegisterPageState extends State<RegisterPage> {
         // Con la confirmación por correo activada, la cuenta se crea pero no
         // hay sesión: se avisa del éxito y se vuelve a "Iniciar sesión".
         if (error.code == AppErrorCode.authConfirmEmail) {
-          showRestockSnack(
+          showStockySnack(
             context,
             l10n.describeDetail(error),
             title: l10n.authAccountCreated,
@@ -115,7 +115,7 @@ class _RegisterPageState extends State<RegisterPage> {
         // El alta falló por un límite de Supabase (correos o intentos): la
         // cuenta no existe, así que se deja el formulario abierto.
         if (error.code == AppErrorCode.authSignUpRateLimited) {
-          showRestockSnack(
+          showStockySnack(
             context,
             l10n.describeDetail(error),
             title: l10n.authCreateFailed,
@@ -126,7 +126,7 @@ class _RegisterPageState extends State<RegisterPage> {
         // Si el correo ya existe puede ser una cuenta sin confirmar: se ofrece
         // reenviar el correo desde aquí mismo.
         if (error.code == AppErrorCode.authEmailTaken) {
-          showRestockSnack(
+          showStockySnack(
             context,
             l10n.describeDetail(error),
             tone: RSnackTone.warning,
@@ -135,7 +135,7 @@ class _RegisterPageState extends State<RegisterPage> {
           );
           return;
         }
-        showRestockSnack(
+        showStockySnack(
           context,
           l10n.describeDetail(error),
           tone: RSnackTone.warning,
@@ -307,7 +307,7 @@ class _RegisterPageState extends State<RegisterPage> {
         : _paypalController.text.trim();
 
     if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.authCreateMissingFieldsBody,
         title: l10n.authMissingFields,
@@ -316,7 +316,7 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
     if (paypalEmail.isNotEmpty && !paypalEmail.contains('@')) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.authPaypalEmailInvalid,
         tone: RSnackTone.warning,
@@ -324,7 +324,7 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
     if (password.length < 6) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.authPasswordTooShort,
         title: l10n.authPasswordTooShortTitle,
@@ -333,7 +333,7 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
     if (password != confirm) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.authPasswordsMismatch,
         title: l10n.authPasswordsMismatchTitle,

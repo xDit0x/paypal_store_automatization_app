@@ -15,7 +15,7 @@ export async function sendPayout(params: {
   const body = {
     sender_batch_header: {
       sender_batch_id: params.senderBatchId,
-      email_subject: 'Restock — pago a proveedor',
+      email_subject: 'Stocky — pago a proveedor',
       email_message: params.note,
     },
     items: [

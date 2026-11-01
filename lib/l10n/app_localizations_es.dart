@@ -10,7 +10,7 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appName => 'Restock';
+  String get appName => 'Stocky';
 
   @override
   String get appTagline => 'Pedidos automáticos con IA + PayPal';
@@ -812,7 +812,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Te hemos enviado otro correo de confirmación. Revisa tu bandeja de entrada o el spam.';
 
   @override
-  String get authFirstTime => '¿Primera vez en Restock?';
+  String get authFirstTime => '¿Primera vez en Stocky?';
 
   @override
   String get authFirstTimeBody =>

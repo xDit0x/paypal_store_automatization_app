@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_state.dart';
 import 'package:store_automatization_app/presentation/pages/auth/sign_in_page.dart';
-import 'package:store_automatization_app/presentation/pages/shell/restock_shell.dart';
+import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
 import 'package:store_automatization_app/presentation/pages/splash/splash_page.dart';
 
 class AuthGate extends StatelessWidget {
@@ -18,7 +18,7 @@ class AuthGate extends StatelessWidget {
           case AuthStatus.unknown:
             return const SplashPage();
           case AuthStatus.authenticated:
-            return const RestockShell();
+            return const StockyShell();
           case AuthStatus.unauthenticated:
           case AuthStatus.loading:
             return const SignInPage();

@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 
 /// Anillo de presupuesto al estilo de los anillos de actividad de Apple.
 class BudgetRing extends StatelessWidget {

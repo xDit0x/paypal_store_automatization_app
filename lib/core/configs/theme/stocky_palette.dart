@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Colores del diseño Restock (estilo Apple + azul PayPal).
+/// Colores del diseño Stocky (estilo Apple + azul PayPal).
 ///
 /// Tiene versión clara y oscura para respetar el ThemeCubit de la app.
 /// Se usa con `context.rp` (colores) y `context.rt` (textos).
-class RestockPalette {
-  const RestockPalette({
+class StockyPalette {
+  const StockyPalette({
     required this.background,
     required this.surface,
     required this.border,
@@ -75,7 +75,7 @@ class RestockPalette {
   final Color neutralBar;
   final Color shadow;
 
-  static const light = RestockPalette(
+  static const light = StockyPalette(
     background: Color(0xFFFBFCFE),
     surface: Color(0xFFFFFFFF),
     border: Color(0xFFE9EDF4),
@@ -106,7 +106,7 @@ class RestockPalette {
     shadow: Color(0x1F003087),
   );
 
-  static const dark = RestockPalette(
+  static const dark = StockyPalette(
     background: Color(0xFF000000),
     surface: Color(0xFF1C1C1E),
     border: Color(0xFF2C2C2E),
@@ -139,10 +139,10 @@ class RestockPalette {
 }
 
 /// Estilos de texto tipo iOS. Sin fontFamily: en iPhone sale San Francisco.
-class RestockText {
-  const RestockText(this.p);
+class StockyText {
+  const StockyText(this.p);
 
-  final RestockPalette p;
+  final StockyPalette p;
 
   TextStyle get largeTitle => TextStyle(
     fontSize: 34,
@@ -183,17 +183,17 @@ class RestockText {
   );
 }
 
-extension RestockThemeX on BuildContext {
-  RestockPalette get rp => Theme.of(this).brightness == Brightness.dark
-      ? RestockPalette.dark
-      : RestockPalette.light;
+extension StockyThemeX on BuildContext {
+  StockyPalette get rp => Theme.of(this).brightness == Brightness.dark
+      ? StockyPalette.dark
+      : StockyPalette.light;
 
-  RestockText get rt => RestockText(rp);
+  StockyText get rt => StockyText(rp);
 }
 
 /// Decoración de campo de texto sin bordes, para no heredar los bordes
 /// redondeados grandes del tema general de la app.
-InputDecoration restockPlainInput(BuildContext context, String hint) {
+InputDecoration stockyPlainInput(BuildContext context, String hint) {
   return InputDecoration(
     hintText: hint,
     hintStyle: TextStyle(

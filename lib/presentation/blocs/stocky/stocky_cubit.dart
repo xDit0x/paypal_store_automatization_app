@@ -30,10 +30,10 @@ import 'package:store_automatization_app/domain/usecases/settings/get_spending_r
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/watch_store_changes_usecase.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 
 /// Cubit de las pantallas principales. Solo usa casos de uso del dominio.
-class RestockCubit extends Cubit<RestockState> {
+class StockyCubit extends Cubit<StockyState> {
   final GetCurrentStoreUsecase getCurrentStore;
   final GetSpendingRulesUsecase getSpendingRules;
   final UpdateSpendingRulesUsecase updateSpendingRules;
@@ -74,7 +74,7 @@ class RestockCubit extends Cubit<RestockState> {
 
   AppLocalizations get l10n => _l10n();
 
-  RestockCubit({
+  StockyCubit({
     required this.getCurrentStore,
     required this.getSpendingRules,
     required this.updateSpendingRules,
@@ -93,12 +93,12 @@ class RestockCubit extends Cubit<RestockState> {
     this.watchStoreChanges,
     AppLocalizations Function()? l10n,
   }) : _l10n = l10n ?? (() => l10nFor(deviceLocale())),
-       super(const RestockState());
+       super(const StockyState());
 
   /// Carga todo. Si ya había datos, los mantiene visibles mientras refresca.
   Future<void> load() async {
-    if (state.status != RestockStatus.ready) {
-      emit(state.copyWith(status: RestockStatus.loading, clearError: true));
+    if (state.status != StockyStatus.ready) {
+      emit(state.copyWith(status: StockyStatus.loading, clearError: true));
     }
 
     final storeResult = await getCurrentStore();
@@ -108,7 +108,7 @@ class RestockCubit extends Cubit<RestockState> {
         (error) => error,
         (_) => const AppError(AppErrorCode.storeNotFound),
       );
-      emit(state.copyWith(status: RestockStatus.failure, error: message));
+      emit(state.copyWith(status: StockyStatus.failure, error: message));
       return;
     }
 
@@ -157,7 +157,7 @@ class RestockCubit extends Cubit<RestockState> {
 
     emit(
       state.copyWith(
-        status: RestockStatus.ready,
+        status: StockyStatus.ready,
         store: store,
         rules: rules,
         spentThisMonth: spent,

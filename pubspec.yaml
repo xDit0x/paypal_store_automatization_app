@@ -1,5 +1,5 @@
 name: store_automatization_app
-description: "Restock: pedidos automáticos a tus proveedores con IA y PayPal."
+description: "Stocky: pedidos automáticos a tus proveedores con IA y PayPal."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -121,28 +121,28 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# Iconos de la app Restock.
+# Iconos de la app Stocky.
 # Regenerar con: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true
   ios: true
   macos:
     generate: true
-    image_path: "assets/images/restock_logo.png"
+    image_path: "assets/images/stocky_logo.png"
   windows:
     generate: true
-    image_path: "assets/images/restock_logo.png"
+    image_path: "assets/images/stocky_logo.png"
     icon_size: 256
   web:
     generate: true
-    image_path: "assets/images/restock_logo.png"
+    image_path: "assets/images/stocky_logo.png"
     background_color: "#050B2E"
     theme_color: "#050B2E"
-  image_path: "assets/images/restock_logo.png"
+  image_path: "assets/images/stocky_logo.png"
   # Icono adaptativo de Android: capa de fondo con el degradado marino y
   # capa foreground solo con el carro.
-  adaptive_icon_background: "assets/images/restock_logo_background.png"
-  adaptive_icon_foreground: "assets/images/restock_logo_foreground.png"
+  adaptive_icon_background: "assets/images/stocky_logo_background.png"
+  adaptive_icon_foreground: "assets/images/stocky_logo_foreground.png"
   adaptive_icon_foreground_inset: 16
   min_sdk_android: 21
   remove_alpha_ios: true

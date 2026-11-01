@@ -1,7 +1,7 @@
 {
   "@@locale": "es",
 
-  "appName": "Restock",
+  "appName": "Stocky",
   "appTagline": "Pedidos automáticos con IA + PayPal",
   "configErrorTitle": "Configuración incompleta",
 
@@ -443,7 +443,7 @@
   "authResendEmail": "Reenviar correo de confirmación",
   "authResendEmailSent": "Correo reenviado",
   "authResendEmailSentBody": "Te hemos enviado otro correo de confirmación. Revisa tu bandeja de entrada o el spam.",
-  "authFirstTime": "¿Primera vez en Restock?",
+  "authFirstTime": "¿Primera vez en Stocky?",
   "authFirstTimeBody": "Crea tu tienda y deja que el agente reponga el stock.",
   "authCreateTitle": "Crear cuenta",
   "authCreateSubtitle": "Crea tu tienda y empieza a reponer en segundos",

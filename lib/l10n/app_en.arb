@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appName": "Restock",
+  "appName": "Stocky",
   "appTagline": "Automatic orders with AI + PayPal",
   "configErrorTitle": "Incomplete configuration",
 
@@ -60,7 +60,7 @@
       "amount": { "type": "String" }
     }
   },
-  "homeAgentTitle": "Restocking agent",
+  "homeAgentTitle": "Stockying agent",
   "homeAgentDescription": "Reviews your stock, prepares orders and pays them with PayPal within your rules.",
   "homeReviewing": "Reviewing…",
   "homeNeedsApproval": "Needs your approval",
@@ -328,7 +328,7 @@
   "deliveryClaimMessage": "Tell them about the missing units.",
 
   "assistantTitle": "Assistant",
-  "assistantSubtitle": "Your restocking agent",
+  "assistantSubtitle": "Your stockying agent",
   "assistantGreeting": "Hi. I review your stock, prepare orders for your suppliers and pay them with PayPal, always within your spending rules.",
   "assistantChipReview": "Review the stock now",
   "assistantChipPending": "What do I need to approve?",
@@ -443,10 +443,10 @@
   "authResendEmail": "Resend confirmation email",
   "authResendEmailSent": "Email resent",
   "authResendEmailSentBody": "We sent you another confirmation email. Check your inbox or spam folder.",
-  "authFirstTime": "First time in Restock?",
-  "authFirstTimeBody": "Create your store and let the agent restock it.",
+  "authFirstTime": "First time in Stocky?",
+  "authFirstTimeBody": "Create your store and let the agent stocky it.",
   "authCreateTitle": "Create account",
-  "authCreateSubtitle": "Create your store and start restocking in seconds",
+  "authCreateSubtitle": "Create your store and start stockying in seconds",
   "authCreateFailed": "Could not create the account",
   "authAccountCreated": "Account created",
   "authCreateMissingFieldsBody": "Fill in the email and both passwords.",
@@ -459,7 +459,7 @@
   "errorLoadData": "We could not load your data",
   "errorAgentBusy": "The agent is already working.",
 
-  "decisionOrderCreated": "I prepared a restocking order with your low stock.",
+  "decisionOrderCreated": "I prepared a stockying order with your low stock.",
   "decisionNoAction": "I reviewed the stock: nothing needed ordering.",
   "decisionBlocked": "I wanted to order, but your spending rules blocked it.",
   "decisionFailed": "The review failed. Try again in a moment.",

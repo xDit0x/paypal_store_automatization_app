@@ -6,7 +6,7 @@ import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:store_automatization_app/core/audio/restock_sounds.dart';
+import 'package:store_automatization_app/core/audio/stocky_sounds.dart';
 import 'package:store_automatization_app/core/configs/env.dart';
 import 'package:store_automatization_app/core/configs/supabase/supabase_config.dart';
 import 'package:store_automatization_app/core/configs/theme/app_theme.dart';
@@ -41,10 +41,10 @@ Future<void> main() async {
     await SupabaseConfig.initialize();
     await initializeDependencies();
     // Las ondas se generan al arrancar para que el primer toque no tarde.
-    RestockSounds.instance.enabled = sl<SoundCubit>().state;
-    await RestockSounds.instance.warmUp();
+    StockySounds.instance.enabled = sl<SoundCubit>().state;
+    await StockySounds.instance.warmUp();
     await _signInDemoIfConfigured();
-    runApp(const RestockApp());
+    runApp(const StockyApp());
   } catch (error) {
     runApp(ConfigErrorApp(message: error.toString()));
   }
@@ -61,8 +61,8 @@ Future<void> _signInDemoIfConfigured() async {
   );
 }
 
-class RestockApp extends StatelessWidget {
-  const RestockApp({super.key});
+class StockyApp extends StatelessWidget {
+  const StockyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +81,7 @@ class RestockApp extends StatelessWidget {
           builder: (context, mode) {
             return BlocBuilder<LocaleCubit, Locale?>(
               builder: (context, locale) => MaterialApp(
-                title: 'Restock',
+                title: 'Stocky',
                 // `null` = el Locale del dispositivo; con un Locale elegido
                 // se fuerza ese idioma.
                 locale: locale,
@@ -94,8 +94,8 @@ class RestockApp extends StatelessWidget {
                 home: BlocListener<SoundCubit, bool>(
                   listenWhen: (previous, current) => previous != current,
                   listener: (context, enabled) {
-                    RestockSounds.instance.enabled = enabled;
-                    if (enabled) RestockSounds.instance.play(RSound.success);
+                    StockySounds.instance.enabled = enabled;
+                    if (enabled) StockySounds.instance.play(RSound.success);
                   },
                   child: const AuthGate(),
                 ),
@@ -116,7 +116,7 @@ class ConfigErrorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Restock',
+      title: 'Stocky',
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,

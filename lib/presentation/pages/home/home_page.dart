@@ -2,18 +2,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/pages/order/order_detail_page.dart';
-import 'package:store_automatization_app/presentation/pages/shell/restock_shell.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/budget_ring.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/budget_ring.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Pestaña Inicio: presupuesto, agente, pedidos por aprobar y stock bajo.
 class HomePage extends StatelessWidget {
@@ -126,7 +126,7 @@ class _AgentBadge extends StatelessWidget {
 class _BudgetCard extends StatelessWidget {
   const _BudgetCard({required this.state});
 
-  final RestockState state;
+  final StockyState state;
 
   @override
   Widget build(BuildContext context) {
@@ -202,11 +202,11 @@ class _AgentCard extends StatelessWidget {
   final bool running;
 
   Future<void> _run(BuildContext context) async {
-    final cubit = context.read<RestockCubit>();
+    final cubit = context.read<StockyCubit>();
     final message = await cubit.runAgent();
     if (!context.mounted) return;
     final failed = cubit.lastRunFailed;
-    showRestockSnack(
+    showStockySnack(
       context,
       message,
       title: failed
@@ -294,7 +294,7 @@ class _ApprovalTile extends StatelessWidget {
   const _ApprovalTile({required this.order, required this.state});
 
   final Order order;
-  final RestockState state;
+  final StockyState state;
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +305,7 @@ class _ApprovalTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () =>
-            pushRestockPage<void>(context, OrderDetailPage(orderId: order.id)),
+            pushStockyPage<void>(context, OrderDetailPage(orderId: order.id)),
         child: RCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
@@ -359,7 +359,7 @@ class _LowStockRow extends StatelessWidget {
   const _LowStockRow({required this.product, required this.state});
 
   final Product product;
-  final RestockState state;
+  final StockyState state;
 
   @override
   Widget build(BuildContext context) {

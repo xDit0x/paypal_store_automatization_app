@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/catalog_product.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/pages/order/order_detail_page.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Buscador del catálogo de proveedores.
 ///
@@ -39,7 +39,7 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   Future<void> _search({String? supplierId}) async {
-    final cubit = context.read<RestockCubit>();
+    final cubit = context.read<StockyCubit>();
     setState(() => _loading = true);
     await cubit.searchCatalog(
       query: _query.trim().isEmpty ? null : _query.trim(),
@@ -50,7 +50,7 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   void _add(BuildContext context, CatalogProduct product, {int quantity = 1}) {
-    context.read<RestockCubit>().addToCart(product, quantity: quantity);
+    context.read<StockyCubit>().addToCart(product, quantity: quantity);
     HapticFeedback.selectionClick();
   }
 
@@ -68,7 +68,7 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   Future<void> _placeOrder(BuildContext pageContext) async {
-    final cubit = pageContext.read<RestockCubit>();
+    final cubit = pageContext.read<StockyCubit>();
     final l10n = pageContext.l10n;
     final orders = await cubit.submitCart();
     if (!pageContext.mounted) return;
@@ -76,7 +76,7 @@ class _CatalogPageState extends State<CatalogPage> {
     if (orders.isEmpty) {
       final error = cubit.state.catalogError;
       if (error != null) {
-        showRestockSnack(
+        showStockySnack(
           pageContext,
           l10n.describeDetail(error),
           tone: RSnackTone.warning,
@@ -89,13 +89,13 @@ class _CatalogPageState extends State<CatalogPage> {
     Navigator.of(pageContext).pop();
 
     if (orders.length == 1) {
-      showRestockSnack(
+      showStockySnack(
         pageContext,
         l10n.catalogOrderCreated,
         title: l10n.catalogOrderButton,
         tone: RSnackTone.success,
       );
-      await pushRestockPage<void>(
+      await pushStockyPage<void>(
         pageContext,
         OrderDetailPage(orderId: orders.first.id),
       );
@@ -103,7 +103,7 @@ class _CatalogPageState extends State<CatalogPage> {
       return;
     }
 
-    showRestockSnack(
+    showStockySnack(
       pageContext,
       l10n.catalogOrdersCreated(orders.length),
       title: l10n.catalogOrderButton,
@@ -118,7 +118,7 @@ class _CatalogPageState extends State<CatalogPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => BlocProvider.value(
-        value: context.read<RestockCubit>(),
+        value: context.read<StockyCubit>(),
         child: _CartSheet(onOrder: () => _placeOrder(context)),
       ),
     );
@@ -137,7 +137,7 @@ class _CatalogPageState extends State<CatalogPage> {
         elevation: 0,
         title: Text(l10n.catalogTitle),
       ),
-      body: BlocBuilder<RestockCubit, RestockState>(
+      body: BlocBuilder<StockyCubit, StockyState>(
         builder: (context, state) {
           final results = state.catalogResults;
           final suppliers = state.suppliers.values.toList()
@@ -506,7 +506,7 @@ class _QuantityStepButton extends StatelessWidget {
 class _CartBar extends StatelessWidget {
   const _CartBar({required this.state, required this.onTap});
 
-  final RestockState state;
+  final StockyState state;
   final VoidCallback onTap;
 
   @override
@@ -572,9 +572,9 @@ class _CartSheet extends StatelessWidget {
     final t = context.rt;
     final l10n = context.l10n;
 
-    return BlocBuilder<RestockCubit, RestockState>(
+    return BlocBuilder<StockyCubit, StockyState>(
       builder: (context, state) {
-        final cubit = context.read<RestockCubit>();
+        final cubit = context.read<StockyCubit>();
         // Proveedor → producto → unidades, para enseñar un bloque por pedido.
         final suppliers = <String, Map<String, List<CatalogProduct>>>{};
         for (final product in state.cart) {

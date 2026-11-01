@@ -1,7 +1,7 @@
 // Lanza ahora mismo la revisión automática para todas las tiendas.
 // Sirve para probarla sin esperar a las 9:00 y como comando de un
 // Cron Job (por ejemplo en Render): npm run job:restock
-import { runRestockForAllStores } from '../jobs/scheduled_restock.js';
+import { runStockyForAllStores } from '../jobs/scheduled_restock.js';
 
 const logger = {
   info: (_obj: unknown, msg?: string) => console.log(msg ?? ''),
@@ -10,7 +10,7 @@ const logger = {
 };
 
 try {
-  const results = await runRestockForAllStores(logger);
+  const results = await runStockyForAllStores(logger);
   console.log(JSON.stringify(results, null, 2));
   process.exit(0);
 } catch (error) {

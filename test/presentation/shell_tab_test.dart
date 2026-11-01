@@ -26,11 +26,13 @@ import 'package:store_automatization_app/domain/usecases/store/get_current_store
 import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
+
 import 'package:store_automatization_app/presentation/blocs/sound/sound_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
-import 'package:store_automatization_app/presentation/pages/shell/restock_shell.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
+import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
+
 import 'package:store_automatization_app/preview/preview_repositories.dart';
 
 class _MemoryStorage implements Storage {
@@ -69,13 +71,13 @@ AuthCubit _authCubit() {
   );
 }
 
-RestockCubit _restockCubit() {
+StockyCubit _restockCubit() {
   final db = PreviewDb();
   final orders = PreviewOrderRepository(db);
   final products = PreviewProductRepository(db);
   final settings = PreviewSettingsRepository(db);
   final agent = PreviewAgentRepository(db);
-  return RestockCubit(
+  return StockyCubit(
     getCurrentStore: GetCurrentStoreUsecase(
       repository: PreviewStoreRepository(db),
     ),
@@ -139,7 +141,7 @@ void main() {
               locale: const Locale('es'),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: RestockShell(createCubit: _restockCubit),
+              home: StockyShell(createCubit: _restockCubit),
             ),
           ),
         ),
@@ -176,7 +178,7 @@ void main() {
           locale: const Locale('es'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: RestockShell(createCubit: _restockCubit),
+          home: StockyShell(createCubit: _restockCubit),
         ),
       ),
     );
@@ -208,7 +210,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: KeyedSubtree(
             key: const ValueKey('otro-shell'),
-            child: RestockShell(createCubit: _restockCubit),
+            child: StockyShell(createCubit: _restockCubit),
           ),
         ),
       ),
@@ -234,7 +236,7 @@ void main() {
             locale: selected ?? const Locale('es'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: RestockShell(createCubit: _restockCubit),
+            home: StockyShell(createCubit: _restockCubit),
           ),
         ),
       ),

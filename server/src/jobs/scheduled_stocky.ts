@@ -9,7 +9,7 @@ interface JobLogger {
   error(obj: unknown, msg?: string): void;
 }
 
-export interface StoreRestockResult {
+export interface StoreStockyResult {
   storeId: string;
   storeName: string;
   decision: string;
@@ -21,9 +21,9 @@ export interface StoreRestockResult {
  * Lanza el agente de reposición para cada tienda, una detrás de otra.
  * Si una tienda falla, se registra y se sigue con las demás.
  */
-export async function runRestockForAllStores(
+export async function runStockyForAllStores(
   logger: JobLogger,
-): Promise<StoreRestockResult[]> {
+): Promise<StoreStockyResult[]> {
   // RESTOCK_STORE_IDS limita la revisión a ciertas tiendas (útil cuando cada
   // miembro del equipo tiene su propio servidor). Vacío = todas.
   const onlyStores = (process.env.RESTOCK_STORE_IDS ?? '')
@@ -41,7 +41,7 @@ export async function runRestockForAllStores(
     throw new Error(`No se pudieron cargar las tiendas: ${error.message}`);
   }
 
-  const results: StoreRestockResult[] = [];
+  const results: StoreStockyResult[] = [];
   for (const row of (data ?? []) as { id: string; owner_id: string; name: string }[]) {
     try {
       const store = await getStoreForOwner(row.id, row.owner_id);
@@ -83,7 +83,7 @@ export async function runRestockForAllStores(
  *
  * Devuelve una función para pararla.
  */
-export function startRestockScheduler(logger: JobLogger): () => void {
+export function startStockyScheduler(logger: JobLogger): () => void {
   if ((process.env.RESTOCK_SCHEDULE_ENABLED ?? 'true').toLowerCase() === 'false') {
     logger.info({}, 'Revisión automática de stock desactivada (RESTOCK_SCHEDULE_ENABLED=false)');
     return () => {};
@@ -111,7 +111,7 @@ export function startRestockScheduler(logger: JobLogger): () => void {
     running = true;
     logger.info({ slot: due.slot.label, timeZone }, 'Empieza la revisión automática de stock');
     try {
-      const results = await runRestockForAllStores(logger);
+      const results = await runStockyForAllStores(logger);
       const ordered = results.filter((r) => r.orderId).length;
       logger.info(
         { slot: due.slot.label, stores: results.length, ordersCreated: ordered },

@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:store_automatization_app/core/audio/restock_sounds.dart';
+import 'package:store_automatization_app/core/audio/stocky_sounds.dart';
 
 /// Todo botón de la app llama a `play`, así que estos casos no son un lujo:
 /// sin tarjeta de sonido (tests, navegador, plataforma sin soporte) el motor
@@ -12,26 +12,26 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('sin motor de audio no lanza ni prepara nada', () async {
-    await RestockSounds.instance.warmUp();
-    RestockSounds.instance.play(RSound.tap);
-    RestockSounds.instance.play(RSound.success);
-    RestockSounds.instance.stopAll();
+    await StockySounds.instance.warmUp();
+    StockySounds.instance.play(RSound.tap);
+    StockySounds.instance.play(RSound.success);
+    StockySounds.instance.stopAll();
   });
 
   test('el interruptor corta el sonido aunque no haya motor', () {
-    RestockSounds.instance.enabled = false;
-    expect(RestockSounds.instance.enabled, isFalse);
+    StockySounds.instance.enabled = false;
+    expect(StockySounds.instance.enabled, isFalse);
 
-    RestockSounds.instance.play(RSound.warning);
+    StockySounds.instance.play(RSound.warning);
 
-    RestockSounds.instance.enabled = true;
-    expect(RestockSounds.instance.enabled, isTrue);
+    StockySounds.instance.enabled = true;
+    expect(StockySounds.instance.enabled, isTrue);
   });
 
   group('WAV generado', () {
     /// Muestras PCM 16 bits del buffer, sin la cabecera.
     List<int> samples(RSound sound) {
-      final bytes = RestockSounds.instance.renderWav(sound);
+      final bytes = StockySounds.instance.renderWav(sound);
       final data = ByteData.sublistView(bytes);
       final count = (bytes.length - 44) ~/ 2;
       return [
@@ -41,7 +41,7 @@ void main() {
     }
 
     test('es un WAV PCM 16 bits mono a 44,1 kHz', () {
-      final bytes = RestockSounds.instance.renderWav(RSound.tap);
+      final bytes = StockySounds.instance.renderWav(RSound.tap);
       final data = ByteData.sublistView(bytes);
       String text(int offset) =>
           String.fromCharCodes(bytes.sublist(offset, offset + 4));

@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
-import 'package:store_automatization_app/core/audio/restock_sounds.dart';
+import 'package:store_automatization_app/common/helpers/stocky_markdown.dart';
+import 'package:store_automatization_app/core/audio/stocky_sounds.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 
 /// Tarjeta con borde fino y sombra suave (o color de relleno si se indica).
 class RCard extends StatelessWidget {
@@ -489,7 +489,7 @@ Duration _snackDuration(String message) {
 }
 
 /// Aviso flotante con icono y, opcionalmente, título. Sube por encima del dock.
-void showRestockSnack(
+void showStockySnack(
   BuildContext context,
   String message, {
   String? title,
@@ -500,7 +500,7 @@ void showRestockSnack(
   final p = context.rp;
   final t = context.rt;
 
-  RestockSounds.instance.play(switch (tone) {
+  StockySounds.instance.play(switch (tone) {
     RSnackTone.success => RSound.success,
     RSnackTone.warning => RSound.warning,
     RSnackTone.info => RSound.message,
@@ -587,7 +587,7 @@ void showRestockSnack(
                             height: 34,
                             child: FilledButton(
                               onPressed: () {
-                                RestockSounds.instance.play(RSound.tap);
+                                StockySounds.instance.play(RSound.tap);
                                 ScaffoldMessenger.of(context)
                                     .hideCurrentSnackBar();
                                 onAction();
@@ -633,7 +633,7 @@ void showRestockSnack(
 VoidCallback? _tapThen(VoidCallback? action) {
   if (action == null) return null;
   return () {
-    RestockSounds.instance.play(RSound.tap);
+    StockySounds.instance.play(RSound.tap);
     action();
   };
 }

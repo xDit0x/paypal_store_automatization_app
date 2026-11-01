@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
 import 'package:store_automatization_app/l10n/app_localizations.dart';
 
 void main() {

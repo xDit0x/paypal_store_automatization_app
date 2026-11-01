@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 
 import 'package:store_automatization_app/l10n/app_localizations.dart';
 
-extension RestockFormat on AppLocalizations {
+extension StockyFormat on AppLocalizations {
   /// "145,00 €" (es) / "€145.00" (en).
   String euros(double value, [String currency = 'EUR']) =>
       NumberFormat.currency(

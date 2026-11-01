@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
-/// Sonidos de interfaz de Restock.
+/// Sonidos de interfaz de Stocky.
 ///
 /// No hay ficheros de audio: cada sonido se sintetiza al arrancar y se carga en
 /// memoria como WAV. El instrumento es un timbal, y suena a timbal por tres
@@ -79,10 +79,10 @@ class _Preset {
   final double strike;
 }
 
-class RestockSounds {
-  RestockSounds._();
+class StockySounds {
+  StockySounds._();
 
-  static final RestockSounds instance = RestockSounds._();
+  static final StockySounds instance = StockySounds._();
 
   static const int _sampleRate = 44100;
 

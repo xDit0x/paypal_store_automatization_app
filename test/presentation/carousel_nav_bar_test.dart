@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
 
 /// Color de la píldora azul del dock.
 Color _pillColor(WidgetTester tester) {
@@ -22,7 +22,9 @@ Color _pillColor(WidgetTester tester) {
 }
 
 void main() {
-  testWidgets('arrastrar el dock cambia la pestaña seleccionada', (tester) async {
+  testWidgets('arrastrar el dock cambia la pestaña seleccionada', (
+    tester,
+  ) async {
     final controller = PageController();
     final dragged = <int>[];
 
@@ -90,8 +92,9 @@ void main() {
     expect(tapped, 1);
   });
 
-  testWidgets('la píldora se aclara durante el trayecto y vuelve al azul',
-      (tester) async {
+  testWidgets('la píldora se aclara durante el trayecto y vuelve al azul', (
+    tester,
+  ) async {
     final controller = PageController();
 
     await tester.pumpWidget(
@@ -102,11 +105,7 @@ void main() {
               Expanded(
                 child: PageView(
                   controller: controller,
-                  children: const [
-                    SizedBox(),
-                    SizedBox(),
-                    SizedBox(),
-                  ],
+                  children: const [SizedBox(), SizedBox(), SizedBox()],
                 ),
               ),
               CarouselNavBar(

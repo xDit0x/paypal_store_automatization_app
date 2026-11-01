@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:store_automatization_app/common/helpers/restock_markdown.dart';
+import 'package:store_automatization_app/common/helpers/stocky_markdown.dart';
 
 void main() {
   testWidgets('el markdown del agente se pinta en negrita', (tester) async {
@@ -27,8 +26,9 @@ void main() {
     expect(find.textContaining('**'), findsNothing);
   });
 
-  testWidgets('un texto con markdown no deja asteriscos en pantalla',
-      (tester) async {
+  testWidgets('un texto con markdown no deja asteriscos en pantalla', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(

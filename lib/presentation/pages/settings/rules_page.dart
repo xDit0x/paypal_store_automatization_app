@@ -3,20 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
-import 'package:store_automatization_app/core/audio/restock_sounds.dart';
+import 'package:store_automatization_app/common/helpers/stocky_format.dart';
+import 'package:store_automatization_app/core/audio/stocky_sounds.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/sound/sound_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 enum _Limit { monthly, perOrder, approval }
 
@@ -90,7 +90,7 @@ class RulesPage extends StatelessWidget {
 
   Future<void> _editLimit(
     BuildContext context,
-    RestockState state,
+    StockyState state,
     _Limit limit,
   ) async {
     final l10n = context.l10n;
@@ -142,7 +142,7 @@ class RulesPage extends StatelessWidget {
     await _save(context, updated);
   }
 
-  Future<void> _editSuppliers(BuildContext context, RestockState state) async {
+  Future<void> _editSuppliers(BuildContext context, StockyState state) async {
     final selected = await showModalBottomSheet<List<String>>(
       context: context,
       isScrollControlled: true,
@@ -159,16 +159,16 @@ class RulesPage extends StatelessWidget {
 
   Future<void> _save(BuildContext context, SpendingRules rules) async {
     final l10n = context.l10n;
-    final error = await context.read<RestockCubit>().saveRules(rules);
+    final error = await context.read<StockyCubit>().saveRules(rules);
     if (!context.mounted) return;
     if (error != null) {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.describeDetail(error),
         tone: RSnackTone.warning,
       );
     } else {
-      showRestockSnack(
+      showStockySnack(
         context,
         l10n.rulesSavedMessage,
         title: l10n.rulesSaved,
@@ -304,7 +304,7 @@ class _AmountSheetState extends State<_AmountSheet> {
                         fontWeight: FontWeight.w700,
                         color: p.ink,
                       ),
-                      decoration: restockPlainInput(context, '0'),
+                      decoration: stockyPlainInput(context, '0'),
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
@@ -338,7 +338,7 @@ class _AmountSheetState extends State<_AmountSheet> {
 class _SuppliersSheet extends StatefulWidget {
   const _SuppliersSheet({required this.state});
 
-  final RestockState state;
+  final StockyState state;
 
   @override
   State<_SuppliersSheet> createState() => _SuppliersSheetState();
@@ -464,7 +464,7 @@ class _AccountGroup extends StatelessWidget {
                       // Solo suena si de verdad cambió: el control emite al
                       // tocar una pestaña que ya estaba seleccionada.
                       if (value != mode) {
-                        RestockSounds.instance.play(RSound.soft);
+                        StockySounds.instance.play(RSound.soft);
                         context.read<ThemeCubit>().updateTheme(value);
                       }
                     }
@@ -496,7 +496,7 @@ class _AccountGroup extends StatelessWidget {
                     final selected = value == 'auto' ? null : Locale(value);
                     final current = context.read<LocaleCubit>().state;
                     if (selected != current) {
-                      RestockSounds.instance.play(RSound.soft);
+                      StockySounds.instance.play(RSound.soft);
                       context.read<LocaleCubit>().updateLocale(selected);
                     }
                   },

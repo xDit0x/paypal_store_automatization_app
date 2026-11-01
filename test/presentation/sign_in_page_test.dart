@@ -79,14 +79,14 @@ void main() {
     HydratedBloc.storage = _MemoryStorage();
   });
 
-  testWidgets('el inicio de sesión muestra el icono real de Restock', (
+  testWidgets('el inicio de sesión muestra el icono real de Stocky', (
     tester,
   ) async {
     await tester.pumpWidget(_signIn());
     await tester.pumpAndSettle();
 
     expect(_paintedAssets(tester), contains(AppAssets.logo));
-    expect(find.text('Restock'), findsOneWidget);
+    expect(find.text('Stocky'), findsOneWidget);
     expect(find.text('Pedidos automáticos con IA + PayPal'), findsOneWidget);
   });
 

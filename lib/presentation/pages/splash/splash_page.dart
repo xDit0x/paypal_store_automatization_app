@@ -23,7 +23,7 @@ class SplashPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Restock',
+              'Stocky',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,

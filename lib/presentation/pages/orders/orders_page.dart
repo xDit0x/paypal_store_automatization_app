@@ -1,15 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/pages/order/delivery_check_page.dart';
 import 'package:store_automatization_app/presentation/pages/order/order_detail_page.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Pestaña Pedidos: gasto del mes, comprobar entrega e historial.
 class OrdersPage extends StatelessWidget {
@@ -51,7 +51,7 @@ class OrdersPage extends StatelessWidget {
             const SizedBox(height: 16),
             _DeliveryBanner(
               supplier: state.supplierName(delivery.supplierId),
-              onTap: () => pushRestockPage<void>(context, DeliveryCheckPage(orderId: delivery.id)),
+              onTap: () => pushStockyPage<void>(context, DeliveryCheckPage(orderId: delivery.id)),
             ),
           ],
           const SizedBox(height: 22),
@@ -147,7 +147,7 @@ class _OrderRow extends StatelessWidget {
   const _OrderRow({required this.order, required this.state});
 
   final Order order;
-  final RestockState state;
+  final StockyState state;
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +181,7 @@ class _OrderRow extends StatelessWidget {
           const RChevron(),
         ],
       ),
-      onTap: () => pushRestockPage<void>(context, OrderDetailPage(orderId: order.id)),
+      onTap: () => pushStockyPage<void>(context, OrderDetailPage(orderId: order.id)),
     );
   }
 }

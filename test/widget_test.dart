@@ -15,10 +15,10 @@ Widget _splash({Locale locale = const Locale('es')}) => MaterialApp(
     );
 
 void main() {
-  testWidgets('Splash muestra la marca Restock', (WidgetTester tester) async {
+  testWidgets('Splash muestra la marca Stocky', (WidgetTester tester) async {
     await tester.pumpWidget(_splash());
 
-    expect(find.text('Restock'), findsOneWidget);
+    expect(find.text('Stocky'), findsOneWidget);
     expect(find.text('Pedidos automáticos con IA + PayPal'), findsOneWidget);
   });
 

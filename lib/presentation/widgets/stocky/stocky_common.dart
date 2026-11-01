@@ -2,16 +2,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/common/helpers/restock_format.dart';
+import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/domain/entities/spending_rules.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/carousel_nav_bar.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Texto y tono de cada estado de pedido.
 (String, RPillTone) orderStatusLabel(AppLocalizations l10n, OrderStatus status) =>
@@ -45,7 +45,7 @@ Color pillToneColor(BuildContext context, RPillTone tone) {
 /// Motivo corto por el que un pedido no se paga solo.
 String? shortDecisionReason(
   AppLocalizations l10n,
-  RestockState state,
+  StockyState state,
   Order order,
 ) {
   final decision = state.evaluate(order);
@@ -74,12 +74,12 @@ String? shortDecisionReason(
   return null;
 }
 
-/// Abre una pantalla nueva conservando el RestockCubit.
-Future<T?> pushRestockPage<T>(BuildContext context, Widget page) {
-  final cubit = context.read<RestockCubit>();
+/// Abre una pantalla nueva conservando el StockyCubit.
+Future<T?> pushStockyPage<T>(BuildContext context, Widget page) {
+  final cubit = context.read<StockyCubit>();
   return Navigator.of(context).push<T>(
     CupertinoPageRoute<T>(
-      builder: (_) => BlocProvider<RestockCubit>.value(value: cubit, child: page),
+      builder: (_) => BlocProvider<StockyCubit>.value(value: cubit, child: page),
     ),
   );
 }
@@ -92,18 +92,18 @@ double navBarClearance(BuildContext context) =>
 class RTabPage extends StatelessWidget {
   const RTabPage({super.key, required this.builder});
 
-  final List<Widget> Function(BuildContext context, RestockState state) builder;
+  final List<Widget> Function(BuildContext context, StockyState state) builder;
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<RestockCubit>().state;
+    final state = context.watch<StockyCubit>().state;
     final top = MediaQuery.paddingOf(context).top;
 
     if (state.isLoading && state.store == null) {
       return const Center(child: CupertinoActivityIndicator(radius: 14));
     }
 
-    if (state.status == RestockStatus.failure && state.store == null) {
+    if (state.status == StockyStatus.failure && state.store == null) {
       return Center(
         child: REmptyState(
           icon: CupertinoIcons.wifi_exclamationmark,
@@ -115,7 +115,7 @@ class RTabPage extends StatelessWidget {
             width: 200,
             child: RPrimaryButton(
               context.l10n.actionRetry,
-              onPressed: () => context.read<RestockCubit>().load(),
+              onPressed: () => context.read<StockyCubit>().load(),
             ),
           ),
         ),
@@ -125,7 +125,7 @@ class RTabPage extends StatelessWidget {
     return RefreshIndicator.adaptive(
       color: context.rp.accent,
       edgeOffset: top,
-      onRefresh: () => context.read<RestockCubit>().load(),
+      onRefresh: () => context.read<StockyCubit>().load(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, top + 16, 16, navBarClearance(context)),

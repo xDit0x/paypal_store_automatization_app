@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 Widget _app({required VoidCallback onAction}) => MaterialApp(
   theme: ThemeData.light(),
   home: Scaffold(
     body: Builder(
       builder: (context) => TextButton(
-        onPressed: () => showRestockSnack(
+        onPressed: () => showStockySnack(
           context,
           'No se pudo reenviar el correo.',
           tone: RSnackTone.warning,

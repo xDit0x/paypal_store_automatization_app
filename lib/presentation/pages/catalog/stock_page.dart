@@ -6,13 +6,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/domain/entities/app_error.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
-import 'package:store_automatization_app/core/configs/theme/restock_palette.dart';
+import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 import 'package:store_automatization_app/domain/entities/product.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_cubit.dart';
-import 'package:store_automatization_app/presentation/blocs/restock/restock_state.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/pages/catalog/catalog_page.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_common.dart';
-import 'package:store_automatization_app/presentation/widgets/restock/restock_ui.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 enum _Filter { all, low, transit }
 
@@ -30,7 +30,7 @@ class _StockPageState extends State<StockPage> {
   String _query = '';
   String? _supplierFilter;
 
-  List<Product> _visible(RestockState state) {
+  List<Product> _visible(StockyState state) {
     final q = _query.trim().toLowerCase();
     return state.products.where((p) {
       final matchesQuery =
@@ -51,7 +51,7 @@ class _StockPageState extends State<StockPage> {
   }
 
   Future<void> _editStock(BuildContext context, Product product) async {
-    final cubit = context.read<RestockCubit>();
+    final cubit = context.read<StockyCubit>();
     final saved = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -62,7 +62,7 @@ class _StockPageState extends State<StockPage> {
       ),
     );
     if (saved != null && context.mounted) {
-      showRestockSnack(
+      showStockySnack(
         context,
         context.l10n.stockUpdatedMessage(product.name, saved, product.unit),
         title: context.l10n.stockUpdated,
@@ -95,7 +95,7 @@ class _StockPageState extends State<StockPage> {
                 subtitle: Text(l10n.catalogAddProductsHint, style: t.footnote),
                 trailing: RChevron(color: p.accent),
                 onTap: () =>
-                    pushRestockPage<void>(context, const CatalogPage()),
+                    pushStockyPage<void>(context, const CatalogPage()),
               ),
             ],
           ),
@@ -196,7 +196,7 @@ class _ProductRow extends StatelessWidget {
   });
 
   final Product product;
-  final RestockState state;
+  final StockyState state;
   final VoidCallback onTap;
 
   @override

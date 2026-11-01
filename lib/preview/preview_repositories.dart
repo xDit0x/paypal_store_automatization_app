@@ -285,7 +285,7 @@ class PreviewDb {
 class PreviewAuthRepository implements AuthRepository {
   static const _user = AppUser(
     id: 'demo-user',
-    email: 'demo@restock.app',
+    email: 'demo@stocky.app',
     storeName: 'Café Lumbre',
   );
 

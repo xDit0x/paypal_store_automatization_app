@@ -62,7 +62,7 @@ export interface AgentRunResult {
   message: string;
 }
 
-interface RestockArgs {
+interface StockyArgs {
   supplier_id?: unknown;
   items?: unknown;
   reasoning?: unknown;
@@ -77,9 +77,9 @@ async function handleToolCall(
     return { ok: false, error: `Herramienta desconocida: ${call.function.name}` };
   }
 
-  let args: RestockArgs;
+  let args: StockyArgs;
   try {
-    args = JSON.parse(call.function.arguments) as RestockArgs;
+    args = JSON.parse(call.function.arguments) as StockyArgs;
   } catch {
     return { ok: false, error: 'Los argumentos de la herramienta no son JSON válido.' };
   }

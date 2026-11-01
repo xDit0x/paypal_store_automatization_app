@@ -1,11 +1,11 @@
 {
-    "name": "Restock",
-    "short_name": "Restock",
+    "name": "Stocky",
+    "short_name": "Stocky",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#050B2E",
     "theme_color": "#050B2E",
-    "description": "Restock: pedidos automáticos a tus proveedores con IA y PayPal.",
+    "description": "Stocky: pedidos automáticos a tus proveedores con IA y PayPal.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
