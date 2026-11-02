@@ -99,8 +99,7 @@ class _StockPageState extends State<StockPage> {
                 title: l10n.catalogAddProducts,
                 subtitle: Text(l10n.catalogAddProductsHint, style: t.footnote),
                 trailing: RChevron(color: p.accent),
-                onTap: () =>
-                    pushStockyPage<void>(context, const CatalogPage()),
+                onTap: () => pushStockyPage<void>(context, const CatalogPage()),
               ),
             ],
           ),
@@ -184,16 +183,22 @@ class _StockPageState extends State<StockPage> {
             ),
             if (state.products.any((p) => !p.active))
               Theme(
-                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                data: Theme.of(context)
+                    .copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
-                  title: const Text('Eliminados', style: TextStyle(color: Colors.red)),
+                  title: const Text(
+                    'Eliminados',
+                    style: TextStyle(color: Colors.red),
+                  ),
                   leading: const Icon(Icons.delete_outline, color: Colors.red),
                   initiallyExpanded: true,
                   tilePadding: EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     RInsetGroup(
                       children: [
-                        for (final product in state.products.where((p) => !p.active))
+                        for (final product in state.products.where(
+                          (p) => !p.active,
+                        ))
                           _ProductRow(
                             product: product,
                             state: state,
@@ -316,10 +321,15 @@ class _ProductRow extends StatelessWidget {
 
 /// Hoja para editar el stock de un producto: botones − / + y campo numérico.
 class _StockEditorSheet extends StatefulWidget {
-  const _StockEditorSheet({required this.product, required this.onSave, this.cubit});
+  const _StockEditorSheet({
+    required this.product,
+    required this.onSave,
+    this.cubit,
+  });
 
   final Product product;
   final StockyCubit? cubit;
+
   /// Devuelve null si se guardó bien, o el error.
   final Future<AppError?> Function(int stock) onSave;
 
@@ -368,16 +378,34 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
       builder: (_) => AlertDialog(
         backgroundColor: context.rp.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Acción irreversible', style: context.rt.title2.copyWith(color: context.rp.warning)),
-        content: Text('¿Eliminar producto del control de su stock?', style: context.rt.body.copyWith(color: context.rp.inkSecondary)),
+        title: Text(
+          'Acción irreversible',
+          style: context.rt.title2.copyWith(color: context.rp.warning),
+        ),
+        content: Text(
+          '¿Eliminar producto del control de su stock?',
+          style: context.rt.body.copyWith(color: context.rp.inkSecondary),
+        ),
         actions: [
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: context.rp.ink, backgroundColor: context.rp.fill, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: TextButton.styleFrom(
+              foregroundColor: context.rp.ink,
+              backgroundColor: context.rp.fill,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(context.l10n.actionCancel),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: context.rp.onAccent, backgroundColor: context.rp.accent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: TextButton.styleFrom(
+              foregroundColor: context.rp.onAccent,
+              backgroundColor: context.rp.accent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Eliminar'),
           ),
