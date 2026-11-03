@@ -256,22 +256,26 @@ void main() {
     await tester.pumpAndSettle();
 
     final resting = _pillRect(tester);
+    expect(resting.width, closeTo(84, 1));
 
-    // De Inicio (0) a Asistente (4): la cascada dura 4 x 100 ms.
+    // De Inicio (0) a Asistente (4): la cascada dura 4 x 165 ms.
     await tester.tap(find.text('Asistente').last);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 80));
 
+    // Al salir se deshincha: ya ha perdido tamaño a mitad del primer salto.
+    await tester.pump(const Duration(milliseconds: 80));
+    final leaving = _pillRect(tester);
+    expect(leaving.width, lessThan(resting.width - 10));
+
+    // En el camino viaja como una burbuja pequeña (~50 %).
+    await tester.pump(const Duration(milliseconds: 250));
     final travelling = _pillRect(tester);
-    // Durante el viaje la píldora es visiblemente más pequeña.
-    expect(travelling.width, lessThan(resting.width - 8));
-    expect(travelling.height, lessThan(resting.height - 6));
-    // Pero sigue en la barra (no se sale de ella).
-    expect(travelling.height, greaterThan(20));
+    expect(travelling.width, lessThan(resting.width * 0.55));
+    expect(travelling.height, closeTo(34, 3));
 
     await tester.pumpAndSettle();
 
-    // Al llegar vuelve a su tamaño real y en la pestaña correcta.
+    // Al llegar se expande hasta su tamaño real, en la pestaña correcta.
     final arrived = _pillRect(tester);
     expect(arrived.width, closeTo(resting.width, 1));
     expect(arrived.height, closeTo(resting.height, 1));

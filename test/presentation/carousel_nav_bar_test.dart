@@ -135,7 +135,8 @@ void main() {
 
     await tester.tap(find.text('Stock'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 140));
+    // A mitad del viaje la píldora es la burbuja pequeña y clara.
+    await tester.pump(const Duration(milliseconds: 80));
 
     final moving = _pillColor(tester);
     // Durante el camino la píldora se aclara un poco.

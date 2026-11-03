@@ -54,9 +54,6 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   /// tiene que dar tiempo a verse: si va muy rápido parece un teletransporte.
   static const _hopStep = Duration(milliseconds: 165);
 
-  /// Tamaño de la píldora mientras viaja, como fracción de su tamaño real.
-  static const _travelMin = 0.68;
-
   late final AnimationController _settle;
 
   /// Cascada: la píldora recorre una a una las pestañas intermedias hasta
@@ -183,26 +180,35 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     );
   }
 
-  /// Fracción dentro del tramo actual (0 = en una pestaña, 1 = en la
-  /// siguiente). Sirve para el arco: la píldora se eleva al volar.
-  double _hopWithin() {
-    if (_hopSteps <= 0) return 0.0;
-    final t = (_hop.value * _hopSteps) % 1.0;
-    return t.isNaN ? 0.0 : t;
-  }
+  /// Efecto burbuja: cómo de hinchada está la píldora durante la cascada.
+  ///
+  /// 1 = tamaño real; 0 = burbuja pequeña (34 px). Se deshincha al salir de
+  /// la pestaña, viaja pequeña por todo el camino y se hincha al llegar al
+  /// destino con un pequeño rebote.
+  ///
+  /// El estirón de salida y el de llegada duran medio salto cada uno: así la
+  /// píldora va pequeña durante todo el trayecto (no da un bote por cada
+  /// pestaña intermedia) y aun así el cambio se ve incluso al saltar a la
+  /// pestaña de al lado.
+  double _bubbleEmphasis() {
+    final steps = _hopSteps;
+    if (steps <= 0) return 1;
 
-  /// Escala de la píldora durante la cascada: 1 al salir, baja mientras
-  /// viaja y vuelve a 1 justo al llegar para asentarse con su tamaño real.
-  double _travelScale(double t) {
-    // Se encoge con smoothness en el primer 18 % del recorrido...
-    final shrink = Curves.easeOutCubic.transform((t / 0.18).clamp(0.0, 1.0));
-    // ...y recupera su tamaño real en el último 26 %, con un rebote suave.
-    final grow = Curves.easeOutBack.transform(
-      ((t - 0.74) / 0.26).clamp(0.0, 1.0),
-    );
-    final scale = 1 - (1 - _travelMin) * shrink + (1 - _travelMin) * grow;
-    // El techo es algo mayor de 1 para que se note el rebote al llegar.
-    return scale.clamp(_travelMin, 1.06);
+    final edge = 0.5 / steps;
+    final t = _hop.value.clamp(0.0, 1.0);
+
+    // Al salir: se deshincha hasta quedarse en burbuja.
+    if (t < edge) {
+      return 1 - Curves.easeInOutSine.transform((t / edge).clamp(0.0, 1.0));
+    }
+    // Al llegar: se hincha de nuevo, con un rebote suave.
+    if (t > 1 - edge) {
+      return Curves.easeOutBack
+          .transform(((t - (1 - edge)) / edge).clamp(0.0, 1.0))
+          .clamp(0.0, 1.08);
+    }
+    // En el camino: burbuja pequeña.
+    return 0.0;
   }
 
   double _visualPage() {
@@ -390,22 +396,20 @@ class _CarouselNavBarState extends State<CarouselNavBar>
                       transit = (2 * (visualPage - visualPage.round()).abs())
                           .clamp(0.0, 1.0);
 
-                      // Durante la cascada la píldora mantiene un tamaño de
-                      // viaje: se encoge con suavidad al salir y recupera su
-                      // tamaño real al llegar (con un rebote). En reposo el
-                      // tamaño depende de lo cerca que esté de una pestaña.
+                      // Burbuja: la píldora se deshincha al salir de una
+                      // pestaña, viaja pequeña (34 px) y se hincha otra vez
+                      // al llegar, con un rebote final.
                       final double emphasis;
                       // Cuánto se eleva la píldora del centro de la barra.
                       final double lift;
                       // Cuánto se aclara el azul mientras está en camino.
                       final double travelMix;
                       if (_hopping) {
-                        emphasis = _travelScale(_hop.value);
-                        // Arco: la píldora se eleva al volar entre pestañas y
-                        // se posa al llegar.
-                        final airborne = math.sin(math.pi * _hopWithin());
-                        lift = airborne;
-                        travelMix = 0.2 + 0.25 * airborne;
+                        emphasis = _bubbleEmphasis();
+                        lift = 1 - emphasis;
+                        // El rebote final deja `emphasis` por encima de 1:
+                        // se recorta para que el color no se pase de azul.
+                        travelMix = (1 - emphasis).clamp(0.0, 1.0) * 0.6;
                       } else {
                         // Coseno: se encoge y crece con una curva suave, sin
                         // frenazos al entrar o salir de cada pestaña.
