@@ -51,7 +51,10 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   );
 
   /// Duración de cada salto en el efecto cascada de la píldora.
-  static const _hopStep = Duration(milliseconds: 70);
+  static const _hopStep = Duration(milliseconds: 100);
+
+  /// Tamaño de la píldora mientras viaja, como fracción de su tamaño real.
+  static const _travelMin = 0.68;
 
   late final AnimationController _settle;
 
@@ -63,6 +66,7 @@ class _CarouselNavBarState extends State<CarouselNavBar>
 
   double _hopFrom = 0;
   double _hopTo = 0;
+  int _hopSteps = 0;
   bool _hopping = false;
 
   double _slot = 0;
@@ -133,19 +137,19 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   void _startHop(double from, double to) {
     _hopFrom = from;
     _hopTo = to;
-    final steps = (to - from).abs().round();
-    if (steps <= 0) {
+    _hopSteps = (to - from).abs().round();
+    if (_hopSteps <= 0) {
       _hopping = false;
       return;
     }
     _hopping = true;
-    _hop.duration = _hopStep * steps;
+    _hop.duration = _hopStep * _hopSteps;
     _hop.forward(from: 0);
   }
 
   void _onHopTick() {
-    if (!mounted) return;
-    setState(() {});
+    // La píldora se redibuja desde el `AnimatedBuilder`, que ya escucha la
+    // cascada: aquí no hace falta reconstruir toda la barra.
   }
 
   void _onHopStatus(AnimationStatus status) {
@@ -159,32 +163,45 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   /// Posición de la píldora durante la cascada: recorre los enteros
   /// intermedios con un salto suave entre cada uno.
   double _hopPage() {
-    final steps = (_hopTo - _hopFrom).abs();
-    if (steps <= 0) return _hopTo;
-    // Progreso uniforme: cada pestaña intermedia recibe el mismo tiempo.
-    final t = _hop.value * steps;
+    final dist = _hopTo - _hopFrom;
+    if (_hopSteps <= 0 || dist.abs() <= 0.0001) return _hopTo;
+    // Longitud real de cada tramo: si la cascada se interrumpió a media
+    // camino, el último tramo es más corto y la píldora cae exacta en la
+    // pestaña de destino.
+    final perStep = dist.abs() / _hopSteps;
+    final t = _hop.value * _hopSteps;
     final segment = t.floorToDouble();
     final within = t - segment;
-    // Dentro de cada tramo la píldora va rápida y se posa en la pestaña
-    // intermedia antes de continuar.
-    final eased = Curves.easeOutQuad.transform(within);
-    final dir = _hopTo > _hopFrom ? 1.0 : -1.0;
-    return (_hopFrom + dir * (segment + eased)).clamp(0.0, _maxPage());
+    // Dentro de cada tramo la píldora sale disparada y frena justo al
+    // posarse en la pestaña intermedia.
+    final eased = Curves.easeOutCubic.transform(within);
+    final dir = dist.sign;
+    return (_hopFrom + dir * (segment + eased) * perStep).clamp(
+      0.0,
+      _maxPage(),
+    );
+  }
+
+  /// Fracción dentro del tramo actual (0 = en una pestaña, 1 = en la
+  /// siguiente). Sirve para el arco: la píldora se eleva al volar.
+  double _hopWithin() {
+    if (_hopSteps <= 0) return 0.0;
+    final t = (_hop.value * _hopSteps) % 1.0;
+    return t.isNaN ? 0.0 : t;
   }
 
   /// Escala de la píldora durante la cascada: 1 al salir, baja mientras
   /// viaja y vuelve a 1 justo al llegar para asentarse con su tamaño real.
   double _travelScale(double t) {
-    // Se encoge rápido en el primer 15 % del recorrido y se abre en el
-    // último 20 %, con un pequeño rebote al asentarse.
-    final shrink = Curves.easeOutCubic.transform((t / 0.15).clamp(0.0, 1.0));
+    // Se encoge con smoothness en el primer 18 % del recorrido...
+    final shrink = Curves.easeOutCubic.transform((t / 0.18).clamp(0.0, 1.0));
+    // ...y recupera su tamaño real en el último 26 %, con un rebote suave.
     final grow = Curves.easeOutBack.transform(
-      ((t - 0.80) / 0.20).clamp(0.0, 1.0),
+      ((t - 0.74) / 0.26).clamp(0.0, 1.0),
     );
-    // 0 = tamaño de viaje, 1 = tamaño real.
-    final travel = 1 - 0.45 * shrink + 0.45 * grow;
+    final scale = 1 - (1 - _travelMin) * shrink + (1 - _travelMin) * grow;
     // El techo es algo mayor de 1 para que se note el rebote al llegar.
-    return travel.clamp(0.55, 1.06);
+    return scale.clamp(_travelMin, 1.06);
   }
 
   double _visualPage() {
@@ -321,7 +338,9 @@ class _CarouselNavBarState extends State<CarouselNavBar>
                   onHorizontalDragEnd: _onDragEnd,
                   onHorizontalDragCancel: _onDragEnd,
                   child: AnimatedBuilder(
-                    animation: widget.controller,
+                    // Escucha también la cascada: así la píldora se anima
+                    // sin tener que reconstruir la barra (con su blur).
+                    animation: Listenable.merge([widget.controller, _hop]),
                     builder: (context, _) {
                       final visualPage = _visualPage();
 
@@ -370,26 +389,32 @@ class _CarouselNavBarState extends State<CarouselNavBar>
                       transit = (2 * (visualPage - visualPage.round()).abs())
                           .clamp(0.0, 1.0);
 
-                      // Durante la cascada la píldora se encoge al salir y
-                      // recupera su tamaño real al llegar: se nota el salto
-                      // sin que el recorrido se vea brusco.
-                      final travelScale = _hopping
-                          ? _travelScale(_hop.value)
-                          : 1.0;
-
-                      // Coseno: se encoge y crece con una curva suave, sin
-                      // frenazos al entrar o salir de cada pestaña.
-                      final emphasis = (0.5 + 0.5 * math.cos(math.pi * transit)) *
-                          travelScale;
+                      // Durante la cascada la píldora mantiene un tamaño de
+                      // viaje: se encoge con suavidad al salir y recupera su
+                      // tamaño real al llegar (con un rebote). En reposo el
+                      // tamaño depende de lo cerca que esté de una pestaña.
+                      final double emphasis;
+                      // Cuánto se eleva la píldora del centro de la barra.
+                      final double lift;
+                      // Cuánto se aclara el azul mientras está en camino.
+                      final double travelMix;
+                      if (_hopping) {
+                        emphasis = _travelScale(_hop.value);
+                        // Arco: la píldora se eleva al volar entre pestañas y
+                        // se posa al llegar.
+                        final airborne = math.sin(math.pi * _hopWithin());
+                        lift = airborne;
+                        travelMix = 0.2 + 0.25 * airborne;
+                      } else {
+                        // Coseno: se encoge y crece con una curva suave, sin
+                        // frenazos al entrar o salir de cada pestaña.
+                        emphasis = 0.5 + 0.5 * math.cos(math.pi * transit);
+                        lift = 1 - emphasis;
+                        travelMix = transit.clamp(0.0, 1.0) * 0.75;
+                      }
                       final pillWidth = ui.lerpDouble(34, 84, emphasis)!;
                       final pillHeight = ui.lerpDouble(34, 66, emphasis)!;
 
-                      final lift = 1 - emphasis;
-
-                      // Durante el trayecto la píldora se aclara un poco (para
-                      // que se note que está "en camino"); al posarse sobre
-                      // una pestaña vuelve al azul de la app.
-                      final travelMix = transit.clamp(0.0, 1.0) * 0.75;
                       final pillColor = Color.lerp(
                         p.accent,
                         p.accentLight,

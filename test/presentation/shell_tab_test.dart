@@ -24,6 +24,7 @@ import 'package:store_automatization_app/domain/usecases/settings/get_spending_r
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
 import 'package:store_automatization_app/l10n/app_localizations.dart';
+import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 
@@ -33,6 +34,7 @@ import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.da
 import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
 
+import 'package:store_automatization_app/preview/preview_assistant_repository.dart';
 import 'package:store_automatization_app/preview/preview_repositories.dart';
 
 class _MemoryStorage implements Storage {
@@ -218,6 +220,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_page(tester), 1);
+  });
+
+  testWidgets('la píldora se encoge al viajar y recupera su tamaño al llegar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StockyShell(
+            createCubit: _restockCubit,
+            createAssistantCubit: () =>
+                AssistantCubit(repository: PreviewAssistantRepository()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final resting = _pillRect(tester);
+
+    // De Inicio (0) a Asistente (4): la cascada dura 4 x 100 ms.
+    await tester.tap(find.text('Asistente').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    final travelling = _pillRect(tester);
+    // Durante el viaje la píldora es visiblemente más pequeña.
+    expect(travelling.width, lessThan(resting.width - 8));
+    expect(travelling.height, lessThan(resting.height - 6));
+    // Pero sigue en la barra (no se sale de ella).
+    expect(travelling.height, greaterThan(20));
+
+    await tester.pumpAndSettle();
+
+    // Al llegar vuelve a su tamaño real y en la pestaña correcta.
+    final arrived = _pillRect(tester);
+    expect(arrived.width, closeTo(resting.width, 1));
+    expect(arrived.height, closeTo(resting.height, 1));
+    expect(_page(tester), 4);
   });
 
   testWidgets('el selector de idioma traduce la app al inglés', (tester) async {
