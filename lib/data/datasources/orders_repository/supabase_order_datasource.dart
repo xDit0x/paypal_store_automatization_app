@@ -56,6 +56,22 @@ class SupabaseOrderDatasource {
     await _dio.post<Map<String, dynamic>>('/orders/$orderId/approve', data: {});
   }
 
+  /// Enlace de PayPal para autorizar el importe de un pedido aprobado.
+  Future<String?> authorizationUrl(String orderId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/orders/$orderId/approve-url',
+    );
+    final url = response.data?['approve_url'];
+    return url is String && url.isNotEmpty ? url : null;
+  }
+
+  Future<void> confirmAuthorization(String orderId) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/orders/$orderId/confirm-auth',
+      data: const <String, dynamic>{},
+    );
+  }
+
   Future<Map<String, dynamic>> reviewAmount(String orderId) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/orders/$orderId/amount',

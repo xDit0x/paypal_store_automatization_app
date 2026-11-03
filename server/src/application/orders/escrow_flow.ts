@@ -4,6 +4,7 @@ import {
   authorizeOrder,
   captureAuthorization,
   createAuthorizationOrder,
+  getApprovalUrl,
   refundCapture,
 } from '../paypal/escrow.js';
 import { paypalConfigured } from '../paypal/paypal_client.js';
@@ -29,6 +30,7 @@ interface EscrowOrderRow {
   total: number | string;
   payment_authorization_id: string | null;
   payment_capture_id: string | null;
+  payment_payout_id: string | null;
   order_items: OrderItemRow[] | null;
 }
 
@@ -85,7 +87,7 @@ async function loadEscrowContext(orderId: string): Promise<{
   const { data, error } = await supabaseAdmin
     .from('orders')
     .select(
-      'id, store_id, supplier_id, status, total, payment_authorization_id, payment_capture_id, order_items(product_uid, name, qty, unit_price)',
+      'id, store_id, supplier_id, status, total, payment_authorization_id, payment_capture_id, payment_payout_id, order_items(product_uid, name, qty, unit_price)',
     )
     .eq('id', orderId)
     .maybeSingle();
@@ -172,7 +174,7 @@ export async function startAuthorization(
  */
 export async function confirmAuthorization(
   orderId: string,
-  paypalOrderId: string,
+  paypalOrderId?: string | null,
 ): Promise<{ authorizationId: string; status: string }> {
   const { order } = await loadEscrowContext(orderId);
 
@@ -180,7 +182,12 @@ export async function confirmAuthorization(
     throw new Error(`El pedido está en estado "${order.status}".`);
   }
 
-  const authorization = await authorizeOrder(paypalOrderId);
+  const paypalOrder = paypalOrderId ?? order.payment_payout_id;
+  if (!paypalOrder) {
+    throw new Error('El pedido no tiene una orden de PayPal pendiente.');
+  }
+
+  const authorization = await authorizeOrder(paypalOrder);
 
   await updateOrder(order.id, {
     status: 'authorized',
@@ -190,6 +197,23 @@ export async function confirmAuthorization(
   });
 
   return authorization;
+}
+
+/**
+ * Enlace de aprobación de PayPal para un pedido pendiente de autorizar.
+ * Sirve cuando la app se ha reiniciado y ya no tiene el enlace en memoria.
+ */
+export async function approvalUrlForOrder(
+  orderId: string,
+): Promise<string | null> {
+  const { order } = await loadEscrowContext(orderId);
+
+  if (order.status !== 'approved') {
+    throw new Error(`El pedido está en estado "${order.status}".`);
+  }
+  if (!order.payment_payout_id) return null;
+
+  return getApprovalUrl(order.payment_payout_id);
 }
 
 /**

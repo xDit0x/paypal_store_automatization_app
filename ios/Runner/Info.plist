@@ -31,10 +31,14 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Stocky usa la cámara para escanear códigos de barras y leer albaranes.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Stocky se conecta a su servidor en tu red local durante el desarrollo.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Stocky usa el micrófono para que puedas hablar con el asistente de compras.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Stocky accede a tus fotos para leer los albaranes de entrega.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Stocky convierte tu voz en texto para entender qué producto quieres añadir.</string>
 	<key>UIApplicationSceneManifest</key>

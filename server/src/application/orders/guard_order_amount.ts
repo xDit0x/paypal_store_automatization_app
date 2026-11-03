@@ -157,6 +157,7 @@ export interface AmountReview {
   total: number;
   previousTotal: number;
   changed: boolean;
+  blockedReason?: string;
 }
 
 async function loadOrderAmountData(orderId: string): Promise<OrderAmountData> {
@@ -285,7 +286,12 @@ export async function previewOrderAmount(orderId: string): Promise<AmountReview>
   });
 
   if (!check.ok) {
-    throw new Error(check.reason ?? 'El pedido no se puede pagar.');
+    return {
+      total: check.total,
+      previousTotal: check.previousTotal,
+      changed: check.changed,
+      blockedReason: check.reason,
+    };
   }
 
   return {

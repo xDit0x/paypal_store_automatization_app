@@ -169,6 +169,48 @@
       "supplier": { "type": "String" }
     }
   },
+
+  "deliveryScreenTitle": "Delivery",
+  "deliveryNotAuthorized": "Order not authorized for delivery.",
+  "deliveryScanHint": "Take a photo of the delivery note and the agent will read what arrived. You can also adjust the quantities by hand.",
+  "deliveryScanButton": "Photograph delivery note",
+  "deliveryGalleryButton": "Choose from gallery",
+  "deliveryScanning": "Reading delivery note…",
+  "deliveryScanError": "Could not read the delivery note. Adjust the quantities by hand.",
+  "deliveryScanSummary": "Read {matched} of {total} lines. Review the quantities.",
+  "@deliveryScanSummary": {
+    "placeholders": {
+      "matched": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "deliveryExpected": "Ordered: {qty}",
+  "@deliveryExpected": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "deliveryReceived": "Received",
+  "deliveryMissing": "{qty} missing",
+  "@deliveryMissing": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "deliveryExtra": "{qty} extra",
+  "@deliveryExtra": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "deliveryOrderedTotal": "Ordered",
+  "deliveryReceivedTotal": "Received",
+  "deliveryMissingTotal": "Missing",
+  "deliveryToCapture": "To capture",
+  "deliveryConfirm": "Confirm delivery and capture payment",
+  "deliveryConfirming": "Confirming…",
+  "deliverySuccess": "Delivery confirmed. Payment captured.",
+  "deliveryError": "Could not confirm the delivery.",
   "ordersCreatedByAgentWord": "agent",
   "ordersCreatedByYouWord": "you",
 
@@ -268,6 +310,27 @@
     }
   },
   "orderPaymentFailed": "Could not pay",
+  "orderBlockedByRules": "Cannot order due to spending rules",
+  "@orderBlockedByRules": {
+    "placeholders": {}
+  },
+  "orderPaypalAuthorizeTitle": "Authorize the payment in PayPal",
+  "orderPaypalAuthorizeMessage": "We have opened PayPal. Once you authorize the amount, come back to Stocky and tap “I have authorized it”. The money stays on hold until you confirm the delivery.",
+  "orderPaypalAuthorized": "I have authorized the payment",
+  "orderPaypalLater": "Later",
+  "orderPaypalOpenFailed": "Could not open PayPal. Please try again.",
+  "orderPaypalPendingTitle": "Payment awaiting authorization",
+  "orderPaypalPendingMessage": "The money will be charged when you confirm the delivery, not now.",
+  "orderPaypalOpen": "Open PayPal",
+  "orderAuthorizationConfirmed": "Payment authorized. The money stays on hold until delivery.",
+  "orderAuthorizationFailed": "PayPal has not authorized the payment yet. Finish the process in PayPal and try again.",
+  "orderApproveAuthorizeMessage": "{amount} will be held in PayPal until you confirm the delivery from {supplier}.",
+  "@orderApproveAuthorizeMessage": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "supplier": { "type": "String" }
+    }
+  },
   "orderPriceChangedTitle": "The price has changed",
   "orderPriceChangedMessage": "The new total is {newTotal} (previously {previousTotal}). The supplier's current price will be charged.",
   "@orderPriceChangedMessage": {
@@ -462,6 +525,10 @@
   "decisionOrderCreated": "I prepared a stockying order with your low stock.",
   "decisionNoAction": "I reviewed the stock: nothing needed ordering.",
   "decisionBlocked": "I wanted to order, but your spending rules blocked it.",
+  "decisionBlockedEs": "Quería pedir, pero mis reglas de gasto lo bloquearon.",
+  "@decisionBlockedEs": {
+    "placeholders": {}
+  },
   "decisionFailed": "The review failed. Try again in a moment.",
   "decisionAutoApproved": "I placed an order within your rules and paid it with PayPal.",
   "decisionRequiresApproval": "I prepared an order that needs your approval.",

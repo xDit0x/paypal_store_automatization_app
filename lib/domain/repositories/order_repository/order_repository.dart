@@ -22,6 +22,13 @@ abstract class OrderRepository {
   Future<Either<AppError, Unit>> approve(String orderId);
   Future<Either<AppError, Unit>> reject(String orderId);
 
+  /// Aprueba el pedido y devuelve el enlace de PayPal donde el pagador
+  /// autoriza el importe. `null` si no hace falta abrir nada.
+  Future<Either<AppError, String?>> authorizationUrl(String orderId);
+
+  /// Confirma la autorización cuando el pagador ya la ha aprobado en PayPal.
+  Future<Either<AppError, Unit>> confirmAuthorization(String orderId);
+
   /// Importe que se pagaría ahora, con el precio vigente del catálogo.
   Future<Either<AppError, OrderAmountReview>> reviewAmount(String orderId);
 }
