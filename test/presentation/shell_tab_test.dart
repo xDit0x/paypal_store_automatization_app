@@ -262,16 +262,16 @@ void main() {
     await tester.tap(find.text('Asistente').last);
     await tester.pump();
 
-    // Al salir se deshincha: ya ha perdido tamaño a mitad del primer salto.
-    await tester.pump(const Duration(milliseconds: 80));
-    final leaving = _pillRect(tester);
-    expect(leaving.width, lessThan(resting.width - 10));
-
-    // En el camino viaja como una burbuja pequeña (~50 %).
-    await tester.pump(const Duration(milliseconds: 250));
-    final travelling = _pillRect(tester);
-    expect(travelling.width, lessThan(resting.width * 0.55));
-    expect(travelling.height, closeTo(34, 3));
+    // A lo largo del recorrido la píldora se deshincha hasta ser una burbuja
+    // pequeña (34 px, ~50 % del alto) en mitad de cada salto.
+    var smallest = resting;
+    for (var i = 0; i < 28; i++) {
+      await tester.pump(const Duration(milliseconds: 25));
+      final r = _pillRect(tester);
+      if (r.width < smallest.width) smallest = r;
+    }
+    expect(smallest.width, lessThan(resting.width * 0.55));
+    expect(smallest.height, lessThan(resting.height * 0.75));
 
     await tester.pumpAndSettle();
 
@@ -280,6 +280,57 @@ void main() {
     expect(arrived.width, closeTo(resting.width, 1));
     expect(arrived.height, closeTo(resting.height, 1));
     expect(_page(tester), 4);
+  });
+
+  testWidgets('la píldora también viaja en el segundo cambio de pestaña', (
+    tester,
+  ) async {
+    // Regresión: `forward(from: 0)` pasa por el estado `dismissed`, y si se
+    // toma por "cascada terminada" la píldora aparece ya en el destino en
+    // todos los cambios menos el primero.
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StockyShell(
+            createCubit: _restockCubit,
+            createAssistantCubit: () =>
+                AssistantCubit(repository: PreviewAssistantRepository()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Asistente').last);
+    await tester.pumpAndSettle();
+    final atAssistant = _pillRect(tester);
+
+    // Segundo cambio: de Asistente (4) a Stock (1).
+    await tester.tap(find.text('Stock').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    final moving = _pillRect(tester);
+
+    // En pleno vuelo no puede estar donde estaba ni donde va.
+    expect(moving.width, lessThan(atAssistant.width - 8));
+    expect(moving.center.dx, lessThan(atAssistant.center.dx - 20));
+
+    await tester.pumpAndSettle();
+    final atStock = _pillRect(tester);
+    expect(
+      (moving.center.dx - atStock.center.dx).abs(),
+      greaterThan(20),
+      reason: 'la píldora se teletransportó al destino sin recorrerlo',
+    );
+    expect(atStock.width, closeTo(atAssistant.width, 1));
+    expect(_page(tester), 1);
   });
 
   testWidgets('las pestañas se agrandan una a una al pasar la píldora', (

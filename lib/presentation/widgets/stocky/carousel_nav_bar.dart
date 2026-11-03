@@ -54,6 +54,10 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   /// tiene que dar tiempo a verse: si va muy rápido parece un teletransporte.
   static const _hopStep = Duration(milliseconds: 165);
 
+  /// Cuánto se hincha la píldora al posarse en una pestaña intermedia, como
+  /// fracción de su tamaño real. Lo justo para verse alrededor del icono.
+  static const _midLanding = 0.5;
+
   late final AnimationController _settle;
 
   /// Cascada: la píldora recorre una a una las pestañas intermedias hasta
@@ -152,8 +156,10 @@ class _CarouselNavBarState extends State<CarouselNavBar>
 
   void _onHopStatus(AnimationStatus status) {
     if (!mounted) return;
-    if (status == AnimationStatus.completed ||
-        status == AnimationStatus.dismissed) {
+    // Solo `completed` cierra la cascada. `forward(from: 0)` pasa antes por
+    // `dismissed`, y si se atendiera la píldora se saltaría el viaje y
+    // aparecería ya en su destino (el fallo del "teletransporte").
+    if (status == AnimationStatus.completed) {
       setState(() => _hopping = false);
     }
   }
@@ -180,35 +186,39 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     );
   }
 
-  /// Efecto burbuja: cómo de hinchada está la píldora durante la cascada.
+  /// Efecto burbuja durante la cascada.
   ///
-  /// 1 = tamaño real; 0 = burbuja pequeña (34 px). Se deshincha al salir de
-  /// la pestaña, viaja pequeña por todo el camino y se hincha al llegar al
-  /// destino con un pequeño rebote.
-  ///
-  /// El estirón de salida y el de llegada duran medio salto cada uno: así la
-  /// píldora va pequeña durante todo el trayecto (no da un bote por cada
-  /// pestaña intermedia) y aun así el cambio se ve incluso al saltar a la
-  /// pestaña de al lado.
+  /// 1 = tamaño real; 0 = burbuja (34 px). La píldora se deshincha al salir
+  /// de una pestaña hasta quedar en burbuja a mitad de camino, y se vuelve a
+  /// hinchar al posarse. En las pestañas intermedias recupera parte del
+  /// tamaño ([_midLanding]) para que se vea alrededor del icono, pero la
+  /// expansión completa se reserva para la pestaña de destino.
   double _bubbleEmphasis() {
     final steps = _hopSteps;
     if (steps <= 0) return 1;
 
-    final edge = 0.5 / steps;
-    final t = _hop.value.clamp(0.0, 1.0);
+    final travel = (_hop.value * steps).clamp(0.0, steps.toDouble());
+    // El último tramo se queda con `within` = 1 en el frame final.
+    final segment = travel.floor().clamp(0, steps - 1);
+    final within = (travel - segment).clamp(0.0, 1.0);
 
-    // Al salir: se deshincha hasta quedarse en burbuja.
-    if (t < edge) {
-      return 1 - Curves.easeInOutSine.transform((t / edge).clamp(0.0, 1.0));
+    final lastSegment = segment >= steps - 1;
+    // Al posarse: tamaño real en el destino, media burbuja en las intermedias.
+    final landing = lastSegment ? 1.0 : _midLanding;
+    // Del primer tramo se sale desde el tamaño real; de los demás, desde la
+    // media burbuja en la que se llegó.
+    final departure = segment <= 0 ? 1.0 : _midLanding;
+
+    if (within < 0.5) {
+      // Se deshincha al salir de la pestaña.
+      final t = Curves.easeInOutSine.transform((within / 0.5).clamp(0.0, 1.0));
+      return departure * (1 - t);
     }
-    // Al llegar: se hincha de nuevo, con un rebote suave.
-    if (t > 1 - edge) {
-      return Curves.easeOutBack
-          .transform(((t - (1 - edge)) / edge).clamp(0.0, 1.0))
-          .clamp(0.0, 1.08);
-    }
-    // En el camino: burbuja pequeña.
-    return 0.0;
+    // Se hincha al llegar, con un rebote suave.
+    final t = Curves.easeOutBack.transform(
+      ((within - 0.5) / 0.5).clamp(0.0, 1.0),
+    );
+    return (landing * t).clamp(0.0, 1.08);
   }
 
   double _visualPage() {
