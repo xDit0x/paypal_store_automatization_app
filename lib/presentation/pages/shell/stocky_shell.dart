@@ -122,7 +122,7 @@ class ShellView extends StatefulWidget {
   const ShellView({super.key});
 
   static void jumpToTab(int index) =>
-      _shellKey.currentState?._goTo(index, animate: false);
+      _shellKey.currentState?._goTo(index);
 
   @override
   State<ShellView> createState() => ShellViewState();
@@ -179,30 +179,24 @@ class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  void _goTo(int index, {bool animate = true}) {
+  void _goTo(int index) {
     if (index == _index) return;
     _index = index;
     ShellTabStore.instance.index = index;
-    if (animate) {
-      _pages.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 480),
-        curve: Curves.easeInOutCubic,
-      );
-    } else {
-      _pages.jumpToPage(index);
-    }
+    // Salto directo: el contenido no pasa por las pestañas intermedias
+    // (si lo hiciera, `onPageChanged` avisaría de cada una y el dock
+    // acabaría en la página equivocada). El efecto de "pasar uno a uno"
+    // lo hace la píldora de la barra con su cascada.
+    _pages.jumpToPage(index);
   }
 
   void _dragTo(int index) {
     if (index == _index) return;
     _index = index;
     ShellTabStore.instance.index = index;
-    _pages.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-    );
+    // También salto directo: durante el arrastre la píldora ya va marcando
+    // el recorrido y el contenido no debe pasar por páginas intermedias.
+    _pages.jumpToPage(index);
   }
 
   @override
@@ -223,8 +217,13 @@ class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
               onPageChanged: (i) {
                 HapticFeedback.selectionClick();
                 FocusScope.of(context).unfocus();
-                ShellTabStore.instance.index = i;
-                setState(() => _index = i);
+                final rounded = i.round();
+                if (rounded != _index && (i - rounded).abs() < 0.1) {
+                  // Primero `_index`: así `_onTabChanged` ve que ya está
+                  // sincronizado y no vuelve a saltar el visor.
+                  setState(() => _index = rounded);
+                  ShellTabStore.instance.index = rounded;
+                }
               },
               children: const [
                 HomePage(),
