@@ -30,6 +30,31 @@ class _StockPageState extends State<StockPage> {
   _Filter _filter = _Filter.all;
   String _query = '';
   String? _supplierFilter;
+  final GlobalKey _todosKey = GlobalKey();
+  final Map<_Filter, GlobalKey> _filterKeys = {};
+
+  @override
+  void initState() {
+    super.initState();
+    for (final f in _Filter.values) {
+      _filterKeys[f] = GlobalKey();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _todosKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx, alignment: 0.5);
+      }
+    });
+  }
+
+  void _scrollToFilter(_Filter f) {
+    final key = _filterKeys[f];
+    if (key == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = key.currentContext;
+      if (ctx != null) Scrollable.ensureVisible(ctx, alignment: 0.5);
+    });
+  }
 
   List<Product> _visible(StockyState state) {
     final q = _query.trim().toLowerCase();
@@ -40,7 +65,7 @@ class _StockPageState extends State<StockPage> {
           p.uid.toLowerCase().contains(q);
       final matchesFilter = switch (_filter) {
         _Filter.active => p.active,
-        _Filter.low => p.isLowStock,
+        _Filter.low => p.isLowStock && p.stock > 0,
         _Filter.transit => state.isInTransit(p),
         _Filter.outOfStock => p.active && p.stock <= 0,
         _Filter.eliminated => !p.active,
@@ -56,7 +81,7 @@ class _StockPageState extends State<StockPage> {
 
   Future<void> _editStock(BuildContext context, Product product) async {
     final cubit = context.read<StockyCubit>();
-    final saved = await showModalBottomSheet<int>(
+    final saved = await showModalBottomSheet<dynamic>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -66,7 +91,15 @@ class _StockPageState extends State<StockPage> {
         onSave: (stock) => cubit.updateStock(product.uid, stock),
       ),
     );
-    if (saved != null && context.mounted) {
+    if (saved == true && context.mounted) {
+      setState(() => _filter = _Filter.all);
+      showStockySnack(
+        context,
+        '¡Producto ${product.name} recuperado!',
+        title: 'Recuperado',
+        tone: RSnackTone.success,
+      );
+    } else if (saved != null && saved is int && context.mounted) {
       showStockySnack(
         context,
         context.l10n.stockUpdatedMessage(product.name, saved, product.unit),
@@ -84,11 +117,6 @@ class _StockPageState extends State<StockPage> {
         final t = context.rt;
         final l10n = context.l10n;
         final products = _visible(state);
-        final segmentStyle = TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: p.ink,
-        );
 
         return [
           RLargeTitle(l10n.tabStock),
@@ -111,32 +139,49 @@ class _StockPageState extends State<StockPage> {
             onChanged: (value) => setState(() => _query = value),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: CupertinoSlidingSegmentedControl<_Filter>(
-              groupValue: _filter,
-              backgroundColor: p.fill,
-              thumbColor: p.surface,
-              children: {
-                _Filter.all: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(l10n.stockFilterAll, style: segmentStyle),
+          LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _FilterTab(
+                      key: _filterKeys[_Filter.low],
+                      label: l10n.stockFilterLow,
+                      selected: _filter == _Filter.low,
+                      onTap: () { setState(() => _filter = _Filter.low); _scrollToFilter(_Filter.low); },
+                    ),
+                    _FilterTab(
+                      key: _filterKeys[_Filter.transit],
+                      label: l10n.stockFilterTransit,
+                      selected: _filter == _Filter.transit,
+                      onTap: () { setState(() => _filter = _Filter.transit); _scrollToFilter(_Filter.transit); },
+                    ),
+                    _FilterTab(
+                      key: _filterKeys[_Filter.all],
+                      label: l10n.stockFilterAll,
+                      selected: _filter == _Filter.all,
+                      onTap: () { setState(() => _filter = _Filter.all); _scrollToFilter(_Filter.all); },
+                    ),
+                    _FilterTab(
+                      key: _filterKeys[_Filter.outOfStock],
+                      label: 'Agotados',
+                      selected: _filter == _Filter.outOfStock,
+                      accent: Colors.amber,
+                      onTap: () { setState(() => _filter = _Filter.outOfStock); _scrollToFilter(_Filter.outOfStock); },
+                    ),
+                    _FilterTab(
+                      key: _filterKeys[_Filter.eliminated],
+                      label: 'Eliminados',
+                      selected: _filter == _Filter.eliminated,
+                      accent: Colors.red,
+                      onTap: () { setState(() => _filter = _Filter.eliminated); _scrollToFilter(_Filter.eliminated); },
+                    ),
+                  ],
                 ),
-                _Filter.low: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(l10n.stockFilterLow, style: segmentStyle),
-                ),
-                _Filter.transit: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(l10n.stockFilterTransit, style: segmentStyle),
-                ),
-                _Filter.outOfStock: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text('Agotado', style: segmentStyle),
-                ),
-              },
-              onValueChanged: (value) =>
-                  setState(() => _filter = value ?? _Filter.all),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -221,6 +266,56 @@ class _StockPageState extends State<StockPage> {
           ],
         ];
       },
+    );
+  }
+}
+
+class _FilterTab extends StatelessWidget {
+  const _FilterTab({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.accent,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.rp;
+    final t = context.rt;
+    final color = accent ?? p.accent;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: t.footnote.copyWith(
+                fontWeight: FontWeight.w600,
+                color: selected ? color : p.inkSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 3,
+              width: selected ? 24 : 0,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -432,6 +527,21 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
     }
   }
 
+  Future<void> _restore() async {
+    final cubit = widget.cubit ?? (context.read<StockyCubit>());
+    final error = await cubit.restoreProduct(widget.product.uid);
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.of(context).pop(true);
+    } else {
+      showStockySnack(
+        context,
+        context.l10n.describeDetail(error),
+        tone: RSnackTone.warning,
+      );
+    }
+  }
+
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
     setState(() {
@@ -503,11 +613,18 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(CupertinoIcons.delete_solid, color: p.warning),
-                    onPressed: _saving ? null : _confirmDelete,
-                    tooltip: 'Eliminar',
-                  ),
+                  if (widget.product.active)
+                    IconButton(
+                      icon: Icon(CupertinoIcons.delete_solid, color: p.warning),
+                      onPressed: _saving ? null : _confirmDelete,
+                      tooltip: 'Eliminar',
+                    ),
+                  if (!widget.product.active)
+                    IconButton(
+                      icon: const Icon(Icons.restore, size: 22, color: Colors.green),
+                      onPressed: () => _restore(),
+                      tooltip: 'Recuperar',
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -518,6 +635,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                     label: l10n.actionRemoveOneUnit,
                     onTap: _saving ? null : () => _step(-1),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       children: [
@@ -543,6 +661,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   _StepButton(
                     icon: CupertinoIcons.plus,
                     label: l10n.actionAddOneUnit,

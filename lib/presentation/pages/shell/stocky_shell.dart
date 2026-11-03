@@ -163,6 +163,12 @@ class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
     final newIndex = ShellTabStore.instance.index;
     if (newIndex == _index) return;
     _index = newIndex;
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _pages.jumpToPage(newIndex);
+      });
+      setState(() {});
+    }
   }
 
   @override

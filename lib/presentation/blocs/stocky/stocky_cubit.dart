@@ -25,6 +25,8 @@ import 'package:store_automatization_app/domain/usecases/catalog/update_product_
 import 'package:store_automatization_app/domain/services/order_builder.dart';
 import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/authorization_url_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/confirm_authorization_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/reject_order_usecase.dart';
@@ -50,6 +52,11 @@ class StockyCubit extends Cubit<StockyState> {
   final SearchCatalogUsecase? searchCatalogUsecase;
   final ApproveOrderUsecase approveOrder;
   final RejectOrderUsecase rejectOrder;
+
+  /// Enlace de PayPal y confirmación de la autorización. Opcionales para no
+  /// romper la vista previa ni los tests que no los ejercitan.
+  final AuthorizationUrlUsecase? authorizationUrlUsecase;
+  final ConfirmAuthorizationUsecase? confirmAuthorizationUsecase;
 
   /// Consulta el importe vigente antes de cobrar. Opcional para no romper la
   /// vista previa ni los tests que no lo ejercitan.
@@ -91,6 +98,8 @@ class StockyCubit extends Cubit<StockyState> {
     this.searchCatalogUsecase,
     required this.approveOrder,
     required this.rejectOrder,
+    this.authorizationUrlUsecase,
+    this.confirmAuthorizationUsecase,
     this.reviewOrderAmountUsecase,
     this.createDraftOrder,
     this.watchStoreChanges,
@@ -292,6 +301,25 @@ class StockyCubit extends Cubit<StockyState> {
     return error;
   }
 
+  /// Enlace de PayPal para autorizar el importe. `null` si no hay enlace
+  /// disponible (vista previa, pedido sin PayPal o error de red).
+  Future<String?> authorizationUrl(String orderId) async {
+    final usecase = authorizationUrlUsecase;
+    if (usecase == null) return null;
+    final result = await usecase(orderId);
+    return result.fold<String?>((_) => null, (url) => url);
+  }
+
+  /// Confirma la autorización que el pagador aprobó en PayPal.
+  Future<AppError?> confirmAuthorization(String orderId) async {
+    final usecase = confirmAuthorizationUsecase;
+    if (usecase == null) return null;
+    final result = await usecase(orderId);
+    final error = result.fold<AppError?>((e) => e, (_) => null);
+    await load();
+    return error;
+  }
+
   Future<AppError?> reject(String orderId) async {
     emit(state.copyWith(busyOrderId: orderId));
     final result = await rejectOrder(orderId);
@@ -330,24 +358,36 @@ class StockyCubit extends Cubit<StockyState> {
   }
 
   Future<AppError?> deleteProduct(String uid) async {
+    // Offline-first: siempre se marca como eliminado localmente.
+    emit(
+      state.copyWith(
+        products: [
+          for (final product in state.products)
+            product.uid == uid ? product.copyWith(active: false, stock: 0) : product,
+        ],
+      ),
+    );
     try {
       final repo = sl<ProductRepository>();
       final result = await repo.deleteProduct(uid);
-      final error = result.fold<AppError?>((e) => e, (_) => null);
-      if (error == null) {
-        emit(
-          state.copyWith(
-            products: [
-              for (final product in state.products)
-                product.uid == uid ? product.copyWith(active: false, stock: 0) : product,
-            ],
-          ),
-        );
-      }
-      return error;
+      return result.fold<AppError?>((e) => e, (_) => null);
     } catch (error) {
       return AppError(AppErrorCode.catalogLoadFailed, detail: error.toString());
     }
+  }
+
+  /// Restaura un producto eliminado: devuelve `active` a `true` en el estado
+  /// local para que aparezca de nuevo en "Todos".
+  Future<AppError?> restoreProduct(String uid) async {
+    emit(
+      state.copyWith(
+        products: [
+          for (final product in state.products)
+            product.uid == uid ? product.copyWith(active: true) : product,
+        ],
+      ),
+    );
+    return null;
   }
 
   Future<AppError?> saveRules(SpendingRules rules) async {
