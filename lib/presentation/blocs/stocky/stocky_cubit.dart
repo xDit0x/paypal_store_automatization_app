@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/core/service_locator.dart';
 import 'package:store_automatization_app/domain/repositories/product_repository/product_repository.dart';
 
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
@@ -66,6 +65,10 @@ class StockyCubit extends Cubit<StockyState> {
   /// previa ni los tests que no ejercitan la compra.
   final CreateDraftOrderUsecase? createDraftOrder;
 
+  /// Elimina y restaura productos del catálogo. Opcional: sin él (vista
+  /// previa, tests) el cambio es solo local.
+  final ProductRepository? productRepository;
+
   /// Cambios en tiempo real de la tienda. Opcional: sin él (vista previa,
   /// tests) la app solo se actualiza al cargar o tras una acción.
   final WatchStoreChangesUsecase? watchStoreChanges;
@@ -102,6 +105,7 @@ class StockyCubit extends Cubit<StockyState> {
     this.confirmAuthorizationUsecase,
     this.reviewOrderAmountUsecase,
     this.createDraftOrder,
+    this.productRepository,
     this.watchStoreChanges,
     AppLocalizations Function()? l10n,
   }) : _l10n = l10n ?? (() => l10nFor(deviceLocale())),
@@ -358,36 +362,78 @@ class StockyCubit extends Cubit<StockyState> {
   }
 
   Future<AppError?> deleteProduct(String uid) async {
-    // Offline-first: siempre se marca como eliminado localmente.
+    final product = _productByUid(uid);
+    if (product == null) return const AppError(AppErrorCode.productMissing);
+
+    // Offline-first: primero se marca como eliminado para que la interfaz
+    // reaccione al instante.
     emit(
       state.copyWith(
         products: [
-          for (final product in state.products)
-            product.uid == uid ? product.copyWith(active: false, stock: 0) : product,
+          for (final p in state.products)
+            p.uid == uid ? p.copyWith(active: false, stock: 0) : p,
         ],
       ),
     );
-    try {
-      final repo = sl<ProductRepository>();
-      final result = await repo.deleteProduct(uid);
-      return result.fold<AppError?>((e) => e, (_) => null);
-    } catch (error) {
-      return AppError(AppErrorCode.catalogLoadFailed, detail: error.toString());
-    }
+
+    final repository = productRepository;
+    final store = state.store;
+    if (repository == null || store == null) return null;
+
+    final result = await repository.deleteProduct(store.id, uid);
+    return result.fold<AppError?>((error) {
+      // El servidor no sabe que está eliminado: el agente seguiría
+      // reponeiéndolo, así que se deshace el cambio local.
+      _putProduct(product);
+      return error;
+    }, (_) => null);
   }
 
-  /// Restaura un producto eliminado: devuelve `active` a `true` en el estado
-  /// local para que aparezca de nuevo en "Todos".
+  /// Restaura un producto eliminado: vuelve a estar activo y el agente de
+  /// reposición vuelve a tenerlo en cuenta.
   Future<AppError?> restoreProduct(String uid) async {
+    final product = _productByUid(uid);
+    if (product == null) return const AppError(AppErrorCode.productMissing);
+
     emit(
       state.copyWith(
         products: [
-          for (final product in state.products)
-            product.uid == uid ? product.copyWith(active: true) : product,
+          for (final p in state.products)
+            p.uid == uid ? p.copyWith(active: true) : p,
         ],
       ),
     );
+
+    final repository = productRepository;
+    final store = state.store;
+    if (repository == null || store == null) return null;
+
+    final result = await repository.restoreProduct(store.id, uid);
+    return result.fold<AppError?>((error) {
+      // Si el servidor no lo ha guardado, el producto sigue eliminado allí:
+      // se deshace el cambio local para no mentir.
+      _putProduct(product);
+      return error;
+    }, (_) => null);
+  }
+
+  /// Producto del estado actual con ese uid.
+  Product? _productByUid(String uid) {
+    for (final product in state.products) {
+      if (product.uid == uid) return product;
+    }
     return null;
+  }
+
+  /// Vuelve a dejar el producto como estaba (deshace un cambio fallido).
+  void _putProduct(Product product) {
+    emit(
+      state.copyWith(
+        products: [
+          for (final p in state.products) p.uid == product.uid ? product : p,
+        ],
+      ),
+    );
   }
 
   Future<AppError?> saveRules(SpendingRules rules) async {

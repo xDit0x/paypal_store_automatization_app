@@ -1195,6 +1195,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorStockNegative => 'Stock cannot be negative.';
 
   @override
+  String get errorProductDeleteFailed => 'Could not delete the product';
+
+  @override
+  String get errorProductRestoreFailed => 'Could not restore the product';
+
+  @override
   String get errorAgentUnreachable => 'The agent did not respond';
 
   @override

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { dueSlot, parseSchedule, zonedTime } from '../src/jobs/restock_schedule.js';
+import { dueSlot, parseSchedule, zonedTime } from '../src/jobs/stocky_schedule.js';
 
 test('lee las horas de la revisión', () => {
   const slots = parseSchedule('21:00, 9:00,09:00');

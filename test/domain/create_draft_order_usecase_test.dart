@@ -57,8 +57,16 @@ class _FakeProductRepository implements ProductRepository {
   }) async => Right([]);
 
   @override
-  Future<Either<AppError, Unit>> deleteProduct(String uid) async =>
-      const Right(unit);
+  Future<Either<AppError, Unit>> deleteProduct(
+    String storeId,
+    String uid,
+  ) async => const Right(unit);
+
+  @override
+  Future<Either<AppError, Unit>> restoreProduct(
+    String storeId,
+    String uid,
+  ) async => const Right(unit);
 
   @override
   Future<Either<AppError, Unit>> updateStock(

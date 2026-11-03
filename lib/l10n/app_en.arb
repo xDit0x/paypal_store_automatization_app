@@ -615,6 +615,8 @@
   "errorProductNotFound": "There is no product with UID {uid}.",
   "errorProductUidMissing": "Enter a UID.",
   "errorStockNegative": "Stock cannot be negative.",
+  "errorProductDeleteFailed": "Could not delete the product",
+  "errorProductRestoreFailed": "Could not restore the product",
   "errorAgentUnreachable": "The agent did not respond",
   "errorAgentFailed": "Agent error",
   "errorAgentRunsLoadFailed": "Could not load the runs",

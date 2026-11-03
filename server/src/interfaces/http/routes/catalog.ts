@@ -9,6 +9,11 @@ interface StockBody {
   store_id?: unknown;
 }
 
+interface ActiveBody {
+  active?: unknown;
+  store_id?: unknown;
+}
+
 interface ProductRow {
   uid: string;
   name: string;
@@ -17,6 +22,12 @@ interface ProductRow {
 
 interface InventoryRow {
   stock: number;
+}
+
+interface ActiveProductRow {
+  uid: string;
+  name: string;
+  active: boolean;
 }
 
 // El catálogo solo se escribe desde el servidor (service_role). La app pide
@@ -142,6 +153,102 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         return reply
           .code(500)
           .send({ error: 'No se pudo actualizar el stock del producto.' });
+      }
+    },
+  );
+
+  // Marca un producto como eliminado (`active: false`) o lo restaura
+  // (`active: true`). El agente de reposición solo repone productos activos,
+  // así que un producto eliminado deja de entrar en los pedidos.
+  //
+  // El catálogo solo se escribe desde el servidor (service_role), por eso la
+  // app no puede marcarlo por su cuenta con Supabase.
+  app.patch<{ Params: { uid: string }; Body: ActiveBody }>(
+    '/catalog/products/:uid/active',
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) {
+        return reply.code(401).send({ error: 'Sesión no válida.' });
+      }
+
+      const { allowed, retryAfterSeconds } = limiter.check(user.id);
+      if (!allowed) {
+        reply.header('Retry-After', String(retryAfterSeconds));
+        return reply
+          .code(429)
+          .send({ error: 'Demasiados cambios de catálogo. Espera un momento.' });
+      }
+
+      const storeId =
+        typeof request.body?.store_id === 'string' ? request.body.store_id : '';
+      if (!storeId) {
+        return reply.code(400).send({ error: 'Falta store_id.' });
+      }
+
+      const active = request.body?.active;
+      if (typeof active !== 'boolean') {
+        return reply
+          .code(400)
+          .send({ error: 'El estado del producto debe ser true o false.' });
+      }
+
+      // La tienda tiene que ser del usuario que hace el cambio.
+      const { data: store, error: storeError } = await supabaseAdmin
+        .from('stores')
+        .select('id')
+        .eq('id', storeId)
+        .eq('owner_id', user.id)
+        .maybeSingle();
+
+      if (storeError) {
+        request.log.error(storeError);
+        return reply.code(500).send({ error: 'No se pudo comprobar la tienda.' });
+      }
+      if (!store) {
+        return reply
+          .code(403)
+          .send({ error: 'La tienda no existe o no es tuya.' });
+      }
+
+      try {
+        const { data: updated, error: updateError } = await supabaseAdmin
+          .from('products')
+          .update({ active })
+          .eq('uid', request.params.uid)
+          .select('uid, name, active')
+          .maybeSingle();
+
+        if (updateError) {
+          throw new Error(
+            `No se pudo actualizar el producto: ${updateError.message}`,
+          );
+        }
+        if (!updated) {
+          return reply.code(404).send({ error: 'Producto no encontrado.' });
+        }
+
+        const product = updated as unknown as ActiveProductRow;
+
+        request.log.info(
+          {
+            user: user.id,
+            store: storeId,
+            product: product.uid,
+            active: product.active,
+          },
+          product.active ? 'producto restaurado' : 'producto eliminado',
+        );
+
+        return reply.send({
+          uid: product.uid,
+          name: product.name,
+          active: product.active,
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply
+          .code(500)
+          .send({ error: 'No se pudo cambiar el estado del producto.' });
       }
     },
   );

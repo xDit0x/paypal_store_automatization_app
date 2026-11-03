@@ -9,7 +9,7 @@ import {
   evaluateSpendingRules,
   type SpendingDecision,
 } from '../../domain/spending_rules.js';
-import { getLowStockProducts } from '../catalog/get_low_stock.js';
+import { getLowStockProducts, getInactiveProductUids } from '../catalog/get_low_stock.js';
 import {
   createOrder,
   quoteOrder,
@@ -105,7 +105,19 @@ async function handleToolCall(
       .map((product) => [product.uid, product]),
   );
 
+  // Un producto eliminado no se repone: se comprueba aparte para poder
+  // explicarlo con claridad (y no pedir un producto que ya no existe).
+  const inactive = await getInactiveProductUids(
+    lines.map((line) => line.productUid),
+  );
+
   for (const line of lines) {
+    if (inactive.has(line.productUid)) {
+      return {
+        ok: false,
+        error: `El producto ${line.productUid} está eliminado: no se repone.`,
+      };
+    }
     if (!available.has(line.productUid)) {
       return {
         ok: false,
@@ -187,6 +199,7 @@ function buildSystemPrompt(
     'IMPORTANTE: SI se te proporciona una lista de productos con stock bajo (como en el mensaje del usuario), DEBES llamar inmediatamente a `create_restock_order` con los datos correspondientes. No expliques sin actuar: primero crea el pedido.',
     'Reglas obligatorias:',
     '- Solo puedes reponer productos que aparezcan en la lista de stock bajo.',
+    '- Los productos eliminados no se reponen: nunca los pidas, aunque sepas que existieron.',
     '- No repitas productos que ya estén en un pedido abierto.',
     '- Crea **un pedido por proveedor**: agrupa los productos de la lista por `supplier_id`. Llama `create_restock_order` una vez por cada proveedor que tenga productos bajos, creando pedidos separados.',
     '- No inventes UIDs, proveedores ni precios.',

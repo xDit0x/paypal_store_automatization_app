@@ -12,6 +12,7 @@ import 'package:store_automatization_app/data/datasources/store_repository/supab
 import 'package:store_automatization_app/data/repositories/assistant_repository/api_assistant_repository.dart';
 import 'package:store_automatization_app/data/repositories/store_repository/supabase_store_changes_repository.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
+import 'package:store_automatization_app/domain/repositories/product_repository/product_repository.dart';
 import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
@@ -75,6 +76,9 @@ class StockyShell extends StatelessWidget {
     updateProductStock: sl<UpdateProductStockUsecase>(),
     searchCatalogUsecase: sl<SearchCatalogUsecase>(),
     createDraftOrder: sl<CreateDraftOrderUsecase>(),
+    // Para eliminar y restaurar productos: el catálogo solo se escribe desde
+    // el servidor, y el agente de reposición tiene que enterarse.
+    productRepository: sl<ProductRepository>(),
     getAgentRuns: sl<GetAgentRunsUsecase>(),
     runAgentUsecase: sl<RunAgentUsecase>(),
     // Estos dos casos de uso son nuevos; se crean aquí para no tocar

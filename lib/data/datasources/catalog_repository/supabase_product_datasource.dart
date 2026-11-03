@@ -143,11 +143,25 @@ class SupabaseProductDatasource {
     );
   }
 
-  Future<void> deleteProduct(String uid) async {
+  /// El catálogo solo se escribe con service_role, así que pasa por la API.
+  ///
+  /// Marcar un producto como eliminado (`active = false`) es lo que hace que
+  /// el agente de reposición deje de incluirlo en los pedidos; restaurarlo
+  /// (`active = true`) hace que vuelva a contar.
+  Future<void> setProductActive(
+    String storeId,
+    String uid,
+    bool active,
+  ) async {
     try {
-      await _client.from('products').update({'active': false}).eq('uid', uid);
-    } catch (error) {
-      throw Exception('No se pudo eliminar: $error');
+      await _dio.patch<Map<String, dynamic>>(
+        '/catalog/products/$uid/active',
+        data: {'store_id': storeId, 'active': active},
+      );
+    } on DioException catch (error) {
+      final data = error.response?.data;
+      final message = data is Map<String, dynamic> ? data['error'] : null;
+      throw Exception(message ?? '');
     }
   }
 

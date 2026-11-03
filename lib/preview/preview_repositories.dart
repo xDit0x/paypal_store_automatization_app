@@ -467,7 +467,26 @@ class PreviewProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, Unit>> deleteProduct(String uid) async => const Right(unit);
+  Future<Either<AppError, Unit>> deleteProduct(
+    String storeId,
+    String uid,
+  ) async {
+    final index = db.products.indexWhere((p) => p.uid == uid);
+    if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
+    db.products[index] = db.products[index].copyWith(active: false, stock: 0);
+    return const Right(unit);
+  }
+
+  @override
+  Future<Either<AppError, Unit>> restoreProduct(
+    String storeId,
+    String uid,
+  ) async {
+    final index = db.products.indexWhere((p) => p.uid == uid);
+    if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
+    db.products[index] = db.products[index].copyWith(active: true);
+    return const Right(unit);
+  }
 }
 
 class PreviewOrderRepository implements OrderRepository {

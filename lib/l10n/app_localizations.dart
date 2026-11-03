@@ -2131,6 +2131,18 @@ abstract class AppLocalizations {
   /// **'El stock no puede ser negativo.'**
   String get errorStockNegative;
 
+  /// No description provided for @errorProductDeleteFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo eliminar el producto'**
+  String get errorProductDeleteFailed;
+
+  /// No description provided for @errorProductRestoreFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo recuperar el producto'**
+  String get errorProductRestoreFailed;
+
   /// No description provided for @errorAgentUnreachable.
   ///
   /// In es, this message translates to:

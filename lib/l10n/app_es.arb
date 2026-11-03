@@ -615,6 +615,8 @@
   "@errorProductNotFound": { "placeholders": { "uid": {"type": "String"} } },
   "errorProductUidMissing": "Introduce un UID.",
   "errorStockNegative": "El stock no puede ser negativo.",
+  "errorProductDeleteFailed": "No se pudo eliminar el producto",
+  "errorProductRestoreFailed": "No se pudo recuperar el producto",
   "errorAgentUnreachable": "El agente no respondió",
   "errorAgentFailed": "Error del agente",
   "errorAgentRunsLoadFailed": "No se pudieron cargar las ejecuciones",

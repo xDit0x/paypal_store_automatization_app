@@ -98,6 +98,8 @@ enum AppErrorCode {
   productNotFound,
   productUidMissing,
   stockNegative,
+  productDeleteFailed,
+  productRestoreFailed,
 
   // Agente.
   agentUnreachable,

@@ -1205,6 +1205,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get errorStockNegative => 'El stock no puede ser negativo.';
 
   @override
+  String get errorProductDeleteFailed => 'No se pudo eliminar el producto';
+
+  @override
+  String get errorProductRestoreFailed => 'No se pudo recuperar el producto';
+
+  @override
   String get errorAgentUnreachable => 'El agente no respondió';
 
   @override

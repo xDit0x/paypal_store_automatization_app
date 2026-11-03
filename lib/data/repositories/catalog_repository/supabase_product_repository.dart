@@ -84,13 +84,46 @@ class SupabaseProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, Unit>> deleteProduct(String uid) async {
+  Future<Either<AppError, Unit>> deleteProduct(String storeId, String uid) async {
     try {
-      await _datasource.deleteProduct(uid);
+      await _datasource.setProductActive(storeId, uid, false);
       return const Right(unit);
     } catch (error) {
-      return Left(logError(AppErrorCode.catalogLoadFailed, error));
+      return Left(
+        AppError(
+          AppErrorCode.productDeleteFailed,
+          detail: _message(error),
+        ),
+      );
     }
+  }
+
+  @override
+  Future<Either<AppError, Unit>> restoreProduct(
+    String storeId,
+    String uid,
+  ) async {
+    try {
+      await _datasource.setProductActive(storeId, uid, true);
+      return const Right(unit);
+    } catch (error) {
+      return Left(
+        AppError(
+          AppErrorCode.productRestoreFailed,
+          detail: _message(error),
+        ),
+      );
+    }
+  }
+
+  /// Texto que explica el fallo, si el datasource lo dio.
+  static String? _message(Object error) {
+    final text = error
+        .toString()
+        .replaceFirst('Exception: ', '')
+        .replaceFirst('Exception', '')
+        .trim();
+    return text.isEmpty ? null : text;
   }
 
   @override
@@ -121,15 +154,10 @@ class SupabaseProductRepository implements ProductRepository {
       await _datasource.updateStock(storeId, uid, stock);
       return const Right(unit);
     } catch (error) {
-      final message = error
-          .toString()
-          .replaceFirst('Exception: ', '')
-          .replaceFirst('Exception', '')
-          .trim();
       return Left(
         AppError(
           AppErrorCode.stockUpdateFailed,
-          detail: message.isEmpty ? null : message,
+          detail: _message(error),
         ),
       );
     }

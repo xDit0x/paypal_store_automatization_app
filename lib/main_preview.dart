@@ -89,6 +89,7 @@ class PreviewApp extends StatelessWidget {
         evaluateSpendingRules: EvaluateSpendingRulesUsecase(),
       ),
       updateProductStock: UpdateProductStockUsecase(repository: products),
+      productRepository: products,
       getAgentRuns: GetAgentRunsUsecase(repository: agent),
       runAgentUsecase: RunAgentUsecase(repository: agent),
       approveOrder: ApproveOrderUsecase(repository: orders),

@@ -7,6 +7,7 @@ interface ProductRow {
   currency: string;
   unit: string;
   supplier_id: string;
+  active: boolean;
   suppliers:
     | { name: string; paypal_email: string | null }
     | { name: string; paypal_email: string | null }[]
@@ -72,31 +73,51 @@ export async function getProductsInOpenOrders(
   return uids;
 }
 
-export async function getLowStockProducts(options: {
-  storeId: string;
-  excludeUids?: Set<string>;
-}): Promise<LowStockProduct[]> {
-  const excluded =
-    options.excludeUids ?? (await getProductsInOpenOrders(options.storeId));
+/**
+ * UIDs de productos que existen pero están eliminados (`active = false`).
+ *
+ * El agente nunca los propone (la lista de stock bajo ya los excluye), pero
+ * sirve para explicar con claridad por qué se rechaza una línea en vez de
+ * dejar un error genérico.
+ */
+export async function getInactiveProductUids(
+  uids: string[],
+): Promise<Set<string>> {
+  if (uids.length === 0) return new Set();
 
   const { data, error } = await supabaseAdmin
-    .from('store_products')
-    .select(
-      'stock, low_stock_threshold, products!inner(uid, name, price, currency, unit, supplier_id, active, suppliers(name, paypal_email))',
-    )
-    .eq('store_id', options.storeId)
-    .eq('products.active', true);
+    .from('products')
+    .select('uid, active')
+    .in('uid', uids);
 
   if (error) {
-    throw new Error(`No se pudo leer el inventario: ${error.message}`);
+    throw new Error(`No se pudieron leer los productos: ${error.message}`);
   }
 
+  const rows = (data ?? []) as unknown as { uid: string; active: boolean }[];
+  return new Set(rows.filter((row) => !row.active).map((row) => row.uid));
+}
+
+/**
+ * Convierte las filas de inventario en la lista de productos a reponer.
+ *
+ * Es pura (sin base de datos) para poder probarla: aquí se descarta lo que
+ * el agente no debe tocar.
+ */
+export function selectLowStockProducts(
+  rows: InventoryRow[],
+  excluded: Set<string>,
+): LowStockProduct[] {
   const products: LowStockProduct[] = [];
-  for (const row of (data ?? []) as unknown as InventoryRow[]) {
+
+  for (const row of rows) {
     const product = Array.isArray(row.products)
       ? row.products[0]
       : row.products;
     if (!product) continue;
+    // Un producto eliminado (`active = false`) no se repone, aunque su stock
+    // esté por debajo del mínimo.
+    if (!product.active) continue;
     if (row.stock > row.low_stock_threshold) continue;
     if (excluded.has(product.uid)) continue;
 
@@ -120,4 +141,31 @@ export async function getLowStockProducts(options: {
   }
 
   return products;
+}
+
+export async function getLowStockProducts(options: {
+  storeId: string;
+  excludeUids?: Set<string>;
+}): Promise<LowStockProduct[]> {
+  const excluded =
+    options.excludeUids ?? (await getProductsInOpenOrders(options.storeId));
+
+  const { data, error } = await supabaseAdmin
+    .from('store_products')
+    .select(
+      'stock, low_stock_threshold, products!inner(uid, name, price, currency, unit, supplier_id, active, suppliers(name, paypal_email))',
+    )
+    .eq('store_id', options.storeId)
+    // Los productos eliminados (`active = false`) no se reponen: ni se le
+    // ofrecen a la IA ni pueden entrar en un pedido.
+    .eq('products.active', true);
+
+  if (error) {
+    throw new Error(`No se pudo leer el inventario: ${error.message}`);
+  }
+
+  return selectLowStockProducts(
+    (data ?? []) as unknown as InventoryRow[],
+    excluded,
+  );
 }

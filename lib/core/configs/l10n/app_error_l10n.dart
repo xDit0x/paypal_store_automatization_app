@@ -75,6 +75,8 @@ extension AppErrorL10n on AppLocalizations {
     AppErrorCode.productNotFound => errorProductNotFound(error.subject ?? ''),
     AppErrorCode.productUidMissing => errorProductUidMissing,
     AppErrorCode.stockNegative => errorStockNegative,
+    AppErrorCode.productDeleteFailed => errorProductDeleteFailed,
+    AppErrorCode.productRestoreFailed => errorProductRestoreFailed,
 
     // Agente.
     AppErrorCode.agentUnreachable => errorAgentUnreachable,

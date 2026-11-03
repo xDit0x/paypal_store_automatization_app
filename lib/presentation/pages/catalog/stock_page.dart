@@ -514,6 +514,12 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
         if (!mounted) return;
         if (error != null) {
           setState(() => _saving = false);
+          // Si el servidor no lo sabe, el producto sigue vivo: se avisa.
+          showStockySnack(
+            context,
+            context.l10n.describeDetail(error),
+            tone: RSnackTone.warning,
+          );
         } else {
           if (StockySounds.instance.enabled) {
             await StockySounds.instance.warmUp();
