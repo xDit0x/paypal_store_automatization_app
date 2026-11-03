@@ -172,6 +172,21 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     return (_hopFrom + dir * (segment + eased)).clamp(0.0, _maxPage());
   }
 
+  /// Escala de la píldora durante la cascada: 1 al salir, baja mientras
+  /// viaja y vuelve a 1 justo al llegar para asentarse con su tamaño real.
+  double _travelScale(double t) {
+    // Se encoge rápido en el primer 15 % del recorrido y se abre en el
+    // último 20 %, con un pequeño rebote al asentarse.
+    final shrink = Curves.easeOutCubic.transform((t / 0.15).clamp(0.0, 1.0));
+    final grow = Curves.easeOutBack.transform(
+      ((t - 0.80) / 0.20).clamp(0.0, 1.0),
+    );
+    // 0 = tamaño de viaje, 1 = tamaño real.
+    final travel = 1 - 0.45 * shrink + 0.45 * grow;
+    // El techo es algo mayor de 1 para que se note el rebote al llegar.
+    return travel.clamp(0.55, 1.06);
+  }
+
   double _visualPage() {
     if (_hopping) {
       return _hopPage();
@@ -338,47 +353,34 @@ class _CarouselNavBarState extends State<CarouselNavBar>
                       // 0 cuando la píldora está en una pestaña, 1 a mitad de
                       // camino entre dos.
                       final double transit;
-                      if (_hopping) {
-                        // La píldora se posa en cada pestaña intermedia: se
-                        // interpola entre los centros de las que va visiting.
-                        final from = visualPage.floor().clamp(
-                          0,
-                          widget.items.length - 1,
-                        );
-                        final to = visualPage.ceil().clamp(
-                          0,
-                          widget.items.length - 1,
-                        );
-                        final t = (visualPage - from).clamp(0.0, 1.0);
-                        pillCenter = ui.lerpDouble(
-                          centerOf(from),
-                          centerOf(to),
-                          t,
-                        )!;
-                        transit = (2 * (visualPage - visualPage.round()).abs())
-                            .clamp(0.0, 1.0);
-                      } else {
-                        final from = visualPage.floor().clamp(
-                          0,
-                          widget.items.length - 1,
-                        );
-                        final to = visualPage.ceil().clamp(
-                          0,
-                          widget.items.length - 1,
-                        );
-                        final t = (visualPage - from).clamp(0.0, 1.0);
-                        pillCenter = ui.lerpDouble(
-                          centerOf(from),
-                          centerOf(to),
-                          t,
-                        )!;
-                        transit = (2 * (visualPage - visualPage.round()).abs())
-                            .clamp(0.0, 1.0);
-                      }
+                      final from = visualPage.floor().clamp(
+                        0,
+                        widget.items.length - 1,
+                      );
+                      final to = visualPage.ceil().clamp(
+                        0,
+                        widget.items.length - 1,
+                      );
+                      final t = (visualPage - from).clamp(0.0, 1.0);
+                      pillCenter = ui.lerpDouble(
+                        centerOf(from),
+                        centerOf(to),
+                        t,
+                      )!;
+                      transit = (2 * (visualPage - visualPage.round()).abs())
+                          .clamp(0.0, 1.0);
+
+                      // Durante la cascada la píldora se encoge al salir y
+                      // recupera su tamaño real al llegar: se nota el salto
+                      // sin que el recorrido se vea brusco.
+                      final travelScale = _hopping
+                          ? _travelScale(_hop.value)
+                          : 1.0;
 
                       // Coseno: se encoge y crece con una curva suave, sin
                       // frenazos al entrar o salir de cada pestaña.
-                      final emphasis = 0.5 + 0.5 * math.cos(math.pi * transit);
+                      final emphasis = (0.5 + 0.5 * math.cos(math.pi * transit)) *
+                          travelScale;
                       final pillWidth = ui.lerpDouble(34, 84, emphasis)!;
                       final pillHeight = ui.lerpDouble(34, 66, emphasis)!;
 
