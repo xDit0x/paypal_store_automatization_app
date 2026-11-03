@@ -330,6 +330,76 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get deliveryScreenTitle => 'Delivery';
+
+  @override
+  String get deliveryNotAuthorized => 'Order not authorized for delivery.';
+
+  @override
+  String get deliveryScanHint =>
+      'Take a photo of the delivery note and the agent will read what arrived. You can also adjust the quantities by hand.';
+
+  @override
+  String get deliveryScanButton => 'Photograph delivery note';
+
+  @override
+  String get deliveryGalleryButton => 'Choose from gallery';
+
+  @override
+  String get deliveryScanning => 'Reading delivery note…';
+
+  @override
+  String get deliveryScanError =>
+      'Could not read the delivery note. Adjust the quantities by hand.';
+
+  @override
+  String deliveryScanSummary(int matched, int total) {
+    return 'Read $matched of $total lines. Review the quantities.';
+  }
+
+  @override
+  String deliveryExpected(int qty) {
+    return 'Ordered: $qty';
+  }
+
+  @override
+  String get deliveryReceived => 'Received';
+
+  @override
+  String deliveryMissing(int qty) {
+    return '$qty missing';
+  }
+
+  @override
+  String deliveryExtra(int qty) {
+    return '$qty extra';
+  }
+
+  @override
+  String get deliveryOrderedTotal => 'Ordered';
+
+  @override
+  String get deliveryReceivedTotal => 'Received';
+
+  @override
+  String get deliveryMissingTotal => 'Missing';
+
+  @override
+  String get deliveryToCapture => 'To capture';
+
+  @override
+  String get deliveryConfirm => 'Confirm delivery and capture payment';
+
+  @override
+  String get deliveryConfirming => 'Confirming…';
+
+  @override
+  String get deliverySuccess => 'Delivery confirmed. Payment captured.';
+
+  @override
+  String get deliveryError => 'Could not confirm the delivery.';
+
+  @override
   String get ordersCreatedByAgentWord => 'agent';
 
   @override
@@ -445,7 +515,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderPaymentStatusSent => 'sent';
 
   @override
-  String get orderBlockedByRules => 'Blocked by your rules';
+  String get orderBlockedByRules => 'Cannot order due to spending rules';
 
   @override
   String get orderBlockedHint =>
@@ -482,6 +552,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderPaymentFailed => 'Could not pay';
+
+  @override
+  String get orderPaypalAuthorizeTitle => 'Authorize the payment in PayPal';
+
+  @override
+  String get orderPaypalAuthorizeMessage =>
+      'We have opened PayPal. Once you authorize the amount, come back to Stocky and tap “I have authorized it”. The money stays on hold until you confirm the delivery.';
+
+  @override
+  String get orderPaypalAuthorized => 'I have authorized the payment';
+
+  @override
+  String get orderPaypalLater => 'Later';
+
+  @override
+  String get orderPaypalOpenFailed =>
+      'Could not open PayPal. Please try again.';
+
+  @override
+  String get orderPaypalPendingTitle => 'Payment awaiting authorization';
+
+  @override
+  String get orderPaypalPendingMessage =>
+      'The money will be charged when you confirm the delivery, not now.';
+
+  @override
+  String get orderPaypalOpen => 'Open PayPal';
+
+  @override
+  String get orderAuthorizationConfirmed =>
+      'Payment authorized. The money stays on hold until delivery.';
+
+  @override
+  String get orderAuthorizationFailed =>
+      'PayPal has not authorized the payment yet. Finish the process in PayPal and try again.';
+
+  @override
+  String orderApproveAuthorizeMessage(String amount, String supplier) {
+    return '$amount will be held in PayPal until you confirm the delivery from $supplier.';
+  }
 
   @override
   String get orderPriceChangedTitle => 'The price has changed';

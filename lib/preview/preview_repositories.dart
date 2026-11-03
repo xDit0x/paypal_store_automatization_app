@@ -542,12 +542,22 @@ class PreviewOrderRepository implements OrderRepository {
     final i = db.orders.indexWhere((o) => o.id == orderId);
     if (i < 0) return const Left(AppError(AppErrorCode.orderNotFound));
     db.orders[i] = db.orders[i].copyWith(
-      status: OrderStatus.paid,
+      status: OrderStatus.authorized,
       paymentProvider: 'paypal',
       paymentPayoutId: 'PAYOUT-DEMO${db.nextId('')}',
-      paymentStatus: 'SUCCESS',
+      paymentStatus: 'APPROVED',
       paymentAt: DateTime.now(),
     );
+    return const Right(unit);
+  }
+
+  @override
+  Future<Either<AppError, String?>> authorizationUrl(String orderId) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<AppError, Unit>> confirmAuthorization(String orderId) async {
     return const Right(unit);
   }
 

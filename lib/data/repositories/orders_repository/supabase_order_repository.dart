@@ -106,6 +106,37 @@ class SupabaseOrderRepository implements OrderRepository {
   }
 
   @override
+  Future<Either<AppError, String?>> authorizationUrl(String orderId) async {
+    try {
+      return Right(await _datasource.authorizationUrl(orderId));
+    } catch (error) {
+      return Left(
+        logError(
+          AppErrorCode.orderApproveFailed,
+          error,
+          detail: serverMessage(error),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<AppError, Unit>> confirmAuthorization(String orderId) async {
+    try {
+      await _datasource.confirmAuthorization(orderId);
+      return Right(unit);
+    } catch (error) {
+      return Left(
+        logError(
+          AppErrorCode.orderApproveFailed,
+          error,
+          detail: serverMessage(error),
+        ),
+      );
+    }
+  }
+
+  @override
   Future<Either<AppError, Unit>> reject(String orderId) async {
     try {
       await _datasource.reject(orderId);
@@ -132,6 +163,7 @@ class SupabaseOrderRepository implements OrderRepository {
           total: (row['total'] as num?)?.toDouble() ?? 0,
           previousTotal: (row['previous_total'] as num?)?.toDouble() ?? 0,
           changed: row['changed'] == true,
+          blockedReason: row['blockedReason'] as String?,
         ),
       );
     } catch (error) {

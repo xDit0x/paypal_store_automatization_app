@@ -57,6 +57,10 @@ class _FakeProductRepository implements ProductRepository {
   }) async => Right([]);
 
   @override
+  Future<Either<AppError, Unit>> deleteProduct(String uid) async =>
+      const Right(unit);
+
+  @override
   Future<Either<AppError, Unit>> updateStock(
     String storeId,
     String uid,
@@ -120,6 +124,16 @@ class _FakeOrderRepository implements OrderRepository {
   @override
   Future<Either<AppError, Unit>> approve(String orderId) async {
     return const Left(AppError(AppErrorCode.orderCreateFailed));
+  }
+
+  @override
+  Future<Either<AppError, String?>> authorizationUrl(String orderId) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<AppError, Unit>> confirmAuthorization(String orderId) async {
+    return const Right(unit);
   }
 
   @override

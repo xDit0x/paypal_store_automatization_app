@@ -638,6 +638,126 @@ abstract class AppLocalizations {
   /// **'Comprueba la entrega de {supplier}'**
   String ordersCheckDelivery(String supplier);
 
+  /// No description provided for @deliveryScreenTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrega'**
+  String get deliveryScreenTitle;
+
+  /// No description provided for @deliveryNotAuthorized.
+  ///
+  /// In es, this message translates to:
+  /// **'Pedido no autorizado para entrega.'**
+  String get deliveryNotAuthorized;
+
+  /// No description provided for @deliveryScanHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Haz una foto al albarán y el agente leerá qué ha llegado. También puedes ajustar las cantidades a mano.'**
+  String get deliveryScanHint;
+
+  /// No description provided for @deliveryScanButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Fotografiar albarán'**
+  String get deliveryScanButton;
+
+  /// No description provided for @deliveryGalleryButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir de galería'**
+  String get deliveryGalleryButton;
+
+  /// No description provided for @deliveryScanning.
+  ///
+  /// In es, this message translates to:
+  /// **'Leyendo albarán…'**
+  String get deliveryScanning;
+
+  /// No description provided for @deliveryScanError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo leer el albarán. Ajusta las cantidades a mano.'**
+  String get deliveryScanError;
+
+  /// No description provided for @deliveryScanSummary.
+  ///
+  /// In es, this message translates to:
+  /// **'Leídas {matched} de {total} líneas. Revisa las cantidades.'**
+  String deliveryScanSummary(int matched, int total);
+
+  /// No description provided for @deliveryExpected.
+  ///
+  /// In es, this message translates to:
+  /// **'Pedido: {qty}'**
+  String deliveryExpected(int qty);
+
+  /// No description provided for @deliveryReceived.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibido'**
+  String get deliveryReceived;
+
+  /// No description provided for @deliveryMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltan {qty}'**
+  String deliveryMissing(int qty);
+
+  /// No description provided for @deliveryExtra.
+  ///
+  /// In es, this message translates to:
+  /// **'Sobran {qty}'**
+  String deliveryExtra(int qty);
+
+  /// No description provided for @deliveryOrderedTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Pedido'**
+  String get deliveryOrderedTotal;
+
+  /// No description provided for @deliveryReceivedTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibido'**
+  String get deliveryReceivedTotal;
+
+  /// No description provided for @deliveryMissingTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltante'**
+  String get deliveryMissingTotal;
+
+  /// No description provided for @deliveryToCapture.
+  ///
+  /// In es, this message translates to:
+  /// **'A cobrar'**
+  String get deliveryToCapture;
+
+  /// No description provided for @deliveryConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar entrega y cobrar'**
+  String get deliveryConfirm;
+
+  /// No description provided for @deliveryConfirming.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmando…'**
+  String get deliveryConfirming;
+
+  /// No description provided for @deliverySuccess.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrega confirmada. Pago capturado.'**
+  String get deliverySuccess;
+
+  /// No description provided for @deliveryError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo confirmar la entrega.'**
+  String get deliveryError;
+
   /// No description provided for @ordersCreatedByAgentWord.
   ///
   /// In es, this message translates to:
@@ -845,7 +965,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderBlockedByRules.
   ///
   /// In es, this message translates to:
-  /// **'Bloqueado por tus reglas'**
+  /// **'No se puede pedir por las reglas establecidas'**
   String get orderBlockedByRules;
 
   /// No description provided for @orderBlockedHint.
@@ -901,6 +1021,72 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo pagar'**
   String get orderPaymentFailed;
+
+  /// No description provided for @orderPaypalAuthorizeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Autoriza el pago en PayPal'**
+  String get orderPaypalAuthorizeTitle;
+
+  /// No description provided for @orderPaypalAuthorizeMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Hemos abierto PayPal. Cuando autorices el importe, vuelve a Stocky y pulsa «Ya he autorizado». El dinero quedará retenido hasta que confirmes la entrega.'**
+  String get orderPaypalAuthorizeMessage;
+
+  /// No description provided for @orderPaypalAuthorized.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya he autorizado el pago'**
+  String get orderPaypalAuthorized;
+
+  /// No description provided for @orderPaypalLater.
+  ///
+  /// In es, this message translates to:
+  /// **'Más tarde'**
+  String get orderPaypalLater;
+
+  /// No description provided for @orderPaypalOpenFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo abrir PayPal. Inténtalo de nuevo.'**
+  String get orderPaypalOpenFailed;
+
+  /// No description provided for @orderPaypalPendingTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Pago pendiente de autorización'**
+  String get orderPaypalPendingTitle;
+
+  /// No description provided for @orderPaypalPendingMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'El dinero se cobrará cuando confirmes la entrega, no ahora.'**
+  String get orderPaypalPendingMessage;
+
+  /// No description provided for @orderPaypalOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir PayPal'**
+  String get orderPaypalOpen;
+
+  /// No description provided for @orderAuthorizationConfirmed.
+  ///
+  /// In es, this message translates to:
+  /// **'Pago autorizado. El dinero queda retenido hasta la entrega.'**
+  String get orderAuthorizationConfirmed;
+
+  /// No description provided for @orderAuthorizationFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'PayPal aún no ha autorizado el pago. Termina el proceso en PayPal y vuelve a intentarlo.'**
+  String get orderAuthorizationFailed;
+
+  /// No description provided for @orderApproveAuthorizeMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'{amount} quedan retenidos en PayPal hasta que confirmes la entrega de {supplier}.'**
+  String orderApproveAuthorizeMessage(String amount, String supplier);
 
   /// No description provided for @orderPriceChangedTitle.
   ///

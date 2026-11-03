@@ -42,6 +42,17 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     // consulta el importe vigente y, si cambió, se muestra antes de cobrar.
     final review = await cubit.reviewOrderAmount(order.id);
     if (!context.mounted) return;
+    
+    // NUEVO: Si las reglas de gasto bloquean el pedido, aviso y retorno.
+    if (review?.blockedReason != null) {
+      showStockySnack(
+        context,
+        l10n.orderBlockedByRules, // "No se puede pedir por las reglas establecidas"
+        tone: RSnackTone.warning,
+      );
+      return;
+    }
+    
     if (review != null && review.changed) {
       final proceed = await showCupertinoDialog<bool>(
         context: context,

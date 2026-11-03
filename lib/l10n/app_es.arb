@@ -169,6 +169,48 @@
       "supplier": { "type": "String" }
     }
   },
+
+  "deliveryScreenTitle": "Entrega",
+  "deliveryNotAuthorized": "Pedido no autorizado para entrega.",
+  "deliveryScanHint": "Haz una foto al albarán y el agente leerá qué ha llegado. También puedes ajustar las cantidades a mano.",
+  "deliveryScanButton": "Fotografiar albarán",
+  "deliveryGalleryButton": "Elegir de galería",
+  "deliveryScanning": "Leyendo albarán…",
+  "deliveryScanError": "No se pudo leer el albarán. Ajusta las cantidades a mano.",
+  "deliveryScanSummary": "Leídas {matched} de {total} líneas. Revisa las cantidades.",
+  "@deliveryScanSummary": {
+    "placeholders": {
+      "matched": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "deliveryExpected": "Pedido: {qty}",
+  "@deliveryExpected": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "deliveryReceived": "Recibido",
+  "deliveryMissing": "Faltan {qty}",
+  "@deliveryMissing": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "deliveryExtra": "Sobran {qty}",
+  "@deliveryExtra": {
+    "placeholders": {
+      "qty": { "type": "int" }
+    }
+  },
+  "deliveryOrderedTotal": "Pedido",
+  "deliveryReceivedTotal": "Recibido",
+  "deliveryMissingTotal": "Faltante",
+  "deliveryToCapture": "A cobrar",
+  "deliveryConfirm": "Confirmar entrega y cobrar",
+  "deliveryConfirming": "Confirmando…",
+  "deliverySuccess": "Entrega confirmada. Pago capturado.",
+  "deliveryError": "No se pudo confirmar la entrega.",
   "ordersCreatedByAgentWord": "agente",
   "ordersCreatedByYouWord": "tú",
 
@@ -269,6 +311,27 @@
     }
   },
   "orderPaymentFailed": "No se pudo pagar",
+  "orderBlockedByRules": "No se puede pedir por las reglas establecidas",
+  "@orderBlockedByRules": {
+    "placeholders": {}
+  },
+  "orderPaypalAuthorizeTitle": "Autoriza el pago en PayPal",
+  "orderPaypalAuthorizeMessage": "Hemos abierto PayPal. Cuando autorices el importe, vuelve a Stocky y pulsa «Ya he autorizado». El dinero quedará retenido hasta que confirmes la entrega.",
+  "orderPaypalAuthorized": "Ya he autorizado el pago",
+  "orderPaypalLater": "Más tarde",
+  "orderPaypalOpenFailed": "No se pudo abrir PayPal. Inténtalo de nuevo.",
+  "orderPaypalPendingTitle": "Pago pendiente de autorización",
+  "orderPaypalPendingMessage": "El dinero se cobrará cuando confirmes la entrega, no ahora.",
+  "orderPaypalOpen": "Abrir PayPal",
+  "orderAuthorizationConfirmed": "Pago autorizado. El dinero queda retenido hasta la entrega.",
+  "orderAuthorizationFailed": "PayPal aún no ha autorizado el pago. Termina el proceso en PayPal y vuelve a intentarlo.",
+  "orderApproveAuthorizeMessage": "{amount} quedan retenidos en PayPal hasta que confirmes la entrega de {supplier}.",
+  "@orderApproveAuthorizeMessage": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "supplier": { "type": "String" }
+    }
+  },
   "orderPriceChangedTitle": "El precio ha cambiado",
   "orderPriceChangedMessage": "El nuevo total es {newTotal} (antes {previousTotal}). Se cobrará el precio vigente del proveedor.",
   "@orderPriceChangedMessage": {

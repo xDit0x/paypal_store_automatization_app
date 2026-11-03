@@ -93,8 +93,7 @@ class SupabaseProductDatasource {
         .select(
           'id, uid, supplier_id, name, description, price, currency, stock, '
           'low_stock_threshold, unit, image_url, active, suppliers!inner(name)',
-        )
-        .eq('active', true);
+        );
     if (supplierId != null && supplierId.isNotEmpty) {
       queryBuilder = queryBuilder.eq('supplier_id', supplierId);
     }

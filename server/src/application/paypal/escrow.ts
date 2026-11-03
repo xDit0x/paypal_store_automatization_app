@@ -68,6 +68,21 @@ export async function createAuthorizationOrder(params: {
   };
 }
 
+/** Devuelve el enlace de aprobación de una orden de PayPal ya creada. */
+export async function getApprovalUrl(
+  orderId: string,
+): Promise<string | null> {
+  const result = await paypalRequest<{
+    links?: { rel: string; href: string }[];
+  }>(`/v2/checkout/orders/${orderId}`, { method: 'GET' });
+
+  return (
+    result.links?.find((link) => link.rel === 'payer-action')?.href ??
+    result.links?.find((link) => link.rel === 'approve')?.href ??
+    null
+  );
+}
+
 /** Autoriza la orden creada (el pagador ya aprobó en PayPal). */
 export async function authorizeOrder(
   orderId: string,

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 
 import {
   DeliveryLine,
+  approvalUrlForOrder,
   captureDelivery,
   confirmAuthorization,
   refundOrder,
@@ -64,6 +65,73 @@ interface OrderStatusRow {
 }
 
 export async function orderRoutes(app: FastifyInstance): Promise<void> {
+  // Página a la que PayPal redirige al pagador tras aprobar. Confirma la
+  // autorización para que el pedido quede listo para la entrega.
+  app.get<{ Querystring: { order_id?: string; token?: string } }>(
+    '/paypal/return',
+    async (request, reply) => {
+      const orderId = request.query.order_id;
+      const html = (title: string, message: string, ok: boolean) =>
+        `<!doctype html><html lang="es"><head><meta charset="utf-8">` +
+        `<meta name="viewport" content="width=device-width,initial-scale=1">` +
+        `<title>${title}</title></head>` +
+        `<body style="font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:48px 24px;background:#f6f6f8">` +
+        `<div style="font-size:48px">${ok ? '✅' : '⚠️'}</div>` +
+        `<h1 style="font-size:22px">${title}</h1>` +
+        `<p style="color:#555;line-height:1.5">${message}</p>` +
+        `<p style="color:#888;font-size:13px">Ya puedes volver a Stocky.</p>` +
+        `</body></html>`;
+
+      if (!orderId) {
+        return reply
+          .code(400)
+          .type('text/html; charset=utf-8')
+          .send(html('Faltan datos', 'No hemos podido identificar el pedido.', false));
+      }
+
+      try {
+        const { data } = await supabaseAdmin
+          .from('orders')
+          .select('id, status')
+          .eq('id', orderId)
+          .maybeSingle();
+
+        if (!data) {
+          return reply
+            .code(404)
+            .type('text/html; charset=utf-8')
+            .send(html('Pedido no encontrado', 'Vuelve a la app y revisa el pedido.', false));
+        }
+
+        if (data.status === 'approved') {
+          await confirmAuthorization(orderId, request.query.token ?? null);
+        }
+
+        return reply
+          .type('text/html; charset=utf-8')
+          .send(
+            html(
+              'Pago autorizado',
+              'El importe queda retenido y se cobrará al confirmar la entrega.',
+              true,
+            ),
+          );
+      } catch (error) {
+        request.log.error(error);
+        return reply
+          .code(502)
+          .type('text/html; charset=utf-8')
+          .send(
+            html(
+              'No se pudo confirmar',
+              'Vuelve a Stocky y pulsa «Ya he autorizado el pago».',
+              false,
+            ),
+          );
+      }
+    },
+  );
+
   // Aprobar mueve dinero: se limita por usuario.
   const paymentLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
   app.get<{ Params: { id: string } }>(
@@ -231,7 +299,29 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  app.post<{ Params: { id: string }; Body: { paypal_order_id: string } }>(
+  app.get<{ Params: { id: string } }>(
+    '/orders/:id/approve-url',
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+
+      try {
+        const order = await loadOwnedOrder(request.params.id, user.id);
+        if (!order) return reply.code(404).send({ error: 'Pedido no encontrado.' });
+        if (order.status !== 'approved') {
+          return reply.code(409).send({ error: `El pedido está en estado "${order.status}".` });
+        }
+
+        const approveUrl = await approvalUrlForOrder(order.id);
+        return reply.send({ order_id: order.id, approve_url: approveUrl });
+      } catch (error) {
+        request.log.error(error);
+        return reply.code(502).send({ error: 'No se pudo obtener el enlace de PayPal.' });
+      }
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: { paypal_order_id?: string } | null }>(
     '/orders/:id/confirm-auth',
     async (request, reply) => {
       const user = await authenticate(request);
@@ -244,7 +334,10 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
           return reply.code(409).send({ error: `El pedido está en estado "${order.status}".` });
         }
 
-        const auth = await confirmAuthorization(order.id, request.body.paypal_order_id);
+        const auth = await confirmAuthorization(
+          order.id,
+          request.body?.paypal_order_id ?? null,
+        );
         return reply.send({ order_id: order.id, ...auth });
       } catch (error) {
         request.log.error(error);

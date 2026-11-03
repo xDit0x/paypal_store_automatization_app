@@ -47,3 +47,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // OCR local en Android (equivalente al ML Kit que usa Apple Vision en iOS).
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+}
