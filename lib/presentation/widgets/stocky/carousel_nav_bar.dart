@@ -50,8 +50,9 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     damping: 23,
   );
 
-  /// Duración de cada salto en el efecto cascada de la píldora.
-  static const _hopStep = Duration(milliseconds: 100);
+  /// Duración de cada salto en el efecto cascada de la píldora. Cada salto
+  /// tiene que dar tiempo a verse: si va muy rápido parece un teletransporte.
+  static const _hopStep = Duration(milliseconds: 165);
 
   /// Tamaño de la píldora mientras viaja, como fracción de su tamaño real.
   static const _travelMin = 0.68;
@@ -172,9 +173,9 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     final t = _hop.value * _hopSteps;
     final segment = t.floorToDouble();
     final within = t - segment;
-    // Dentro de cada tramo la píldora sale disparada y frena justo al
-    // posarse en la pestaña intermedia.
-    final eased = Curves.easeOutCubic.transform(within);
+    // Dentro de cada tramo la píldora arranca despacio, acelera y vuelve a
+    // frenar justo al posarse en la pestaña: se ve pasar una a una.
+    final eased = Curves.easeInOutCubic.transform(within);
     final dir = dist.sign;
     return (_hopFrom + dir * (segment + eased) * perStep).clamp(
       0.0,
@@ -353,11 +354,11 @@ class _CarouselNavBarState extends State<CarouselNavBar>
 
                       final total = actives.fold<double>(
                         0,
-                        (a, active) => a + 1 + 0.38 * active,
+                        (a, active) => a + 1 + 0.46 * active,
                       );
                       final widths = [
                         for (final active in actives)
-                          constraints.maxWidth * (1 + 0.38 * active) / total,
+                          constraints.maxWidth * (1 + 0.46 * active) / total,
                       ];
                       final lefts = <double>[];
                       var x = 0.0;
@@ -521,7 +522,7 @@ class _NavButton extends StatelessWidget {
               children: [
                 Icon(
                   item.icon,
-                  size: ui.lerpDouble(21, 25, active),
+                  size: ui.lerpDouble(20, 27, active),
                   color: foreground,
                 ),
                 const SizedBox(height: 3),
@@ -530,7 +531,7 @@ class _NavButton extends StatelessWidget {
                   maxLines: 1,
                   softWrap: false,
                   style: TextStyle(
-                    fontSize: ui.lerpDouble(11, 13.5, active),
+                    fontSize: ui.lerpDouble(10.5, 14, active),
                     fontWeight: FontWeight.w600,
                     color: foreground,
                   ),

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -97,6 +98,15 @@ StockyCubit _restockCubit() {
     approveOrder: ApproveOrderUsecase(repository: orders),
     rejectOrder: RejectOrderUsecase(repository: orders),
   );
+}
+
+/// Tamaño del icono de la pestaña con ese icono, dentro del dock.
+double _iconSize(WidgetTester tester, IconData icon) {
+  final finder = find.descendant(
+    of: find.byType(CarouselNavBar),
+    matching: find.byIcon(icon),
+  );
+  return tester.getSize(finder.first).width;
 }
 
 /// Rectángulo de la píldora azul del dock.
@@ -265,6 +275,54 @@ void main() {
     final arrived = _pillRect(tester);
     expect(arrived.width, closeTo(resting.width, 1));
     expect(arrived.height, closeTo(resting.height, 1));
+    expect(_page(tester), 4);
+  });
+
+  testWidgets('las pestañas se agrandan una a una al pasar la píldora', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StockyShell(
+            createCubit: _restockCubit,
+            createAssistantCubit: () =>
+                AssistantCubit(repository: PreviewAssistantRepository()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final home = CupertinoIcons.house;
+    final stock = CupertinoIcons.cube_box;
+    final assistant = CupertinoIcons.chat_bubble;
+
+    final homeRest = _iconSize(tester, home);
+    final stockRest = _iconSize(tester, stock);
+    expect(stockRest, lessThan(homeRest));
+
+    // De Inicio (0) a Asistente (4): la cascada pasa por todas.
+    await tester.tap(find.text('Asistente').last);
+    await tester.pump();
+
+    // A mitad del primer salto el foco está en Stock: su icono ha crecido.
+    await tester.pump(const Duration(milliseconds: 180));
+    expect(_iconSize(tester, stock), greaterThan(stockRest + 3));
+    expect(_iconSize(tester, home), lessThan(homeRest - 3));
+
+    await tester.pumpAndSettle();
+
+    // Al llegar, Asistente se queda grande y el resto vuelve a su tamaño.
+    expect(_iconSize(tester, assistant), greaterThan(stockRest + 3));
+    expect(_iconSize(tester, home), lessThan(homeRest - 3));
     expect(_page(tester), 4);
   });
 
