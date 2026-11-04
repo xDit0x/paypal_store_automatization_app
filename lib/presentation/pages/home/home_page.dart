@@ -11,6 +11,7 @@ import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/pages/order/order_detail_page.dart';
 import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/animated_amount.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/budget_ring.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
@@ -150,41 +151,49 @@ class _BudgetCard extends StatelessWidget {
                   style: t.footnote,
                 ),
                 const SizedBox(height: 4),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text.rich(
-                    TextSpan(
-                      text:
-                          '${l10n.eurosShort(state.spentThisMonth.roundToDouble(), c)} ',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                        color: p.ink,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                      children: [
-                        TextSpan(
-                          text:
-                              '/ ${l10n.eurosShort(state.monthlyLimit.roundToDouble(), c)}',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w400,
-                            color: p.inkSecondary,
-                          ),
+                AnimatedAmount(
+                  value: state.spentThisMonth,
+                  builder: (context, spent) => FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text.rich(
+                      TextSpan(
+                        text:
+                            '${l10n.eurosShort(spent.roundToDouble(), c)} ',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                          color: p.ink,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
-                      ],
+                        children: [
+                          TextSpan(
+                            text:
+                                '/ ${l10n.eurosShort(state.monthlyLimit.roundToDouble(), c)}',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w400,
+                              color: p.inkSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  l10n.homeRemaining(l10n.eurosShort(state.remaining, c)),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: p.accent,
+                AnimatedAmount(
+                  value: state.remaining,
+                  builder: (context, remaining) => Text(
+                    l10n.homeRemaining(
+                      l10n.eurosShort(remaining.roundToDouble(), c),
+                    ),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: p.accent,
+                    ),
                   ),
                 ),
               ],
