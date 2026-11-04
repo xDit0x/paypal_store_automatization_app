@@ -693,6 +693,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get assistantChipReview => 'Revisa el stock ahora';
 
   @override
+  String get assistantBudgetUpdated =>
+      'He actualizado tus límites de gasto. Ya se aplican al agente.';
+
+  @override
   String get assistantChipPending => '¿Qué tengo por aprobar?';
 
   @override

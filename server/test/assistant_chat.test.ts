@@ -59,6 +59,41 @@ test('respuesta normal y historial recortado', async () => {
   assert.ok(sent.every((m) => m.content.length <= 2000 || m.role === 'system'));
 });
 
+test('el asistente ajusta el presupuesto cuando el dueño lo pide', async () => {
+  const provider = fake([
+    { content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'adjust_budget', arguments: JSON.stringify({ monthly_limit: 200 }) } }] },
+    { content: 'He ajustado el presupuesto mensual a 200 euros.', toolCalls: [] },
+  ]);
+  const reply = await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'Sí, ajusta el presupuesto máximo a 200 euros' }],
+    provider,
+    products: [],
+    updateRules: async () => ({ ...store.rules }),
+  });
+  assert.equal(reply.reply, 'He ajustado el presupuesto mensual a 200 euros.');
+  assert.deepEqual(reply.quickReplies, []);
+});
+
+test('el asistente no ajusta con valores inválidos', async () => {
+  const provider = fake([
+    { content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'adjust_budget', arguments: JSON.stringify({ max_per_order: 0 }) } }] },
+    { content: 'No puedo ajustar ese presupuesto.', toolCalls: [] },
+  ]);
+  const reply = await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'Quiero un presupuesto de 0 euros' }],
+    provider,
+    products: [],
+    updateRules: async () => ({ ...store.rules }),
+  });
+  assert.equal(reply.reply, 'No puedo ajustar ese presupuesto.');
+  const second = provider.seen[1]!;
+  const toolMessage = second.find((m) => m.role === 'tool');
+  assert.ok(toolMessage?.content !== undefined);
+  assert.match(String(toolMessage?.content), /mayor que 0/);
+});
+
 test('herramienta desconocida no rompe el chat', async () => {
   const provider = fake([
     { content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'borrar_todo', arguments: '{}' } }] },

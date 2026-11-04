@@ -1238,6 +1238,12 @@ abstract class AppLocalizations {
   /// **'Revisa el stock ahora'**
   String get assistantChipReview;
 
+  /// No description provided for @assistantBudgetUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'He actualizado tus límites de gasto. Ya se aplican al agente.'**
+  String get assistantBudgetUpdated;
+
   /// No description provided for @assistantChipPending.
   ///
   /// In es, this message translates to:

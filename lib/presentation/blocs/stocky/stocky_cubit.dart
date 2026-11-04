@@ -483,6 +483,27 @@ class StockyCubit extends Cubit<StockyState> {
     });
   }
 
+  /// Vuelve a leer las reglas de gasto. El asistente puede cambiarlas desde
+  /// el chat, y la app tiene que enterarse sin que el dueño toque nada.
+  /// Devuelve true si algún límite cambió.
+  Future<bool> refreshRules() async {
+    final store = state.store;
+    if (store == null) return false;
+
+    final result = await getSpendingRules(store.id);
+    final rules = result.fold<SpendingRules?>((_) => null, (r) => r);
+    if (rules == null) return false;
+
+    final changed =
+        rules.monthlyLimit != state.rules.monthlyLimit ||
+        rules.maxPerOrder != state.rules.maxPerOrder ||
+        rules.requireApprovalAbove != state.rules.requireApprovalAbove;
+    if (!changed) return false;
+
+    emit(state.copyWith(rules: rules));
+    return true;
+  }
+
   List<ChatEntry> _chatFromRuns(List<AgentRun> runs) {
     final recent =
         runs

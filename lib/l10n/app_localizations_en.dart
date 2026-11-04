@@ -689,6 +689,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantChipReview => 'Review the stock now';
 
   @override
+  String get assistantBudgetUpdated =>
+      'I updated your spending limits. The agent already uses them.';
+
+  @override
   String get assistantChipPending => 'What do I need to approve?';
 
   @override

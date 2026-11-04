@@ -402,6 +402,7 @@
   "assistantSubtitle": "Tu agente de reposición",
   "assistantGreeting": "Hola. Reviso tu stock, preparo pedidos a tus proveedores y los pago con PayPal, siempre dentro de tus reglas de gasto.",
   "assistantChipReview": "Revisa el stock ahora",
+  "assistantBudgetUpdated": "He actualizado tus límites de gasto. Ya se aplican al agente.",
   "assistantChipPending": "¿Qué tengo por aprobar?",
   "assistantChipSpent": "¿Cuánto llevo gastado?",
   "assistantInputHint": "Pregunta lo que quieras",

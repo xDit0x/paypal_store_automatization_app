@@ -401,6 +401,7 @@
   "assistantSubtitle": "Your stockying agent",
   "assistantGreeting": "Hi. I review your stock, prepare orders for your suppliers and pay them with PayPal, always within your spending rules.",
   "assistantChipReview": "Review the stock now",
+  "assistantBudgetUpdated": "I updated your spending limits. The agent already uses them.",
   "assistantChipPending": "What do I need to approve?",
   "assistantChipSpent": "How much have I spent?",
   "assistantInputHint": "Ask anything",

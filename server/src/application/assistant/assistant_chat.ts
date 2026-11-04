@@ -9,6 +9,8 @@ import {
 import { parseRegion } from '../market/market_math.js';
 import { getSpentThisMonth } from '../orders/spent_this_month.js';
 import type { StoreContext } from '../stores/store_service.js';
+import type { SpendingRules } from '../../domain/spending_rules.js';
+import { updateStoreRules } from '../stores/update_store_rules.js';
 
 export interface ChatTurn {
   role: 'user' | 'assistant';
@@ -74,6 +76,35 @@ function buildTools(productKeys: string[]): AiToolDefinition[] {
       parameters: { type: 'object', properties: {} },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'adjust_budget',
+      description:
+        'Ajusta el presupuesto de la tienda cuando el dueño lo pide: límite mensual total, máximo por pedido o umbral de aprobación automática.',
+      parameters: {
+        type: 'object',
+        properties: {
+          monthly_limit: {
+            type: 'number',
+            description:
+              'Límite mensual del presupuesto: lo máximo que se puede gastar en el mes. Omitir si no se cambia.',
+          },
+          max_per_order: {
+            type: 'number',
+            description:
+              'Máximo por pedido: lo máximo que puede costar una sola compra. Omitir si no se cambia.',
+          },
+          require_approval_above: {
+            type: 'number',
+            description:
+              'Importe a partir del cual el agente pide aprobación. 0 para pedirla siempre.',
+          },
+        },
+        required: [],
+      },
+    },
+  },
   ];
 }
 
@@ -98,6 +129,7 @@ function systemPrompt(store: StoreContext, products: { key: string; name: string
     catalogue,
     '',
     'Si el dueño da detalles (marca, tamaño) de un producto del catálogo, no vuelvas a preguntarlos: busca directamente.',
+    'Si el dueño quiere cambiar el presupuesto, llama a `adjust_budget`: "presupuesto del mes", "tope mensual" o "cuánto puedo gastar al mes" es `monthly_limit`; "máximo por pedido" o "tope por compra" es `max_per_order`; "pedirme aprobación" es `require_approval_above`. Si la frase es ambigua (por ejemplo "presupuesto máximo"), pregunta con `ask_user` si es el del mes o el de cada pedido.',
     'Haz una sola pregunta cada vez. No inventes precios ni distribuidores: usa solo lo que devuelven las herramientas.',
     'Para preguntas sobre el stock o el gasto usa get_store_summary.',
     'Usa **negrita** solo para nombres de distribuidor e importes.',
@@ -156,6 +188,8 @@ export async function assistantChat(params: {
   provider?: AiProvider;
   /** Para tests: catálogo sin leer Supabase. */
   products?: { key: string; name: string }[];
+  /** Para tests: actualización de reglas sin tocar Supabase. */
+  updateRules?: (storeId: string, rules: SpendingRules) => Promise<SpendingRules>;
 }): Promise<AssistantReply> {
   const provider = params.provider ?? new GroqProvider();
   const products = params.products ?? (await listMarketProducts());
@@ -212,6 +246,49 @@ export async function assistantChat(params: {
             spent_this_month: spent,
             rules: params.store.rules,
           };
+        } else if (call.function.name === 'adjust_budget') {
+          const monthlyLimit =
+            args.monthly_limit == null ? params.store.rules.monthlyLimit : Number(args.monthly_limit);
+          const maxPerOrder =
+            args.max_per_order == null ? params.store.rules.maxPerOrder : Number(args.max_per_order);
+          const requireApprovalAbove =
+            args.require_approval_above == null
+              ? params.store.rules.requireApprovalAbove
+              : Number(args.require_approval_above);
+
+          const invalid =
+            !Number.isFinite(maxPerOrder) ||
+            !Number.isFinite(monthlyLimit) ||
+            !Number.isFinite(requireApprovalAbove)
+              ? 'Los importes del presupuesto deben ser números.'
+              : maxPerOrder <= 0
+                ? 'El máximo por pedido tiene que ser mayor que 0.'
+                : monthlyLimit < maxPerOrder
+                  ? `El límite mensual no puede ser menor que el máximo por pedido (${maxPerOrder.toFixed(2)}).`
+                  : requireApprovalAbove > maxPerOrder
+                    ? `El umbral de aprobación no puede superar el máximo por pedido (${maxPerOrder.toFixed(2)}).`
+                    : null;
+
+          if (invalid) {
+            output = { ok: false, error: invalid };
+          } else {
+            const updated = await (
+              params.updateRules ?? ((id: string, rules: SpendingRules) => updateStoreRules(id, rules))
+            )(params.store.id, {
+              maxPerOrder,
+              monthlyLimit,
+              requireApprovalAbove,
+              allowedSupplierIds: params.store.rules.allowedSupplierIds,
+            });
+            output = {
+              ok: true,
+              updated: {
+                max_per_order: updated.maxPerOrder,
+                monthly_limit: updated.monthlyLimit,
+                require_approval_above: updated.requireApprovalAbove,
+              },
+            };
+          }
         } else {
           output = { error: `Herramienta desconocida: ${call.function.name}` };
         }

@@ -13,6 +13,7 @@ import 'package:store_automatization_app/domain/entities/market.dart';
 import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
+import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
 import 'package:store_automatization_app/presentation/widgets/market/adopt_sheet.dart';
 import 'package:store_automatization_app/presentation/widgets/market/market_results.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
@@ -120,7 +121,25 @@ class _AssistantPageState extends State<AssistantPage> {
     if (reply != null && (viaVoice || assistant.state.speakReplies)) {
       VoiceService.instance.speak(reply.text, _lang);
     }
+    await _syncRules();
     _scrollToEnd();
+  }
+
+  /// El asistente puede cambiar el presupuesto desde el chat: la app
+  /// recarga las reglas y avisa con un atajo a la pestaña Reglas.
+  Future<void> _syncRules() async {
+    final changed = await context.read<StockyCubit>().refreshRules();
+    if (!changed || !mounted) return;
+
+    final l10n = context.l10n;
+    showStockySnack(
+      context,
+      l10n.assistantBudgetUpdated,
+      title: l10n.rulesSaved,
+      tone: RSnackTone.success,
+      actionLabel: l10n.tabRules,
+      onAction: () => ShellView.jumpToTab(3),
+    );
   }
 
   void _send() => _sendText(_input.text);
