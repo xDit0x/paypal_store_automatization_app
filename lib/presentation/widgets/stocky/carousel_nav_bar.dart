@@ -50,13 +50,12 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     damping: 23,
   );
 
-  /// Duración de cada salto en el efecto cascada de la píldora. Cada salto
-  /// tiene que dar tiempo a verse: si va muy rápido parece un teletransporte.
-  static const _hopStep = Duration(milliseconds: 165);
-
-  /// Cuánto se hincha la píldora al posarse en una pestaña intermedia, como
-  /// fracción de su tamaño real. Lo justo para verse alrededor del icono.
-  static const _midLanding = 0.5;
+  /// Duración de la cascada: un salto de pestaña vecina tarda [_hopBaseMs] y
+  /// cada pestaña extra añade [_hopExtraStepMs]. Cruzar el dock entero ronda
+  /// los 0,4 s: rápido, pero da tiempo a ver pasar la píldora por cada
+  /// pestaña.
+  static const _hopBaseMs = 180;
+  static const _hopExtraStepMs = 70;
 
   late final AnimationController _settle;
 
@@ -139,13 +138,20 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   void _startHop(double from, double to) {
     _hopFrom = from;
     _hopTo = to;
-    _hopSteps = (to - from).abs().round();
+    final distance = (to - from).abs();
+    _hopSteps = distance.round();
     if (_hopSteps <= 0) {
       _hopping = false;
       return;
     }
     _hopping = true;
-    _hop.duration = _hopStep * _hopSteps;
+    // La duración crece con la distancia, pero poco: cruzar el dock entero
+    // sigue siendo cosa de menos de medio segundo.
+    _hop.duration = Duration(
+      milliseconds: (_hopBaseMs + _hopExtraStepMs * (distance - 1))
+          .round()
+          .clamp(120, 600),
+    );
     _hop.forward(from: 0);
   }
 
@@ -164,61 +170,40 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     }
   }
 
-  /// Posición de la píldora durante la cascada: recorre los enteros
-  /// intermedios con un salto suave entre cada uno.
+  /// Posición de la píldora durante la cascada.
+  ///
+  /// Una sola curva para todo el recorrido: la píldora acelera al salir, pasa
+  /// sin frenarse por encima de cada pestaña intermedia y desacelera al
+  /// llegar. Nada de parar en cada pestaña: eso es lo que hacía que la
+  /// animación se viera a trompicones.
   double _hopPage() {
-    final dist = _hopTo - _hopFrom;
-    if (_hopSteps <= 0 || dist.abs() <= 0.0001) return _hopTo;
-    // Longitud real de cada tramo: si la cascada se interrumpió a media
-    // camino, el último tramo es más corto y la píldora cae exacta en la
-    // pestaña de destino.
-    final perStep = dist.abs() / _hopSteps;
-    final t = _hop.value * _hopSteps;
-    final segment = t.floorToDouble();
-    final within = t - segment;
-    // Dentro de cada tramo la píldora arranca despacio, acelera y vuelve a
-    // frenar justo al posarse en la pestaña: se ve pasar una a una.
-    final eased = Curves.easeInOutCubic.transform(within);
-    final dir = dist.sign;
-    return (_hopFrom + dir * (segment + eased) * perStep).clamp(
-      0.0,
-      _maxPage(),
-    );
+    if (_hopSteps <= 0) return _hopTo;
+    // Aceleración y frenada suaves, sin el latigazo central de la curva
+    // "emphasized": así se ve la píldora recorrer cada pestaña.
+    final eased = Curves.easeInOutCubic.transform(_hop.value.clamp(0.0, 1.0));
+    return ui.lerpDouble(_hopFrom, _hopTo, eased)!.clamp(0.0, _maxPage());
   }
 
   /// Efecto burbuja durante la cascada.
   ///
-  /// 1 = tamaño real; 0 = burbuja (34 px). La píldora se deshincha al salir
-  /// de una pestaña hasta quedar en burbuja a mitad de camino, y se vuelve a
-  /// hinchar al posarse. En las pestañas intermedias recupera parte del
-  /// tamaño ([_midLanding]) para que se vea alrededor del icono, pero la
-  /// expansión completa se reserva para la pestaña de destino.
+  /// 1 = tamaño real; 0 = burbuja (34 px). Se deshincha al salir de la
+  /// pestaña, viaja pequeña durante todo el trayecto y se expande al llegar
+  /// con un pequeño rebote. Al ser una sola curva sobre el recorrido total
+  /// (y no una por pestaña), el tamaño acompaña al movimiento sin tirones.
   double _bubbleEmphasis() {
-    final steps = _hopSteps;
-    if (steps <= 0) return 1;
+    const shrinkEnd = 0.22;
+    const growStart = 0.6;
+    final t = _hop.value.clamp(0.0, 1.0);
 
-    final travel = (_hop.value * steps).clamp(0.0, steps.toDouble());
-    // El último tramo se queda con `within` = 1 en el frame final.
-    final segment = travel.floor().clamp(0, steps - 1);
-    final within = (travel - segment).clamp(0.0, 1.0);
-
-    final lastSegment = segment >= steps - 1;
-    // Al posarse: tamaño real en el destino, media burbuja en las intermedias.
-    final landing = lastSegment ? 1.0 : _midLanding;
-    // Del primer tramo se sale desde el tamaño real; de los demás, desde la
-    // media burbuja en la que se llegó.
-    final departure = segment <= 0 ? 1.0 : _midLanding;
-
-    if (within < 0.5) {
-      // Se deshincha al salir de la pestaña.
-      final t = Curves.easeInOutSine.transform((within / 0.5).clamp(0.0, 1.0));
-      return departure * (1 - t);
+    // Al salir: se deshincha hasta quedarse en burbuja.
+    if (t < shrinkEnd) {
+      return 1 - Curves.easeOutCubic.transform(t / shrinkEnd);
     }
-    // Se hincha al llegar, con un rebote suave.
-    final t = Curves.easeOutBack.transform(
-      ((within - 0.5) / 0.5).clamp(0.0, 1.0),
-    );
-    return (landing * t).clamp(0.0, 1.08);
+    // En el camino: burbuja pequeña, estable.
+    if (t <= growStart) return 0.0;
+    // Al llegar: se hincha de nuevo, con un rebote suave.
+    final grow = (t - growStart) / (1 - growStart);
+    return Curves.easeOutBack.transform(grow).clamp(0.0, 1.06);
   }
 
   double _visualPage() {

@@ -258,7 +258,7 @@ void main() {
     final resting = _pillRect(tester);
     expect(resting.width, closeTo(84, 1));
 
-    // De Inicio (0) a Asistente (4): la cascada dura 4 x 165 ms.
+    // De Inicio (0) a Asistente (4): la cascada dura ~390 ms.
     await tester.tap(find.text('Asistente').last);
     await tester.pump();
 
@@ -333,7 +333,7 @@ void main() {
     expect(_page(tester), 1);
   });
 
-  testWidgets('las pestañas se agrandan una a una al pasar la píldora', (
+  testWidgets('las pestañas se encienden una a una al pasar la píldora', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -358,6 +358,8 @@ void main() {
 
     final home = CupertinoIcons.house;
     final stock = CupertinoIcons.cube_box;
+    final orders = CupertinoIcons.doc_text;
+    final rules = CupertinoIcons.slider_horizontal_3;
     final assistant = CupertinoIcons.chat_bubble;
 
     final homeRest = _iconSize(tester, home);
@@ -368,10 +370,33 @@ void main() {
     await tester.tap(find.text('Asistente').last);
     await tester.pump();
 
-    // A mitad del primer salto el foco está en Stock: su icono ha crecido.
-    await tester.pump(const Duration(milliseconds: 180));
-    expect(_iconSize(tester, stock), greaterThan(stockRest + 3));
-    expect(_iconSize(tester, home), lessThan(homeRest - 3));
+    // Se guarda en qué momento cada pestaña intermedia llega a estar casi
+    // activa: así se comprueba que la píldora las visita en orden.
+    int? stockAt;
+    int? ordersAt;
+    int? rulesAt;
+    var homeMin = homeRest;
+    var elapsed = 0;
+    for (var i = 0; i < 45; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+      elapsed += 10;
+      if (stockAt == null && _iconSize(tester, stock) > 25) stockAt = elapsed;
+      if (ordersAt == null && _iconSize(tester, orders) > 25) {
+        ordersAt = elapsed;
+      }
+      if (rulesAt == null && _iconSize(tester, rules) > 25) rulesAt = elapsed;
+      final homeNow = _iconSize(tester, home);
+      if (homeNow < homeMin) homeMin = homeNow;
+    }
+
+    // Cada pestaña intermedia se enciende, y lo hace en orden.
+    expect(stockAt, isNotNull, reason: 'la píldora no llegó a Stock');
+    expect(ordersAt, isNotNull, reason: 'la píldora no llegó a Pedidos');
+    expect(rulesAt, isNotNull, reason: 'la píldora no llegó a Reglas');
+    expect(stockAt!, lessThan(ordersAt!));
+    expect(ordersAt, lessThan(rulesAt!));
+    // Al arrancar, Inicio deja de estar activa.
+    expect(homeMin, lessThan(homeRest - 3));
 
     await tester.pumpAndSettle();
 
@@ -379,6 +404,46 @@ void main() {
     expect(_iconSize(tester, assistant), greaterThan(stockRest + 3));
     expect(_iconSize(tester, home), lessThan(homeRest - 3));
     expect(_page(tester), 4);
+  });
+
+  testWidgets('la cascada de extremo a extremo dura menos de medio segundo', (
+    tester,
+  ) async {
+    // Antes tardaba 4 x 165 ms = 660 ms; ahora tiene que ser ágil.
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StockyShell(
+            createCubit: _restockCubit,
+            createAssistantCubit: () =>
+                AssistantCubit(repository: PreviewAssistantRepository()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final resting = _pillRect(tester);
+    await tester.tap(find.text('Asistente').last);
+    await tester.pump();
+
+    // A los 450 ms ya está posada y del tamaño real.
+    await tester.pump(const Duration(milliseconds: 450));
+    final arrived = _pillRect(tester);
+    expect(arrived.width, closeTo(resting.width, 1));
+    expect(arrived.height, closeTo(resting.height, 1));
+    expect(
+      _iconSize(tester, CupertinoIcons.chat_bubble),
+      greaterThan(26),
+      reason: 'la cascada todavía estaba en marcha a los 450 ms',
+    );
   });
 
   testWidgets('el selector de idioma traduce la app al inglés', (tester) async {
