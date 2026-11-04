@@ -6,6 +6,7 @@ import {
   createAuthorizationOrder,
   getApprovalUrl,
   refundCapture,
+  type CaptureResult,
 } from '../paypal/escrow.js';
 import { paypalConfigured } from '../paypal/paypal_client.js';
 import { ReasonError } from '../../domain/reasons.js';
@@ -33,6 +34,7 @@ interface EscrowOrderRow {
   payment_authorization_id: string | null;
   payment_capture_id: string | null;
   payment_payout_id: string | null;
+  payment_status: string | null;
   order_items: OrderItemRow[] | null;
 }
 
@@ -89,7 +91,7 @@ async function loadEscrowContext(orderId: string): Promise<{
   const { data, error } = await supabaseAdmin
     .from('orders')
     .select(
-      'id, store_id, supplier_id, status, total, payment_authorization_id, payment_capture_id, payment_payout_id, order_items(product_uid, name, qty, unit_price)',
+      'id, store_id, supplier_id, status, total, payment_authorization_id, payment_capture_id, payment_payout_id, payment_status, order_items(product_uid, name, qty, unit_price)',
     )
     .eq('id', orderId)
     .maybeSingle();
@@ -232,6 +234,20 @@ export async function approvalUrlForOrder(
 }
 
 /**
+ * Qué hay que hacer con el pago cuando se confirma la entrega:
+ * - 'capture': el dinero está retenido en PayPal y se cobra lo recibido.
+ * - 'already_paid': el agente ya pagó al proveedor, no hay que cobrar nada.
+ * - null: el pedido no está listo para confirmar la entrega.
+ */
+export type DeliveryPaymentMode = 'capture' | 'already_paid';
+
+export function deliveryPaymentMode(status: string): DeliveryPaymentMode | null {
+  if (status === 'authorized') return 'capture';
+  if (status === 'paid' || status === 'invoiced') return 'already_paid';
+  return null;
+}
+
+/**
  * Confirma qué ha llegado y captura solo lo recibido. Si falta algo, la
  * autorización se captura por el importe de las líneas recibidas.
  */
@@ -243,13 +259,21 @@ export async function captureDelivery(
   const { order, store, supplier } = await loadEscrowContext(orderId);
   const warnings: string[] = [];
 
-  if (order.status !== 'authorized') {
+  // Hay dos situaciones:
+  // - 'authorized': el dinero está retenido en PayPal y se captura lo que
+  //   llega.
+  // - 'paid': el agente ya pagó al proveedor (pedido automático): no hay que
+  //   cobrar nada más, solo confirmar lo recibido y subir el stock.
+  const mode = deliveryPaymentMode(order.status);
+
+  if (!mode) {
     throw new ReasonError({
       code: 'wrong_status',
       params: { status: order.status },
     });
   }
-  if (!order.payment_authorization_id) {
+  const alreadyPaid = mode === 'already_paid';
+  if (!alreadyPaid && !order.payment_authorization_id) {
     throw new ReasonError({ code: 'no_paypal_authorization' });
   }
 
@@ -287,46 +311,51 @@ export async function captureDelivery(
     throw new ReasonError({ code: 'nothing_received' });
   }
 
-  let capture;
-  try {
-    capture = await captureAuthorization({
-      authorizationId: order.payment_authorization_id,
-      amount: capturedAmount,
-      currency: store.currency,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    await updateOrder(order.id, { payment_status: 'CAPTURE_FAILED' });
+  let capture: CaptureResult | null = null;
+  if (!alreadyPaid) {
     try {
-      await sendPaymentFailedEmail({
-        orderNumber: `RS-${order.id.slice(0, 8).toUpperCase()}`,
-        supplierName: supplier.name,
-        storeName: store.name,
-        reason:
-          options.locale === 'en'
-            ? `The payment capture failed: ${message}`
-            : `La captura del pago falló: ${message}`,
-        ownerEmail: store.notification_email,
-        locale: options.locale,
+      capture = await captureAuthorization({
+        authorizationId: order.payment_authorization_id as string,
+        amount: capturedAmount,
+        currency: store.currency,
       });
-    } catch (notifyError) {
-      warnings.push(
-        `No se pudo avisar del fallo de captura: ${
-          notifyError instanceof Error ? notifyError.message : String(notifyError)
-        }`,
-      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await updateOrder(order.id, { payment_status: 'CAPTURE_FAILED' });
+      try {
+        await sendPaymentFailedEmail({
+          orderNumber: `RS-${order.id.slice(0, 8).toUpperCase()}`,
+          supplierName: supplier.name,
+          storeName: store.name,
+          reason:
+            options.locale === 'en'
+              ? `The payment capture failed: ${message}`
+              : `La captura del pago falló: ${message}`,
+          ownerEmail: store.notification_email,
+          locale: options.locale,
+        });
+      } catch (notifyError) {
+        warnings.push(
+          `No se pudo avisar del fallo de captura: ${
+            notifyError instanceof Error ? notifyError.message : String(notifyError)
+          }`,
+        );
+      }
+      throw error;
     }
-    throw error;
   }
 
   const now = new Date().toISOString();
   const orderStatus = complete ? 'delivered' : 'partially_delivered';
+  // Si el pedido ya estaba pagado (agente), el cobro ya ocurrió: el id del
+  // payout es lo que se guarda como referencia del pago.
+  const paymentReference = capture?.captureId ?? order.payment_payout_id ?? '';
 
   await updateOrder(order.id, {
     status: orderStatus,
-    payment_capture_id: capture.captureId,
-    payment_status: capture.status,
-    payment_at: now,
+    payment_capture_id: capture?.captureId ?? order.payment_capture_id,
+    payment_status: capture?.status ?? order.payment_status,
+    ...(capture ? { payment_at: now } : {}),
     delivered_at: now,
     received_total: capturedAmount,
   });
@@ -371,8 +400,8 @@ export async function captureDelivery(
       storeName: store.name,
       currency: store.currency,
       total: capturedAmount,
-      payoutId: capture.captureId,
-      payoutStatus: capture.status,
+      payoutId: paymentReference,
+      payoutStatus: capture?.status ?? order.payment_status ?? 'PAID',
       lines: items
         .filter((item) => (received.get(item.product_uid) ?? 0) > 0)
         .map((item) => {
@@ -409,7 +438,7 @@ export async function captureDelivery(
   }
 
   return {
-    captureId: capture.captureId,
+    captureId: paymentReference,
     capturedAmount,
     orderStatus,
     warnings,

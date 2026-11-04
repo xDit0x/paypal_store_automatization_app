@@ -11,6 +11,7 @@ export function languageOf(value: unknown): AppLanguage {
 
 export interface Copy {
   agentOrderCreated: string;
+  agentOrderPaidPendingDelivery: string;
   agentPartialBlocked: string;
   agentBlocked: string;
   agentNoOrder: string;
@@ -57,6 +58,8 @@ export interface Copy {
 export const copy: Record<AppLanguage, Copy> = {
   es: {
     agentOrderCreated: 'Pedido de reposición creado.',
+    agentOrderPaidPendingDelivery:
+      'Pedido de reposición creado y pagado. El stock sube cuando registres la entrega (albarán).',
     agentPartialBlocked:
       'Pedido creado. No pude hacer el resto porque {reason}.',
     agentBlocked: 'No creé el pedido porque {reason}.',
@@ -114,6 +117,8 @@ export const copy: Record<AppLanguage, Copy> = {
   },
   en: {
     agentOrderCreated: 'Restock order created.',
+    agentOrderPaidPendingDelivery:
+      'Restock order created and paid. The stock goes up when you record the delivery note.',
     agentPartialBlocked: 'Order created. I could not do the rest because {reason}.',
     agentBlocked: "I didn't create the order because {reason}.",
     agentNoOrder: 'No order was created.',

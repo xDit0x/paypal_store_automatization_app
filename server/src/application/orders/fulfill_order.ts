@@ -236,9 +236,15 @@ export async function sendInvoiceForOrder(
     throw new Error(`No se pudo registrar la factura: ${invoiceError.message}`);
   }
 
+  // Si el pedido ya se entregó, se conserva ese estado (no se pisa con
+  // "completado": una entrega parcial tiene que seguir viéndose).
+  const finalStatus = ['delivered', 'partially_delivered'].includes(order.status)
+    ? order.status
+    : 'completed';
+
   await updateOrder(order.id, {
     invoice_id: invoiceRow?.id ?? null,
-    status: 'completed',
+    status: finalStatus,
   });
 
   return { invoiceId: result.invoiceId, number };
@@ -246,7 +252,7 @@ export async function sendInvoiceForOrder(
 
 export async function fulfillOrder(
   orderId: string,
-  options: { ownerApproved?: boolean } = {},
+  options: { ownerApproved?: boolean; deferStock?: boolean } = {},
 ): Promise<FulfillmentResult> {
   const { order, store, supplier } = await loadOrderContext(orderId);
 
@@ -284,14 +290,19 @@ export async function fulfillOrder(
 
       payment = { payoutId: payout.batchId, status: payout.status };
 
-      try {
-        await incrementStock(order);
-      } catch (error) {
-        warnings.push(
-          `Pago realizado pero no se actualizó el stock: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+      // Con `deferStock` el pedido se paga (el agente compra solo) pero el
+      // inventario no se toca: el stock sube al registrar la entrega
+      // (albarán), como en el resto de pedidos.
+      if (!options.deferStock) {
+        try {
+          await incrementStock(order);
+        } catch (error) {
+          warnings.push(
+            `Pago realizado pero no se actualizó el stock: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
       }
     } catch (error) {
       // El motivo técnico se queda en el log; en la app se muestra un texto
@@ -310,14 +321,18 @@ export async function fulfillOrder(
 
   let invoice: FulfillmentResult['invoice'] = null;
 
-  try {
-    invoice = await sendInvoiceForOrder(order.id);
-  } catch (error) {
-    warnings.push(
-      `No se pudo emitir la factura: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+  // La factura del proveedor se emite cuando la mercancía llega: si el stock
+  // está en espera (albarán pendiente), la emite la entrega.
+  if (!options.deferStock) {
+    try {
+      invoice = await sendInvoiceForOrder(order.id);
+    } catch (error) {
+      warnings.push(
+        `No se pudo emitir la factura: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   return {

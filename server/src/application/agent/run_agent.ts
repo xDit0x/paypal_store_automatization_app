@@ -193,7 +193,9 @@ async function handleToolCall(
 
   if (status === 'approved') {
     try {
-      fulfillment = await fulfillOrder(order.id);
+      // El agente compra y paga solo, pero el inventario no se adelanta: el
+      // stock sube cuando llega la mercancía y se registra el albarán.
+      fulfillment = await fulfillOrder(order.id, { deferStock: true });
     } catch (error) {
       warning =
         error instanceof ReasonError
@@ -382,11 +384,20 @@ export async function runAgent(params: {
       ? text.blockFallback
       : blockedReasons.join('; ');
 
+  // El agente puede comprar solo: en ese caso el pedido queda pagado y
+  // esperando la entrega, así que se avisa de que el stock llega con el
+  // albarán.
+  const paidPendingDelivery = executed.some(
+    (result) => result.ok === true && result.status === 'paid',
+  );
+
   const defaultMessage =
     decision === 'order_created'
       ? blockedReasons.length > 0
         ? fill(text.agentPartialBlocked, { reason: blockedClause })
-        : text.agentOrderCreated
+        : paidPendingDelivery
+          ? text.agentOrderPaidPendingDelivery
+          : text.agentOrderCreated
       : decision === 'blocked'
         ? fill(text.agentBlocked, { reason: blockedClause })
         : finalMessage.trim().length > 0

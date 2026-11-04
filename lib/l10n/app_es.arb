@@ -232,6 +232,7 @@
   "deliveryReceivedTotal": "Recibido",
   "deliveryMissingTotal": "Faltante",
   "deliveryToCapture": "A cobrar",
+  "deliveryAlreadyPaid": "Ya pagado (no se cobra nada más)",
   "deliveryConfirm": "Confirmar entrega y cobrar",
   "deliveryConfirming": "Confirmando…",
   "deliverySuccess": "Entrega confirmada. Pago capturado.",
@@ -306,7 +307,7 @@
   "orderPaymentStatusSent": "enviado",
   "orderBlockedByRules": "Bloqueado por tus reglas",
   "orderBlockedHint": "Cambia tus reglas en la pestaña Reglas si quieres permitirlo.",
-  "orderApproveHint": "Al aprobar, el servidor paga a {supplier} y genera la factura.",
+  "orderApproveHint": "Al aprobar, autorizas el pago en PayPal: el dinero queda retenido hasta que confirmes la entrega (albarán).",
   "@orderApproveHint": {
     "placeholders": {
       "supplier": { "type": "String" }
@@ -327,14 +328,9 @@
   },
   "orderLegendSpent": "Ya gastado",
   "orderLegendThisOrder": "Este pedido",
-  "orderPaymentSent": "Pago enviado",
-  "orderPaymentSentMessage": "{amount} enviados a {supplier} con PayPal.",
-  "@orderPaymentSentMessage": {
-    "placeholders": {
-      "amount": { "type": "String" },
-      "supplier": { "type": "String" }
-    }
-  },
+  "orderPaymentAuthorizeTitle": "Continúa en PayPal",
+  "orderPaymentAuthorizeMessage": "{amount} para {supplier}: autoriza el pago en PayPal. El dinero queda retenido hasta que confirmes la entrega.",
+  "@orderPaymentAuthorizeMessage": {"placeholders": {"amount": {"type": "String"}, "supplier": {"type": "String"}}},
   "orderPaymentFailed": "No se pudo pagar",
   "orderBlockedByRules": "No se puede pedir por las reglas establecidas",
   "@orderBlockedByRules": {

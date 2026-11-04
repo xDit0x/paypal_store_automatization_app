@@ -92,6 +92,7 @@ class StockyState {
   static const _inTransitStatuses = {
     OrderStatus.approved,
     OrderStatus.paying,
+    OrderStatus.authorized,
     OrderStatus.paid,
     OrderStatus.invoiced,
   };
@@ -114,11 +115,17 @@ class StockyState {
       ? p.stock.toDouble()
       : p.stock / p.lowStockThreshold;
 
-  /// Pedido más reciente pagado y aún no cerrado: el que se comprueba
-  /// con el albarán.
+  /// Pedido más reciente con el dinero comprometido y aún sin entrega: el
+  /// que se comprueba con el albarán.
+  ///
+  /// - 'authorized': el dinero está retenido en PayPal y se cobra al entregar.
+  /// - 'paid'/'invoiced': el agente ya pagó al proveedor; solo falta confirmar
+  ///   lo que ha llegado.
   Order? get latestDelivery {
     for (final o in orders) {
-      if (o.status == OrderStatus.paid || o.status == OrderStatus.invoiced) {
+      if (o.status == OrderStatus.authorized ||
+          o.status == OrderStatus.paid ||
+          o.status == OrderStatus.invoiced) {
         return o;
       }
     }

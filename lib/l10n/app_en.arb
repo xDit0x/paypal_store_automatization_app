@@ -227,6 +227,7 @@
   "deliveryReceivedTotal": "Received",
   "deliveryMissingTotal": "Missing",
   "deliveryToCapture": "To capture",
+  "deliveryAlreadyPaid": "Already paid (nothing else to charge)",
   "deliveryConfirm": "Confirm delivery and capture payment",
   "deliveryConfirming": "Confirming…",
   "deliverySuccess": "Delivery confirmed. Payment captured.",
@@ -300,7 +301,7 @@
   "orderPaymentStatusSent": "sent",
   "orderBlockedByRules": "Blocked by your rules",
   "orderBlockedHint": "Change your rules in the Rules tab if you want to allow it.",
-  "orderApproveHint": "On approval, the server pays {supplier} and issues the invoice.",
+  "orderApproveHint": "When you approve, you authorize the payment in PayPal: the money is held until you confirm the delivery note.",
   "@orderApproveHint": {
     "placeholders": {
       "supplier": { "type": "String" }
@@ -321,14 +322,9 @@
   },
   "orderLegendSpent": "Already spent",
   "orderLegendThisOrder": "This order",
-  "orderPaymentSent": "Payment sent",
-  "orderPaymentSentMessage": "{amount} sent to {supplier} with PayPal.",
-  "@orderPaymentSentMessage": {
-    "placeholders": {
-      "amount": { "type": "String" },
-      "supplier": { "type": "String" }
-    }
-  },
+  "orderPaymentAuthorizeTitle": "Continue in PayPal",
+  "orderPaymentAuthorizeMessage": "{amount} for {supplier}: authorize the payment in PayPal. The money is held until you confirm the delivery.",
+  "@orderPaymentAuthorizeMessage": {"placeholders": {"amount": {"type": "String"}, "supplier": {"type": "String"}}},
   "orderPaymentFailed": "Could not pay",
   "orderBlockedByRules": "Cannot order due to spending rules",
   "@orderBlockedByRules": {

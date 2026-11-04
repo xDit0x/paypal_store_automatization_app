@@ -794,6 +794,12 @@ abstract class AppLocalizations {
   /// **'A cobrar'**
   String get deliveryToCapture;
 
+  /// No description provided for @deliveryAlreadyPaid.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya pagado (no se cobra nada más)'**
+  String get deliveryAlreadyPaid;
+
   /// No description provided for @deliveryConfirm.
   ///
   /// In es, this message translates to:
@@ -1037,7 +1043,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderApproveHint.
   ///
   /// In es, this message translates to:
-  /// **'Al aprobar, el servidor paga a {supplier} y genera la factura.'**
+  /// **'Al aprobar, autorizas el pago en PayPal: el dinero queda retenido hasta que confirmes la entrega (albarán).'**
   String orderApproveHint(String supplier);
 
   /// No description provided for @orderSpendAfterPayment.
@@ -1064,17 +1070,17 @@ abstract class AppLocalizations {
   /// **'Este pedido'**
   String get orderLegendThisOrder;
 
-  /// No description provided for @orderPaymentSent.
+  /// No description provided for @orderPaymentAuthorizeTitle.
   ///
   /// In es, this message translates to:
-  /// **'Pago enviado'**
-  String get orderPaymentSent;
+  /// **'Continúa en PayPal'**
+  String get orderPaymentAuthorizeTitle;
 
-  /// No description provided for @orderPaymentSentMessage.
+  /// No description provided for @orderPaymentAuthorizeMessage.
   ///
   /// In es, this message translates to:
-  /// **'{amount} enviados a {supplier} con PayPal.'**
-  String orderPaymentSentMessage(String amount, String supplier);
+  /// **'{amount} para {supplier}: autoriza el pago en PayPal. El dinero queda retenido hasta que confirmes la entrega.'**
+  String orderPaymentAuthorizeMessage(String amount, String supplier);
 
   /// No description provided for @orderPaymentFailed.
   ///

@@ -426,6 +426,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get deliveryToCapture => 'A cobrar';
 
   @override
+  String get deliveryAlreadyPaid => 'Ya pagado (no se cobra nada más)';
+
+  @override
   String get deliveryConfirm => 'Confirmar entrega y cobrar';
 
   @override
@@ -563,7 +566,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String orderApproveHint(String supplier) {
-    return 'Al aprobar, el servidor paga a $supplier y genera la factura.';
+    return 'Al aprobar, autorizas el pago en PayPal: el dinero queda retenido hasta que confirmes la entrega (albarán).';
   }
 
   @override
@@ -583,11 +586,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get orderLegendThisOrder => 'Este pedido';
 
   @override
-  String get orderPaymentSent => 'Pago enviado';
+  String get orderPaymentAuthorizeTitle => 'Continúa en PayPal';
 
   @override
-  String orderPaymentSentMessage(String amount, String supplier) {
-    return '$amount enviados a $supplier con PayPal.';
+  String orderPaymentAuthorizeMessage(String amount, String supplier) {
+    return '$amount para $supplier: autoriza el pago en PayPal. El dinero queda retenido hasta que confirmes la entrega.';
   }
 
   @override
