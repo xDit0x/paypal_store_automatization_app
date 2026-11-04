@@ -40,10 +40,20 @@ class _Item {
 }
 
 class _AssistantPageState extends State<AssistantPage> {
-  final _input = TextEditingController();
+  late final TextEditingController _input;
   final _scroll = ScrollController();
   bool _listening = false;
   bool _voiceSent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Si el dueño dejó algo escrito y cambió de pestaña, el borrador sigue
+    // en el cubit: se recupera al volver.
+    _input = TextEditingController(
+      text: context.read<AssistantCubit>().state.draft,
+    );
+  }
 
   @override
   void dispose() {
@@ -113,10 +123,12 @@ class _AssistantPageState extends State<AssistantPage> {
     if (store == null || assistant.state.sending || text.trim().isEmpty) return;
 
     StockySounds.instance.play(RSound.tap);
-    _input.clear();
     _scrollToEnd();
     final reply = await assistant.send(store.id, text, viaVoice: viaVoice);
     if (!mounted) return;
+    // El mensaje ya está en la conversación: el campo y el borrador se
+    // vacían (el cubit ya lo ha hecho al enviar).
+    if (_input.text.trim() == text.trim()) _input.clear();
     StockySounds.instance.play(RSound.message);
     if (reply != null && (viaVoice || assistant.state.speakReplies)) {
       VoiceService.instance.speak(reply.text, _lang);
@@ -160,6 +172,8 @@ class _AssistantPageState extends State<AssistantPage> {
         if (!mounted) return;
         _input.text = text;
         _input.selection = TextSelection.collapsed(offset: text.length);
+        // Lo que dicta también es borrador: no se pierde al cambiar de pestaña.
+        context.read<AssistantCubit>().setDraft(text);
         if (isFinal && !_voiceSent && text.trim().isNotEmpty) {
           _voiceSent = true;
           setState(() => _listening = false);
@@ -373,6 +387,8 @@ class _AssistantPageState extends State<AssistantPage> {
                 Expanded(
                   child: TextField(
                     controller: _input,
+                    onChanged: (value) =>
+                        context.read<AssistantCubit>().setDraft(value),
                     onSubmitted: (_) => _send(),
                     textInputAction: TextInputAction.send,
                     style: t.body,

@@ -36,6 +36,7 @@ class AssistantState {
     this.sending = false,
     this.adoptingOfferId,
     this.speakReplies = false,
+    this.draft = '',
   });
 
   final List<AssistantEntry> entries;
@@ -45,18 +46,24 @@ class AssistantState {
   /// Leer siempre las respuestas en voz alta (aunque se escriba).
   final bool speakReplies;
 
+  /// Lo que el dueño ha escrito pero todavía no ha enviado. Vive aquí (y no
+  /// en la pantalla) para que no se pierda al cambiar de pestaña.
+  final String draft;
+
   AssistantState copyWith({
     List<AssistantEntry>? entries,
     bool? sending,
     String? adoptingOfferId,
     bool clearAdopting = false,
     bool? speakReplies,
+    String? draft,
   }) =>
       AssistantState(
         entries: entries ?? this.entries,
         sending: sending ?? this.sending,
         adoptingOfferId: clearAdopting ? null : adoptingOfferId ?? this.adoptingOfferId,
         speakReplies: speakReplies ?? this.speakReplies,
+        draft: draft ?? this.draft,
       );
 }
 
@@ -67,6 +74,13 @@ class AssistantCubit extends Cubit<AssistantState> {
         super(const AssistantState());
 
   final AssistantRepository _repository;
+
+  /// Guarda lo que se está escribiendo sin enviarlo. Al cambiar de pestaña
+  /// la pantalla se reconstruye, así que el borrador vive en el cubit.
+  void setDraft(String text) {
+    if (state.draft == text) return;
+    emit(state.copyWith(draft: text));
+  }
 
   /// Turnos que se mandan al servidor (sin errores, los últimos 20).
   List<AssistantTurn> get _history => state.entries
@@ -87,6 +101,8 @@ class AssistantCubit extends Cubit<AssistantState> {
 
     emit(state.copyWith(
       sending: true,
+      // El mensaje ya está en la conversación: el borrador se vacía.
+      draft: '',
       entries: [
         ...state.entries,
         AssistantEntry(fromUser: true, text: clean, at: DateTime.now(), viaVoice: viaVoice),
