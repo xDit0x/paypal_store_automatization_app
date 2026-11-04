@@ -42,6 +42,10 @@ class StockyState {
   final bool placingOrder;
   final AppError? catalogError;
 
+  /// Texto que se usa cuando un proveedor no tiene nombre (está en el
+  /// idioma activo).
+  final String supplierFallback;
+
   const StockyState({
     this.status = StockyStatus.initial,
     this.error,
@@ -59,6 +63,7 @@ class StockyState {
     this.catalogResults = const [],
     this.placingOrder = false,
     this.catalogError,
+    this.supplierFallback = 'Proveedor',
   });
 
   bool get isLoading =>
@@ -72,8 +77,10 @@ class StockyState {
       ? 0
       : (spentThisMonth / monthlyLimit).clamp(0, 1).toDouble();
 
-  String supplierName(String supplierId) =>
-      suppliers[supplierId]?.name ?? 'Proveedor';
+  String supplierName(String supplierId) {
+    final name = suppliers[supplierId]?.name ?? '';
+    return name.trim().isEmpty ? supplierFallback : name;
+  }
 
   List<Order> get pendingOrders =>
       orders.where((o) => o.status == OrderStatus.pendingApproval).toList();
@@ -159,6 +166,7 @@ class StockyState {
     bool? placingOrder,
     AppError? catalogError,
     bool clearCatalogError = false,
+    String? supplierFallback,
   }) {
     return StockyState(
       status: status ?? this.status,
@@ -179,6 +187,7 @@ class StockyState {
       catalogError: clearCatalogError
           ? null
           : (catalogError ?? this.catalogError),
+      supplierFallback: supplierFallback ?? this.supplierFallback,
     );
   }
 }

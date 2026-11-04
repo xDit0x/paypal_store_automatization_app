@@ -95,7 +95,13 @@ class AssistantCubit extends Cubit<AssistantState> {
 
   /// Envía un mensaje. Devuelve la respuesta (o null si falló) para que la
   /// pantalla decida si la lee en voz alta.
-  Future<AssistantEntry?> send(String storeId, String text, {bool viaVoice = false}) async {
+  Future<AssistantEntry?> send(
+    String storeId,
+    String text, {
+    bool viaVoice = false,
+    /// Idioma de la app para que el asistente conteste en él.
+    String? locale,
+  }) async {
     final clean = text.trim();
     if (clean.isEmpty || state.sending) return null;
 
@@ -109,7 +115,11 @@ class AssistantCubit extends Cubit<AssistantState> {
       ],
     ));
 
-    final result = await _repository.send(storeId: storeId, history: _history);
+    final result = await _repository.send(
+      storeId: storeId,
+      history: _history,
+      locale: locale,
+    );
     final entry = result.fold(
       (error) => AssistantEntry(fromUser: false, text: '', at: DateTime.now(), error: error),
       (reply) => AssistantEntry(
@@ -142,6 +152,8 @@ class AssistantCubit extends Cubit<AssistantState> {
     required MarketOption option,
     required int? quantity,
     required bool placeOrder,
+    /// Idioma de la app para los mensajes del servidor.
+    String? locale,
   }) async {
     emit(state.copyWith(adoptingOfferId: option.offerId));
     final result = await _repository.adopt(
@@ -150,6 +162,7 @@ class AssistantCubit extends Cubit<AssistantState> {
       searchId: research.searchId,
       quantity: quantity,
       placeOrder: placeOrder,
+      locale: locale,
     );
     if (!isClosed) emit(state.copyWith(clearAdopting: true));
     return result;

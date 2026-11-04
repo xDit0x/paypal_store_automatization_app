@@ -325,7 +325,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                             style: t.footnote,
                           ),
                           trailing: RPill(
-                            order.paymentStatus ?? l10n.orderPaymentStatusSent,
+                            order.paymentStatus == 'PAYMENT_FAILED'
+                                ? l10n.orderPaymentFailed
+                                : order.paymentStatus ??
+                                      l10n.orderPaymentStatusSent,
                             tone: RPillTone.info,
                           ),
                         ),

@@ -28,3 +28,24 @@ AppLocalizations l10nFor(Locale locale) {
 /// elegido ninguno a mano.
 Locale deviceLocale() =>
     WidgetsBinding.instance.platformDispatcher.locale;
+
+/// Nombres y unidades que llegan del catálogo.
+///
+/// El catálogo guarda "unidad" como unidad por defecto, así que se traduce al
+/// idioma activo. El resto de unidades (kg, L...) se dejan como están.
+extension AppLocalizationsNames on AppLocalizations {
+  /// Nombre del producto, con el texto de reserva si viene vacío.
+  String productName(String value) =>
+      value.trim().isEmpty ? productFallback : value;
+
+  /// Nombre del proveedor, con el texto de reserva si viene vacío.
+  String supplierName(String value) =>
+      value.trim().isEmpty ? supplierFallback : value;
+
+  /// Unidad de medida en el idioma activo.
+  String unit(String value) {
+    final key = value.trim().toLowerCase();
+    if (key.isEmpty || key == 'unidad') return unitFallback;
+    return value;
+  }
+}

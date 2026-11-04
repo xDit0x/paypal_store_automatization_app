@@ -40,6 +40,7 @@ class PreviewAssistantRepository implements AssistantRepository {
   Future<Either<AppError, AssistantReply>> send({
     required String storeId,
     required List<AssistantTurn> history,
+    String? locale,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 700));
     final users = history.where((t) => t.fromUser).length;
@@ -73,6 +74,7 @@ class PreviewAssistantRepository implements AssistantRepository {
     String? searchId,
     int? quantity,
     required bool placeOrder,
+    String? locale,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 900));
     final option = _options.firstWhere((o) => o.offerId == offerId, orElse: () => _options.first);

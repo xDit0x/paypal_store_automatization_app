@@ -23,6 +23,8 @@
   "actionReviewStockNow": "Review stock now",
   "actionRemoveOneUnit": "Remove one unit",
   "actionAddOneUnit": "Add one unit",
+  "actionDelete": "Delete",
+  "actionRestore": "Restore",
 
   "semanticsBackTo": "Back to {label}",
   "@semanticsBackTo": {
@@ -52,6 +54,12 @@
   "@homeBudgetOfMonth": {
     "placeholders": {
       "month": { "type": "String" }
+    }
+  },
+  "budgetRingSemantics": "{percent}% of the budget used",
+  "@budgetRingSemantics": {
+    "placeholders": {
+      "percent": { "type": "int" }
     }
   },
   "homeRemaining": "{amount} left",
@@ -101,10 +109,13 @@
     }
   },
   "catalogOrderButton": "Place order",
+  "catalogSupplierHint": "Supplier",
   "catalogOrderCreated": "Order created. Approve it to pay and add the stock.",
   "stockFilterAll": "All",
   "stockFilterLow": "Low stock",
   "stockFilterTransit": "On the way",
+  "stockFilterOut": "Out of stock",
+  "stockFilterDeleted": "Deleted",
   "stockEmptyTitle": "No products yet",
   "stockEmptyFilterTitle": "Nothing matches this filter",
   "stockEmptyMessage": "Your suppliers' catalogues will show up here.",
@@ -128,6 +139,8 @@
   },
   "stockUpdated": "Stock updated",
   "stockUpdatedMessage": "{name}: {stock} {unit}.",
+  "stockRestored": "Restored",
+  "stockRestoredMessage": "Product {name} restored!",
   "@stockUpdatedMessage": {
     "placeholders": {
       "name": { "type": "String" },
@@ -477,6 +490,9 @@
   "rulesLanguageAuto": "Auto",
   "rulesLanguageSpanish": "Spanish",
   "rulesLanguageEnglish": "English",
+  "supplierFallback": "Supplier",
+  "productFallback": "Product",
+  "unitFallback": "unit",
   "rulesSounds": "Sounds",
   "rulesSignOutQuestion": "Sign out?",
   "rulesSignOutCancel": "Cancel",
@@ -538,10 +554,6 @@
     "placeholders": {
       "reason": { "type": "String" }
     }
-  },
-  "decisionBlockedEs": "Quería pedir, pero mis reglas de gasto lo bloquearon.",
-  "@decisionBlockedEs": {
-    "placeholders": {}
   },
   "decisionFailed": "The review failed. Try again in a moment.",
   "decisionAutoApproved": "I placed an order within your rules and paid it with PayPal.",

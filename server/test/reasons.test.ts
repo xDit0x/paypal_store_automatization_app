@@ -5,7 +5,8 @@ import {
   evaluateSpendingRules,
   type SpendingRules,
 } from '../src/domain/spending_rules.js';
-import { describeSpendingBlock } from '../src/application/orders/describe_spending_block.js';
+import { describeReason } from '../src/application/i18n/reasons.js';
+import { languageOf } from '../src/application/i18n/messages.js';
 
 const rules: SpendingRules = {
   maxPerOrder: 200,
@@ -14,24 +15,17 @@ const rules: SpendingRules = {
   allowedSupplierIds: [],
 };
 
-const context = {
-  orderTotal: 250,
-  spentThisMonth: 600,
-  currency: 'EUR',
-  maxPerOrder: rules.maxPerOrder,
-  monthlyLimit: rules.monthlyLimit,
-};
-
 test('explica el bloqueo por encima del máximo por pedido con ambos importes', () => {
   const decision = evaluateSpendingRules({
     rules,
     orderTotal: 250,
     spentThisMonth: 0,
     supplierId: 'sup-1',
+    currency: 'EUR',
   });
 
   assert.equal(
-    describeSpendingBlock(decision, context),
+    describeReason(decision.reason!),
     'supera el máximo por pedido (250.00 EUR de 200.00 EUR)',
   );
 });
@@ -42,10 +36,11 @@ test('explica el bloqueo mensual sumando lo gastado y el pedido', () => {
     orderTotal: 100,
     spentThisMonth: 750,
     supplierId: 'sup-1',
+    currency: 'EUR',
   });
 
   assert.equal(
-    describeSpendingBlock(decision, { ...context, orderTotal: 100, spentThisMonth: 750 }),
+    describeReason(decision.reason!),
     'supera el límite mensual (850.00 EUR de 800.00 EUR)',
   );
 });
@@ -59,7 +54,7 @@ test('explica un proveedor no permitido', () => {
   });
 
   assert.equal(
-    describeSpendingBlock(decision, context),
+    describeReason(decision.reason!),
     'el proveedor no está en la lista de proveedores permitidos',
   );
 });
@@ -72,14 +67,41 @@ test('explica un pedido sin importe', () => {
     supplierId: 'sup-1',
   });
 
-  assert.equal(describeSpendingBlock(decision, context), 'el pedido no tiene importe');
+  assert.equal(describeReason(decision.reason!), 'el pedido no tiene importe');
 });
 
-test('recorta el punto final del motivo de reserva', () => {
-  const reason = describeSpendingBlock(
-    { status: 'blocked', reason: 'lo bloquea una regla antigua.' },
-    context,
-  );
+test('explica el bloqueo en inglés cuando la app va en inglés', () => {
+  const decision = evaluateSpendingRules({
+    rules,
+    orderTotal: 100,
+    spentThisMonth: 750,
+    supplierId: 'sup-1',
+    currency: 'EUR',
+  });
 
-  assert.equal(reason, 'lo bloquea una regla antigua');
+  assert.equal(
+    describeReason(decision.reason!, 'en'),
+    'it exceeds the monthly limit (850.00 EUR of 800.00 EUR)',
+  );
+});
+
+test('el mismo motivo se explica en los dos idiomas', () => {
+  const reason = { code: 'wrong_status', params: { status: 'approved' } } as const;
+
+  assert.equal(
+    describeReason(reason, 'es'),
+    'el pedido está en estado "approved"',
+  );
+  assert.equal(
+    describeReason(reason, 'en'),
+    'the order is in status "approved"',
+  );
+});
+
+test('el idioma se detecta a partir del que manda la app', () => {
+  assert.equal(languageOf('en'), 'en');
+  assert.equal(languageOf('en-US'), 'en');
+  assert.equal(languageOf('es'), 'es');
+  assert.equal(languageOf(null), 'es');
+  assert.equal(languageOf(7), 'es');
 });

@@ -94,6 +94,21 @@ test('el asistente no ajusta con valores inválidos', async () => {
   assert.match(String(toolMessage?.content), /mayor que 0/);
 });
 
+test('el asistente contesta en el idioma que pide la app', async () => {
+  const provider = fake([{ content: 'Your budget is updated.', toolCalls: [] }]);
+  await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'Raise my budget' }],
+    provider,
+    products: [],
+    language: 'en',
+  });
+
+  const system = provider.seen[0]![0]!.content;
+  assert.match(system, /Always reply in English/);
+  assert.doesNotMatch(system, /español por defecto/);
+});
+
 test('herramienta desconocida no rompe el chat', async () => {
   const provider = fake([
     { content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'borrar_todo', arguments: '{}' } }] },

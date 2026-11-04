@@ -450,7 +450,9 @@ void main() {
     );
   });
 
-  testWidgets('el selector de idioma traduce la app al inglés', (tester) async {
+  testWidgets('la app arranca en inglés y el selector cambia al español', (
+    tester,
+  ) async {
     final locale = LocaleCubit();
 
     await tester.pumpWidget(
@@ -463,7 +465,7 @@ void main() {
         ],
         child: BlocBuilder<LocaleCubit, Locale?>(
           builder: (context, selected) => MaterialApp(
-            locale: selected ?? const Locale('es'),
+            locale: selected ?? const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: StockyShell(createCubit: _restockCubit),
@@ -473,10 +475,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Reglas').last);
+    // El idioma por defecto de la app es el inglés.
+    expect(locale.state, const Locale('en'));
+    expect(find.text('Rules'), findsWidgets);
+    expect(find.text('Reglas'), findsNothing);
+
+    await tester.tap(find.text('Rules').last);
     await tester.pumpAndSettle();
 
-    final english = find.text('English');
+    final spanish = find.text('Spanish');
     // La tarjeta de cuenta está al final de la pestaña: baja del todo para
     // que el selector quede por encima del dock.
     await tester.fling(
@@ -485,11 +492,11 @@ void main() {
       1500,
     );
     await tester.pumpAndSettle();
-    await tester.tap(english);
+    await tester.tap(spanish);
     await tester.pumpAndSettle();
 
-    expect(locale.state, const Locale('en'));
-    expect(find.text('Rules'), findsWidgets);
-    expect(find.text('Reglas'), findsNothing);
+    expect(locale.state, const Locale('es'));
+    expect(find.text('Reglas'), findsWidgets);
+    expect(find.text('Rules'), findsNothing);
   });
 }

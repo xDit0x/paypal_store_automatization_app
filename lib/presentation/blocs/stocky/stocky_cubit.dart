@@ -190,6 +190,7 @@ class StockyCubit extends Cubit<StockyState> {
         chat: chat,
         error: errors.isEmpty ? null : errors.first,
         clearError: errors.isEmpty,
+        supplierFallback: l10n.supplierFallback,
       ),
     );
 
@@ -244,7 +245,7 @@ class StockyCubit extends Cubit<StockyState> {
     }
     emit(state.copyWith(agentRunning: true, chat: chat));
 
-    final result = await runAgentUsecase(store.id);
+    final result = await runAgentUsecase(store.id, locale: l10n.localeName);
     var failed = false;
     var blocked = false;
     final message = result.fold<String>(

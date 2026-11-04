@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 
 import { importCatalog } from '../../../application/catalog/import_catalog.js';
+import { errorCopy } from '../../../application/i18n/errors.js';
+import { requestLanguage } from '../language.js';
 import { createRateLimiter } from '../rate_limit.js';
 
 interface SyncBody {
@@ -17,10 +19,11 @@ export async function catalogSyncRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { supplierCode: string }; Body: SyncBody }>(
     '/catalog/sync/:supplierCode',
     async (request, reply) => {
+      const text = errorCopy[requestLanguage(request)];
       const { allowed, retryAfterSeconds } = syncLimiter.check(request.ip);
       if (!allowed) {
         reply.header('Retry-After', String(retryAfterSeconds));
-        return reply.code(429).send({ error: 'Demasiadas peticiones. Espera un momento.' });
+        return reply.code(429).send({ error: text.tooManyRequests });
       }
 
       // Autenticación por token estático en cabecera x-catalog-token o Bearer
@@ -32,13 +35,13 @@ export async function catalogSyncRoutes(app: FastifyInstance): Promise<void> {
 
       const expectedToken = process.env.CATALOG_SYNC_TOKEN;
       if (!expectedToken || tokenHeader !== expectedToken) {
-        return reply.code(401).send({ error: 'Token de sincronización no válido o no configurado.' });
+        return reply.code(401).send({ error: text.syncTokenInvalid });
       }
 
       const supplierCode = request.params.supplierCode.trim().toLowerCase();
       const rawBody = request.body;
       if (!rawBody || typeof rawBody !== 'object') {
-        return reply.code(400).send({ error: 'Payload JSON no válido.' });
+        return reply.code(400).send({ error: text.invalidJson });
       }
 
       try {
@@ -50,7 +53,7 @@ export async function catalogSyncRoutes(app: FastifyInstance): Promise<void> {
 
         if (result.errors.length > 0) {
           return reply.code(422).send({
-            error: 'Errores al procesar el catálogo.',
+            error: text.catalogErrors,
             details: result.errors,
             result,
           });

@@ -2,6 +2,7 @@ import { createAndSendInvoice } from '../paypal/invoices.js';
 import { paypalConfigured } from '../paypal/paypal_client.js';
 import { sendPayout } from '../paypal/payouts.js';
 import { supabaseAdmin } from '../../infrastructure/supabase/supabase_client.js';
+import { ReasonError } from '../../domain/reasons.js';
 import { guardOrderAmount } from './guard_order_amount.js';
 
 interface OrderRow {
@@ -250,7 +251,10 @@ export async function fulfillOrder(
   const { order, store, supplier } = await loadOrderContext(orderId);
 
   if (order.status !== 'approved') {
-    throw new Error(`El pedido está en estado "${order.status}".`);
+    throw new ReasonError({
+      code: 'wrong_status',
+      params: { status: order.status },
+    });
   }
 
   // El importe se recalcula desde el catálogo y se vuelven a comprobar las
@@ -290,10 +294,11 @@ export async function fulfillOrder(
         );
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      // El motivo técnico se queda en el log; en la app se muestra un texto
+      // traducible ("No se pudo pagar"), no el error crudo.
       await updateOrder(order.id, {
         status: 'payment_failed',
-        payment_status: message,
+        payment_status: 'PAYMENT_FAILED',
       });
       throw error;
     }

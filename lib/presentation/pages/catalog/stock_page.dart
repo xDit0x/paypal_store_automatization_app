@@ -99,14 +99,18 @@ class _StockPageState extends State<StockPage> {
       setState(() => _filter = _Filter.all);
       showStockySnack(
         context,
-        '¡Producto ${product.name} recuperado!',
-        title: 'Recuperado',
+        context.l10n.stockRestoredMessage(context.l10n.productName(product.name)),
+        title: context.l10n.stockRestored,
         tone: RSnackTone.success,
       );
     } else if (saved != null && saved is int && context.mounted) {
       showStockySnack(
         context,
-        context.l10n.stockUpdatedMessage(product.name, saved, product.unit),
+        context.l10n.stockUpdatedMessage(
+          context.l10n.productName(product.name),
+          saved,
+          context.l10n.unit(product.unit),
+        ),
         title: context.l10n.stockUpdated,
         tone: RSnackTone.success,
       );
@@ -180,7 +184,7 @@ class _StockPageState extends State<StockPage> {
                     ),
                     _FilterTab(
                       key: _filterKeys[_Filter.outOfStock],
-                      label: 'Agotados',
+                      label: context.l10n.stockFilterOut,
                       selected: _filter == _Filter.outOfStock,
                       accent: Colors.amber,
                       onTap: () {
@@ -190,7 +194,7 @@ class _StockPageState extends State<StockPage> {
                     ),
                     _FilterTab(
                       key: _filterKeys[_Filter.eliminated],
-                      label: 'Eliminados',
+                      label: context.l10n.stockFilterDeleted,
                       selected: _filter == _Filter.eliminated,
                       accent: Colors.red,
                       onTap: () {
@@ -209,9 +213,12 @@ class _StockPageState extends State<StockPage> {
             child: DropdownButton<String?>(
               isExpanded: true,
               value: _supplierFilter,
-              hint: const Text('Proveedor'),
+              hint: Text(context.l10n.catalogSupplierHint),
               items: [
-                const DropdownMenuItem(value: null, child: Text('Todos')),
+                DropdownMenuItem(
+                  value: null,
+                  child: Text(context.l10n.catalogFilterAll),
+                ),
                 ...{
                   for (final p in state.products)
                     if (p.stock > 0) p.supplierId,
@@ -381,7 +388,12 @@ class _ProductRow extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(product.name, style: t.headline)),
+                  Expanded(
+                    child: Text(
+                      l10n.productName(product.name),
+                      style: t.headline,
+                    ),
+                  ),
                   Text(
                     label,
                     style: TextStyle(
@@ -401,7 +413,7 @@ class _ProductRow extends StatelessWidget {
                     child: Text(
                       l10n.stockUnitsMin(
                         product.stock,
-                        product.unit,
+                        l10n.unit(product.unit),
                         product.lowStockThreshold,
                       ),
                       style: t.footnote,
@@ -547,7 +559,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
               ),
             ),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Eliminar'),
+            child: Text(context.l10n.actionDelete),
           ),
         ],
       ),
@@ -651,12 +663,15 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(widget.product.name, style: t.title3),
+                        Text(
+                          l10n.productName(widget.product.name),
+                          style: t.title3,
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           l10n.stockEditorUid(
                             widget.product.uid,
-                            widget.product.unit,
+                            l10n.unit(widget.product.unit),
                           ),
                           style: t.footnote,
                         ),
@@ -667,7 +682,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                     IconButton(
                       icon: Icon(CupertinoIcons.delete_solid, color: p.warning),
                       onPressed: _saving ? null : _confirmDelete,
-                      tooltip: 'Eliminar',
+                      tooltip: l10n.actionDelete,
                     ),
                   if (!widget.product.active)
                     IconButton(
@@ -677,7 +692,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                         color: Colors.green,
                       ),
                       onPressed: () => _restore(),
-                      tooltip: 'Recuperar',
+                      tooltip: l10n.actionRestore,
                     ),
                 ],
               ),
@@ -711,7 +726,10 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                             contentPadding: EdgeInsets.symmetric(vertical: 6),
                           ),
                         ),
-                        Text(widget.product.unit, style: t.caption),
+                        Text(
+                          l10n.unit(widget.product.unit),
+                          style: t.caption,
+                        ),
                       ],
                     ),
                   ),
@@ -746,7 +764,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                           Text(
                             l10n.stockThresholdHelp(
                               _threshold,
-                              widget.product.unit,
+                              l10n.unit(widget.product.unit),
                             ),
                             style: t.caption,
                           ),

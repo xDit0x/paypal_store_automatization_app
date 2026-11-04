@@ -94,8 +94,8 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
-    Locale('es'),
     Locale('en'),
+    Locale('es'),
   ];
 
   /// No description provided for @appName.
@@ -224,6 +224,18 @@ abstract class AppLocalizations {
   /// **'Añadir una unidad'**
   String get actionAddOneUnit;
 
+  /// No description provided for @actionDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get actionDelete;
+
+  /// No description provided for @actionRestore.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperar'**
+  String get actionRestore;
+
   /// No description provided for @semanticsBackTo.
   ///
   /// In es, this message translates to:
@@ -331,6 +343,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Presupuesto de {month}'**
   String homeBudgetOfMonth(String month);
+
+  /// No description provided for @budgetRingSemantics.
+  ///
+  /// In es, this message translates to:
+  /// **'{percent} % del presupuesto usado'**
+  String budgetRingSemantics(int percent);
 
   /// No description provided for @homeRemaining.
   ///
@@ -488,6 +506,12 @@ abstract class AppLocalizations {
   /// **'Tramitar pedido'**
   String get catalogOrderButton;
 
+  /// No description provided for @catalogSupplierHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Proveedor'**
+  String get catalogSupplierHint;
+
   /// No description provided for @catalogOrderCreated.
   ///
   /// In es, this message translates to:
@@ -511,6 +535,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'En camino'**
   String get stockFilterTransit;
+
+  /// No description provided for @stockFilterOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Agotados'**
+  String get stockFilterOut;
+
+  /// No description provided for @stockFilterDeleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminados'**
+  String get stockFilterDeleted;
 
   /// No description provided for @stockEmptyTitle.
   ///
@@ -577,6 +613,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{name}: {stock} {unit}.'**
   String stockUpdatedMessage(String name, int stock, String unit);
+
+  /// No description provided for @stockRestored.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperado'**
+  String get stockRestored;
+
+  /// No description provided for @stockRestoredMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Producto {name} recuperado!'**
+  String stockRestoredMessage(String name);
 
   /// No description provided for @stockEditorUid.
   ///
@@ -1458,6 +1506,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'English'**
   String get rulesLanguageEnglish;
+
+  /// No description provided for @supplierFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'Proveedor'**
+  String get supplierFallback;
+
+  /// No description provided for @productFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'Producto'**
+  String get productFallback;
+
+  /// No description provided for @unitFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'unidad'**
+  String get unitFallback;
 
   /// No description provided for @rulesSounds.
   ///

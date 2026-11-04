@@ -13,9 +13,12 @@ class SupabaseAgentRepository implements AgentRepository {
   SupabaseAgentRepository(this._datasource);
 
   @override
-  Future<Either<AppError, AgentRunResult>> run(String storeId) async {
+  Future<Either<AppError, AgentRunResult>> run(
+    String storeId, {
+    String? locale,
+  }) async {
     try {
-      final data = await _datasource.run(storeId);
+      final data = await _datasource.run(storeId, locale: locale);
       return Right(
         AgentRunResult(
           orderId: (data['order_id'] ?? data['orderId']) as String?,

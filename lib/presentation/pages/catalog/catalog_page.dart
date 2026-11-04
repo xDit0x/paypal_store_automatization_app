@@ -292,10 +292,10 @@ class _CatalogRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(product.name, style: t.headline),
+                    Text(l10n.productName(product.name), style: t.headline),
                     const SizedBox(height: 2),
                     Text(
-                      '${product.supplierName} · ${product.uid}',
+                      '${l10n.supplierName(product.supplierName)} · ${product.uid}',
                       style: t.caption,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -400,10 +400,13 @@ class _QuantitySheetState extends State<_QuantitySheet> {
                 ),
               ),
               const SizedBox(height: 18),
-              Text(widget.product.name, style: t.title3),
+              Text(
+                l10n.productName(widget.product.name),
+                style: t.title3,
+              ),
               const SizedBox(height: 4),
               Text(
-                '${widget.product.supplierName} · '
+                '${l10n.supplierName(widget.product.supplierName)} · '
                 '${l10n.euros(widget.product.price, widget.product.currency)}',
                 style: t.footnote,
               ),
@@ -759,7 +762,7 @@ class _CartLine extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name, style: t.body),
+                Text(l10n.productName(product.name), style: t.body),
                 Text(
                   l10n.euros(product.price * quantity, product.currency),
                   style: t.footnote,

@@ -124,7 +124,12 @@ class _AssistantPageState extends State<AssistantPage> {
 
     StockySounds.instance.play(RSound.tap);
     _scrollToEnd();
-    final reply = await assistant.send(store.id, text, viaVoice: viaVoice);
+    final reply = await assistant.send(
+      store.id,
+      text,
+      viaVoice: viaVoice,
+      locale: context.l10n.localeName,
+    );
     if (!mounted) return;
     // El mensaje ya está en la conversación: el campo y el borrador se
     // vacían (el cubit ya lo ha hecho al enviar).
@@ -221,6 +226,7 @@ class _AssistantPageState extends State<AssistantPage> {
       option: option,
       quantity: choice.quantity,
       placeOrder: choice.placeOrder,
+      locale: l10n.localeName,
     );
     if (!mounted) return;
 

@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 
+import { errorCopy } from '../../../application/i18n/errors.js';
 import { supabaseAdmin } from '../../../infrastructure/supabase/supabase_client.js';
 import { authenticate } from '../auth.js';
+import { requestLanguage } from '../language.js';
 import { createRateLimiter } from '../rate_limit.js';
 
 interface StockBody {
@@ -44,9 +46,12 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
   app.patch<{ Params: { uid: string }; Body: StockBody }>(
     '/catalog/products/:uid/stock',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
       if (!user) {
-        return reply.code(401).send({ error: 'Sesión no válida.' });
+        return reply.code(401).send({ error: text.sessionInvalid });
       }
 
       const { allowed, retryAfterSeconds } = limiter.check(user.id);
@@ -54,20 +59,20 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         reply.header('Retry-After', String(retryAfterSeconds));
         return reply
           .code(429)
-          .send({ error: 'Demasiados cambios de stock. Espera un momento.' });
+          .send({ error: text.stockChangesRateLimited });
       }
 
       const stock = Number(request.body?.stock);
       if (!Number.isInteger(stock) || stock < 0) {
         return reply
           .code(400)
-          .send({ error: 'El stock debe ser un número entero igual o mayor que 0.' });
+          .send({ error: text.stockNotInteger });
       }
 
       const storeId =
         typeof request.body?.store_id === 'string' ? request.body.store_id : '';
       if (!storeId) {
-        return reply.code(400).send({ error: 'Falta store_id.' });
+        return reply.code(400).send({ error: text.storeIdMissing });
       }
 
       // La tienda tiene que ser del usuario que hace el cambio. Así el stock
@@ -81,12 +86,12 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
 
       if (storeError) {
         request.log.error(storeError);
-        return reply.code(500).send({ error: 'No se pudo comprobar la tienda.' });
+        return reply.code(500).send({ error: text.storeCheckFailed });
       }
       if (!store) {
         return reply
           .code(403)
-          .send({ error: 'La tienda no existe o no es tuya.' });
+          .send({ error: text.storeNotOwned });
       }
 
       try {
@@ -102,7 +107,7 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
           );
         }
         if (!product) {
-          return reply.code(404).send({ error: 'Producto no encontrado.' });
+          return reply.code(404).send({ error: text.productNotFound });
         }
 
         const catalogProduct = product as unknown as ProductRow;
@@ -158,7 +163,7 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         request.log.error(error);
         return reply
           .code(500)
-          .send({ error: 'No se pudo actualizar el stock del producto.' });
+          .send({ error: text.stockUpdateFailed });
       }
     },
   );
@@ -169,9 +174,12 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
   app.patch<{ Params: { uid: string }; Body: ThresholdBody }>(
     '/catalog/products/:uid/threshold',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
       if (!user) {
-        return reply.code(401).send({ error: 'Sesión no válida.' });
+        return reply.code(401).send({ error: text.sessionInvalid });
       }
 
       const { allowed, retryAfterSeconds } = limiter.check(user.id);
@@ -179,20 +187,20 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         reply.header('Retry-After', String(retryAfterSeconds));
         return reply
           .code(429)
-          .send({ error: 'Demasiados cambios de mínimo. Espera un momento.' });
+          .send({ error: text.thresholdChangesRateLimited });
       }
 
       const threshold = Number(request.body?.low_stock_threshold);
       if (!Number.isInteger(threshold) || threshold < 0) {
         return reply.code(400).send({
-          error: 'El mínimo debe ser un número entero igual o mayor que 0.',
+          error: text.thresholdNotInteger,
         });
       }
 
       const storeId =
         typeof request.body?.store_id === 'string' ? request.body.store_id : '';
       if (!storeId) {
-        return reply.code(400).send({ error: 'Falta store_id.' });
+        return reply.code(400).send({ error: text.storeIdMissing });
       }
 
       // La tienda tiene que ser del usuario que hace el cambio. Así el mínimo
@@ -206,12 +214,12 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
 
       if (storeError) {
         request.log.error(storeError);
-        return reply.code(500).send({ error: 'No se pudo comprobar la tienda.' });
+        return reply.code(500).send({ error: text.storeCheckFailed });
       }
       if (!store) {
         return reply
           .code(403)
-          .send({ error: 'La tienda no existe o no es tuya.' });
+          .send({ error: text.storeNotOwned });
       }
 
       try {
@@ -227,7 +235,7 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
           );
         }
         if (!product) {
-          return reply.code(404).send({ error: 'Producto no encontrado.' });
+          return reply.code(404).send({ error: text.productNotFound });
         }
 
         const catalogProduct = product as unknown as ProductRow;
@@ -287,7 +295,7 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         request.log.error(error);
         return reply
           .code(500)
-          .send({ error: 'No se pudo actualizar el mínimo del producto.' });
+          .send({ error: text.thresholdUpdateFailed });
       }
     },
   );
@@ -301,9 +309,12 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
   app.patch<{ Params: { uid: string }; Body: ActiveBody }>(
     '/catalog/products/:uid/active',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
       if (!user) {
-        return reply.code(401).send({ error: 'Sesión no válida.' });
+        return reply.code(401).send({ error: text.sessionInvalid });
       }
 
       const { allowed, retryAfterSeconds } = limiter.check(user.id);
@@ -311,20 +322,20 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         reply.header('Retry-After', String(retryAfterSeconds));
         return reply
           .code(429)
-          .send({ error: 'Demasiados cambios de catálogo. Espera un momento.' });
+          .send({ error: text.catalogChangesRateLimited });
       }
 
       const storeId =
         typeof request.body?.store_id === 'string' ? request.body.store_id : '';
       if (!storeId) {
-        return reply.code(400).send({ error: 'Falta store_id.' });
+        return reply.code(400).send({ error: text.storeIdMissing });
       }
 
       const active = request.body?.active;
       if (typeof active !== 'boolean') {
         return reply
           .code(400)
-          .send({ error: 'El estado del producto debe ser true o false.' });
+          .send({ error: text.productStateInvalid });
       }
 
       // La tienda tiene que ser del usuario que hace el cambio.
@@ -337,12 +348,12 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
 
       if (storeError) {
         request.log.error(storeError);
-        return reply.code(500).send({ error: 'No se pudo comprobar la tienda.' });
+        return reply.code(500).send({ error: text.storeCheckFailed });
       }
       if (!store) {
         return reply
           .code(403)
-          .send({ error: 'La tienda no existe o no es tuya.' });
+          .send({ error: text.storeNotOwned });
       }
 
       try {
@@ -359,7 +370,7 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
           );
         }
         if (!updated) {
-          return reply.code(404).send({ error: 'Producto no encontrado.' });
+          return reply.code(404).send({ error: text.productNotFound });
         }
 
         const product = updated as unknown as ActiveProductRow;
@@ -383,7 +394,7 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         request.log.error(error);
         return reply
           .code(500)
-          .send({ error: 'No se pudo cambiar el estado del producto.' });
+          .send({ error: text.productStateFailed });
       }
     },
   );

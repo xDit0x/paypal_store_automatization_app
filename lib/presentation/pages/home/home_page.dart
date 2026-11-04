@@ -379,11 +379,11 @@ class _LowStockRow extends StatelessWidget {
       pill = RPill(l10n.stockStatusLow, tone: RPillTone.warning);
     }
     return RListRow(
-      title: product.name,
+      title: l10n.productName(product.name),
       subtitle: Text(
         l10n.stockUnitsMin(
           product.stock,
-          product.unit,
+          l10n.unit(product.unit),
           product.lowStockThreshold,
         ),
         style: t.footnote,

@@ -23,6 +23,8 @@
   "actionReviewStockNow": "Revisar stock ahora",
   "actionRemoveOneUnit": "Quitar una unidad",
   "actionAddOneUnit": "Añadir una unidad",
+  "actionDelete": "Eliminar",
+  "actionRestore": "Recuperar",
 
   "semanticsBackTo": "Volver a {label}",
   "@semanticsBackTo": {
@@ -49,6 +51,12 @@
   "homeAgentWorking": "Trabajando…",
   "homeAgentActive": "Agente activo",
   "homeBudgetOfMonth": "Presupuesto de {month}",
+  "budgetRingSemantics": "{percent} % del presupuesto usado",
+  "@budgetRingSemantics": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
   "@homeBudgetOfMonth": {
     "placeholders": {
       "month": { "type": "String" }
@@ -101,10 +109,13 @@
     }
   },
   "catalogOrderButton": "Tramitar pedido",
+  "catalogSupplierHint": "Proveedor",
   "catalogOrderCreated": "Pedido creado. Apruébalo para pagar y sumar el stock.",
   "stockFilterAll": "Todos",
   "stockFilterLow": "Bajo mínimo",
   "stockFilterTransit": "En camino",
+  "stockFilterOut": "Agotados",
+  "stockFilterDeleted": "Eliminados",
   "stockEmptyTitle": "Aún no hay productos",
   "stockEmptyFilterTitle": "Nada con ese filtro",
   "stockEmptyMessage": "Los catálogos de tus proveedores aparecerán aquí.",
@@ -128,6 +139,13 @@
   },
   "stockUpdated": "Stock actualizado",
   "stockUpdatedMessage": "{name}: {stock} {unit}.",
+  "stockRestored": "Recuperado",
+  "stockRestoredMessage": "¡Producto {name} recuperado!",
+  "@stockRestoredMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "@stockUpdatedMessage": {
     "placeholders": {
       "name": { "type": "String" },
@@ -478,6 +496,9 @@
   "rulesLanguageAuto": "Auto",
   "rulesLanguageSpanish": "Español",
   "rulesLanguageEnglish": "English",
+  "supplierFallback": "Proveedor",
+  "productFallback": "Producto",
+  "unitFallback": "unidad",
   "rulesSounds": "Sonidos",
   "rulesSignOutQuestion": "¿Cerrar sesión?",
   "rulesSignOutCancel": "Cancelar",

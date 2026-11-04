@@ -58,7 +58,9 @@ test('bloquea por encima del máximo por pedido', () => {
 
   assert.equal(decision.status, 'blocked');
   assert.equal(decision.code, 'over_max_per_order');
-  assert.match(decision.reason ?? '', /250\.00 de 200\.00/);
+  assert.equal(decision.reason?.code, 'over_max_per_order');
+  assert.equal(decision.reason?.params?.total, '250.00');
+  assert.equal(decision.reason?.params?.limit, '200.00');
 });
 
 test('bloquea si supera el límite mensual', () => {
@@ -71,7 +73,9 @@ test('bloquea si supera el límite mensual', () => {
 
   assert.equal(decision.status, 'blocked');
   assert.equal(decision.code, 'over_monthly_limit');
-  assert.match(decision.reason ?? '', /850\.00 de 800\.00/);
+  assert.equal(decision.reason?.code, 'over_monthly_limit');
+  assert.equal(decision.reason?.params?.total, '850.00');
+  assert.equal(decision.reason?.params?.limit, '800.00');
 });
 
 test('bloquea proveedores no permitidos', () => {

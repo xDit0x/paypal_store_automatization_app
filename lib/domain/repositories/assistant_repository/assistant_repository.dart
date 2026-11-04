@@ -8,6 +8,8 @@ abstract class AssistantRepository {
   Future<Either<AppError, AssistantReply>> send({
     required String storeId,
     required List<AssistantTurn> history,
+    /// Idioma de la app ('es' o 'en') para que el asistente conteste en él.
+    String? locale,
   });
 
   Future<Either<AppError, AdoptResult>> adopt({
@@ -16,5 +18,7 @@ abstract class AssistantRepository {
     String? searchId,
     int? quantity,
     required bool placeOrder,
+    /// Idioma de la app ('es' o 'en').
+    String? locale,
   });
 }

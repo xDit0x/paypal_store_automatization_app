@@ -8,6 +8,8 @@ import {
   refundCapture,
 } from '../paypal/escrow.js';
 import { paypalConfigured } from '../paypal/paypal_client.js';
+import { ReasonError } from '../../domain/reasons.js';
+import type { AppLanguage } from '../i18n/messages.js';
 import { guardOrderAmount } from './guard_order_amount.js';
 import { sendInvoiceForOrder } from './fulfill_order.js';
 import {
@@ -96,7 +98,7 @@ async function loadEscrowContext(orderId: string): Promise<{
     throw new Error(`No se pudo cargar el pedido: ${error.message}`);
   }
   if (!data) {
-    throw new Error('El pedido no existe.');
+    throw new ReasonError({ code: 'order_not_found' });
   }
 
   const order = data as unknown as EscrowOrderRow;
@@ -114,8 +116,8 @@ async function loadEscrowContext(orderId: string): Promise<{
       .maybeSingle(),
   ]);
 
-  if (!storeData) throw new Error('La tienda del pedido no existe.');
-  if (!supplierData) throw new Error('El proveedor del pedido no existe.');
+  if (!storeData) throw new ReasonError({ code: 'store_not_found' });
+  if (!supplierData) throw new ReasonError({ code: 'supplier_not_found' });
 
   return {
     order,
@@ -130,15 +132,18 @@ async function loadEscrowContext(orderId: string): Promise<{
  */
 export async function startAuthorization(
   orderId: string,
-  options: { ownerApproved?: boolean } = {},
+  options: { ownerApproved?: boolean; locale?: 'es' | 'en' } = {},
 ): Promise<StartAuthorizationResult> {
   const { order } = await loadEscrowContext(orderId);
 
   if (!['approved', 'draft', 'pending_approval'].includes(order.status)) {
-    throw new Error(`El pedido está en estado "${order.status}".`);
+    throw new ReasonError({
+      code: 'wrong_status',
+      params: { status: order.status },
+    });
   }
   if (!paypalConfigured()) {
-    throw new Error('PayPal no está configurado.');
+    throw new ReasonError({ code: 'paypal_not_configured' });
   }
 
   // El importe se recalcula con el catálogo vigente antes de autorizar.
@@ -148,7 +153,11 @@ export async function startAuthorization(
     amount: amount.total,
     currency: 'EUR',
     referenceId: order.id,
-    returnUrl: `${env.publicBaseUrl}/paypal/return?order_id=${order.id}`,
+    // El idioma viaja en la URL para que la página de vuelta de PayPal esté
+    // en el idioma del dueño.
+    returnUrl: `${env.publicBaseUrl}/paypal/return?order_id=${order.id}&locale=${
+      options.locale ?? 'es'
+    }`,
     cancelUrl: `${env.appUrl}/orders/${order.id}`,
   });
 
@@ -179,12 +188,15 @@ export async function confirmAuthorization(
   const { order } = await loadEscrowContext(orderId);
 
   if (order.status !== 'approved') {
-    throw new Error(`El pedido está en estado "${order.status}".`);
+    throw new ReasonError({
+      code: 'wrong_status',
+      params: { status: order.status },
+    });
   }
 
   const paypalOrder = paypalOrderId ?? order.payment_payout_id;
   if (!paypalOrder) {
-    throw new Error('El pedido no tiene una orden de PayPal pendiente.');
+    throw new ReasonError({ code: 'no_paypal_order' });
   }
 
   const authorization = await authorizeOrder(paypalOrder);
@@ -209,7 +221,10 @@ export async function approvalUrlForOrder(
   const { order } = await loadEscrowContext(orderId);
 
   if (order.status !== 'approved') {
-    throw new Error(`El pedido está en estado "${order.status}".`);
+    throw new ReasonError({
+      code: 'wrong_status',
+      params: { status: order.status },
+    });
   }
   if (!order.payment_payout_id) return null;
 
@@ -223,17 +238,19 @@ export async function approvalUrlForOrder(
 export async function captureDelivery(
   orderId: string,
   lines: DeliveryLine[],
+  options: { locale?: AppLanguage } = {},
 ): Promise<CaptureDeliveryResult> {
   const { order, store, supplier } = await loadEscrowContext(orderId);
   const warnings: string[] = [];
 
   if (order.status !== 'authorized') {
-    throw new Error(
-      `El pedido está en estado "${order.status}". Solo se puede cobrar un pedido autorizado.`,
-    );
+    throw new ReasonError({
+      code: 'wrong_status',
+      params: { status: order.status },
+    });
   }
   if (!order.payment_authorization_id) {
-    throw new Error('El pedido no tiene autorización de PayPal.');
+    throw new ReasonError({ code: 'no_paypal_authorization' });
   }
 
   const items = order.order_items ?? [];
@@ -242,12 +259,16 @@ export async function captureDelivery(
   for (const line of lines) {
     const item = byUid.get(line.productUid);
     if (!item) {
-      throw new Error(`El producto ${line.productUid} no está en el pedido.`);
+      throw new ReasonError({
+        code: 'product_not_in_order',
+        params: { uid: line.productUid },
+      });
     }
     if (line.qtyReceived < 0 || line.qtyReceived > item.qty) {
-      throw new Error(
-        `Cantidad recibida no válida para ${item.name}: ${line.qtyReceived}.`,
-      );
+      throw new ReasonError({
+        code: 'invalid_received_qty',
+        params: { name: item.name, qty: String(line.qtyReceived) },
+      });
     }
   }
 
@@ -263,7 +284,7 @@ export async function captureDelivery(
   );
 
   if (capturedAmount <= 0) {
-    throw new Error('No se ha recibido ningún producto: no hay nada que cobrar.');
+    throw new ReasonError({ code: 'nothing_received' });
   }
 
   let capture;
@@ -281,8 +302,12 @@ export async function captureDelivery(
         orderNumber: `RS-${order.id.slice(0, 8).toUpperCase()}`,
         supplierName: supplier.name,
         storeName: store.name,
-        reason: `La captura del pago falló: ${message}`,
+        reason:
+          options.locale === 'en'
+            ? `The payment capture failed: ${message}`
+            : `La captura del pago falló: ${message}`,
         ownerEmail: store.notification_email,
+        locale: options.locale,
       });
     } catch (notifyError) {
       warnings.push(
@@ -399,7 +424,7 @@ export async function refundOrder(
   const { order, store } = await loadEscrowContext(orderId);
 
   if (!order.payment_capture_id) {
-    throw new Error('El pedido no tiene una captura que reembolsar.');
+    throw new ReasonError({ code: 'no_capture_to_refund' });
   }
 
   const refund = await refundCapture({

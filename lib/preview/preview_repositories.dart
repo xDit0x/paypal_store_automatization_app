@@ -630,7 +630,10 @@ class PreviewAgentRepository implements AgentRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<AppError, AgentRunResult>> run(String storeId) async {
+  Future<Either<AppError, AgentRunResult>> run(
+    String storeId, {
+    String? locale,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 1600));
 
     final pending = db.orders

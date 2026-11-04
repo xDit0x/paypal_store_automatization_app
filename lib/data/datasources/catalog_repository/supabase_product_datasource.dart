@@ -57,7 +57,7 @@ class SupabaseProductDatasource {
     return rows.map((r) {
       final map = Map<String, dynamic>.from(r as Map);
       final sup = (r['suppliers'] as Map?) ?? {};
-      map['supplier_name'] = sup['name'] ?? 'Proveedor';
+      map['supplier_name'] = sup['name'] ?? '';
       map['supplier_id'] = r['supplier_id'];
       map['in_inventory'] = false;
       return map;
@@ -129,7 +129,7 @@ class SupabaseProductDatasource {
       final sup = (r['suppliers'] as Map?) ?? {};
       final uid = r['uid'] as String;
       final stock = inventory[uid];
-      map['supplier_name'] = sup['name'] ?? 'Proveedor';
+      map['supplier_name'] = sup['name'] ?? '';
       map['in_inventory'] = stock != null;
       if (stock != null) {
         map['stock'] = stock['stock'];

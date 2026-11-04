@@ -4,6 +4,7 @@ import {
   mapSpendingRules,
   type SpendingRules,
 } from '../../domain/spending_rules.js';
+import { ReasonError, type Reason } from '../../domain/reasons.js';
 import { getSpentThisMonth } from './spent_this_month.js';
 
 export interface OrderAmountLine {
@@ -26,7 +27,7 @@ export interface AmountCheck {
   previousTotal: number;
   /** El total guardado no coincide con el del catálogo. */
   changed: boolean;
-  reason?: string;
+  reason?: Reason;
 }
 
 /**
@@ -37,9 +38,9 @@ export interface AmountCheck {
 export function computeOrderTotal(
   lines: OrderAmountLine[],
   products: CatalogPrice[],
-): { total: number; reason?: string } {
+): { total: number; reason?: Reason } {
   if (lines.length === 0) {
-    return { total: 0, reason: 'El pedido no tiene líneas.' };
+    return { total: 0, reason: { code: 'no_lines' } };
   }
 
   const catalog = new Map(products.map((product) => [product.uid, product]));
@@ -48,13 +49,22 @@ export function computeOrderTotal(
   for (const line of lines) {
     const product = catalog.get(line.productUid);
     if (!product) {
-      return { total: 0, reason: `El producto ${line.productUid} no está en el catálogo.` };
+      return {
+        total: 0,
+        reason: { code: 'product_not_in_catalog', params: { uid: line.productUid } },
+      };
     }
     if (!product.active) {
-      return { total: 0, reason: `El producto ${product.name} no está activo.` };
+      return {
+        total: 0,
+        reason: { code: 'product_not_active', params: { name: product.name } },
+      };
     }
     if (!Number.isInteger(line.qty) || line.qty <= 0) {
-      return { total: 0, reason: `Cantidad inválida para ${line.productUid}.` };
+      return {
+        total: 0,
+        reason: { code: 'invalid_qty', params: { uid: line.productUid } },
+      };
     }
     total += Number(product.price) * line.qty;
   }
@@ -82,7 +92,7 @@ export function verifyOrderAmount(params: {
 }): AmountCheck {
   const tolerance = params.tolerance ?? 0.01;
   const previousTotal = Number(params.orderTotal);
-  const fail = (reason: string): AmountCheck => ({
+  const fail = (reason: Reason): AmountCheck => ({
     ok: false,
     total: 0,
     previousTotal,
@@ -93,12 +103,16 @@ export function verifyOrderAmount(params: {
   for (const line of params.lines) {
     const product = params.products.find((p) => p.uid === line.productUid);
     if (!product) {
-      return fail(`El producto ${line.productUid} no está en el catálogo.`);
+      return fail({
+        code: 'product_not_in_catalog',
+        params: { uid: line.productUid },
+      });
     }
     if (product.supplierId !== params.orderSupplierId) {
-      return fail(
-        `El producto ${product.name} no pertenece al proveedor del pedido.`,
-      );
+      return fail({
+        code: 'product_wrong_supplier',
+        params: { name: product.name },
+      });
     }
   }
 
@@ -118,9 +132,7 @@ export function verifyOrderAmount(params: {
 
   if (decision.status === 'blocked') {
     return {
-      ...fail(
-        decision.reason ?? 'El pedido está bloqueado por las reglas de gasto.',
-      ),
+      ...fail(decision.reason ?? { code: 'blocked_by_rules' }),
       total: computed.total,
       changed,
     };
@@ -128,7 +140,7 @@ export function verifyOrderAmount(params: {
 
   if (decision.status === 'requires_approval' && !params.ownerApproved) {
     return {
-      ...fail('El pedido necesita tu aprobación antes de pagarlo.'),
+      ...fail(decision.reason ?? { code: 'needs_approval' }),
       total: computed.total,
       changed,
     };
@@ -157,7 +169,8 @@ export interface AmountReview {
   total: number;
   previousTotal: number;
   changed: boolean;
-  blockedReason?: string;
+  /** Motivo del bloqueo, sin redactar: lo traduce la capa HTTP. */
+  blockedReason?: Reason;
 }
 
 async function loadOrderAmountData(orderId: string): Promise<OrderAmountData> {
@@ -171,7 +184,7 @@ async function loadOrderAmountData(orderId: string): Promise<OrderAmountData> {
     throw new Error(`No se pudo comprobar el pedido: ${error.message}`);
   }
   if (!data) {
-    throw new Error('El pedido no existe.');
+    throw new ReasonError({ code: 'order_not_found' });
   }
 
   const order = data as unknown as OrderAmountRow;
@@ -322,7 +335,7 @@ export async function guardOrderAmount(
   });
 
   if (!check.ok) {
-    throw new Error(check.reason ?? 'El pedido no supera la comprobación de importe.');
+    throw new ReasonError(check.reason ?? { code: 'amount_check_failed' });
   }
 
   if (check.changed) {

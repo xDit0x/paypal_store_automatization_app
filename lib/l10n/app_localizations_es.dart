@@ -73,6 +73,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionAddOneUnit => 'Añadir una unidad';
 
   @override
+  String get actionDelete => 'Eliminar';
+
+  @override
+  String get actionRestore => 'Recuperar';
+
+  @override
   String semanticsBackTo(String label) {
     return 'Volver a $label';
   }
@@ -129,6 +135,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String homeBudgetOfMonth(String month) {
     return 'Presupuesto de $month';
+  }
+
+  @override
+  String budgetRingSemantics(int percent) {
+    return '$percent % del presupuesto usado';
   }
 
   @override
@@ -233,6 +244,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get catalogOrderButton => 'Tramitar pedido';
 
   @override
+  String get catalogSupplierHint => 'Proveedor';
+
+  @override
   String get catalogOrderCreated =>
       'Pedido creado. Apruébalo para pagar y sumar el stock.';
 
@@ -244,6 +258,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get stockFilterTransit => 'En camino';
+
+  @override
+  String get stockFilterOut => 'Agotados';
+
+  @override
+  String get stockFilterDeleted => 'Eliminados';
 
   @override
   String get stockEmptyTitle => 'Aún no hay productos';
@@ -290,6 +310,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String stockUpdatedMessage(String name, int stock, String unit) {
     return '$name: $stock $unit.';
+  }
+
+  @override
+  String get stockRestored => 'Recuperado';
+
+  @override
+  String stockRestoredMessage(String name) {
+    return '¡Producto $name recuperado!';
   }
 
   @override
@@ -821,6 +849,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rulesLanguageEnglish => 'English';
+
+  @override
+  String get supplierFallback => 'Proveedor';
+
+  @override
+  String get productFallback => 'Producto';
+
+  @override
+  String get unitFallback => 'unidad';
 
   @override
   String get rulesSounds => 'Sonidos';

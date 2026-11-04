@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '../../infrastructure/supabase/supabase_client.js';
 import { evaluateSpendingRules } from '../../domain/spending_rules.js';
+import { copy, type AppLanguage } from '../i18n/messages.js';
+import { describeReason } from '../i18n/reasons.js';
 import { createOrder } from '../orders/create_order.js';
 import { fulfillOrder } from '../orders/fulfill_order.js';
 import { getSpentThisMonth } from '../orders/spent_this_month.js';
@@ -16,6 +18,8 @@ export interface AdoptOfferInput {
   /** Unidades al mes que necesita la tienda (para el primer pedido). */
   quantity?: number | null;
   placeOrder: boolean;
+  /** Idioma de los mensajes (el que está usando la app). */
+  language?: AppLanguage;
 }
 
 export interface AdoptOfferResult {
@@ -156,11 +160,13 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
   // 4. Primer pedido
   const qty = cost.orderQty;
   const total = round2(unitPrice * qty);
+  const language = input.language ?? 'es';
   const decision = evaluateSpendingRules({
     rules: input.store.rules,
     orderTotal: total,
     spentThisMonth: await getSpentThisMonth(input.store.id),
     supplierId: supplier.id as string,
+    currency: storeCurrency,
   });
 
   if (decision.status === 'blocked') {
@@ -170,7 +176,9 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
       total,
       status: 'blocked',
       paid: false,
-      reason: decision.reason ?? 'Tus reglas de gasto no permiten este pedido.',
+      reason:
+        describeReason(decision.reason ?? { code: 'blocked_by_rules' }, language) ||
+        copy[language].blockNotAllowedFallback,
       warnings: [],
     };
     return result;

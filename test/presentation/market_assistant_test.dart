@@ -24,6 +24,7 @@ class _FakeRepo implements AssistantRepository {
   Future<Either<AppError, AssistantReply>> send({
     required String storeId,
     required List<AssistantTurn> history,
+    String? locale,
   }) async {
     sent.add(history);
     if (fail) return const Left(AppError(AppErrorCode.agentUnreachable));
@@ -37,6 +38,7 @@ class _FakeRepo implements AssistantRepository {
     String? searchId,
     int? quantity,
     required bool placeOrder,
+    String? locale,
   }) async =>
       throw UnimplementedError();
 }
