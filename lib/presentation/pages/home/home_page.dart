@@ -55,10 +55,7 @@ class HomePage extends StatelessWidget {
               children: [
                 RListRow(
                   title: l10n.homeAllInOrder,
-                  subtitle: Text(
-                    l10n.homeAllInOrderDetail,
-                    style: t.footnote,
-                  ),
+                  subtitle: Text(l10n.homeAllInOrderDetail, style: t.footnote),
                   trailing: Icon(
                     CupertinoIcons.checkmark_seal,
                     color: context.rp.accent,
@@ -110,7 +107,9 @@ class _AgentBadge extends StatelessWidget {
               ),
             const SizedBox(width: 6),
             Text(
-              running ? context.l10n.homeAgentWorking : context.l10n.homeAgentActive,
+              running
+                  ? context.l10n.homeAgentWorking
+                  : context.l10n.homeAgentActive,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -158,8 +157,7 @@ class _BudgetCard extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Text.rich(
                       TextSpan(
-                        text:
-                            '${l10n.eurosShort(spent.roundToDouble(), c)} ',
+                        text: '${l10n.eurosShort(spent.roundToDouble(), c)} ',
                         style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.w700,
@@ -215,13 +213,14 @@ class _AgentCard extends StatelessWidget {
     final message = await cubit.runAgent();
     if (!context.mounted) return;
     final failed = cubit.lastRunFailed;
+    final blocked = cubit.lastRunBlocked;
     showStockySnack(
       context,
       message,
       title: failed
           ? context.l10n.homeAgentFailed
           : context.l10n.homeStockReview,
-      tone: failed ? RSnackTone.warning : RSnackTone.info,
+      tone: failed || blocked ? RSnackTone.warning : RSnackTone.info,
       actionLabel: context.l10n.ordersTitle,
       onAction: () {
         ShellView.jumpToTab(2);
@@ -255,10 +254,7 @@ class _AgentCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            l10n.homeAgentDescription,
-            style: t.callout,
-          ),
+          Text(l10n.homeAgentDescription, style: t.callout),
           const SizedBox(height: 12),
           SizedBox(
             height: 44,

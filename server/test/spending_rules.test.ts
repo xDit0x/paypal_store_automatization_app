@@ -45,6 +45,7 @@ test('bloquea pedidos sin importe', () => {
   });
 
   assert.equal(decision.status, 'blocked');
+  assert.equal(decision.code, 'no_amount');
 });
 
 test('bloquea por encima del máximo por pedido', () => {
@@ -56,6 +57,8 @@ test('bloquea por encima del máximo por pedido', () => {
   });
 
   assert.equal(decision.status, 'blocked');
+  assert.equal(decision.code, 'over_max_per_order');
+  assert.match(decision.reason ?? '', /250\.00 de 200\.00/);
 });
 
 test('bloquea si supera el límite mensual', () => {
@@ -67,6 +70,8 @@ test('bloquea si supera el límite mensual', () => {
   });
 
   assert.equal(decision.status, 'blocked');
+  assert.equal(decision.code, 'over_monthly_limit');
+  assert.match(decision.reason ?? '', /850\.00 de 800\.00/);
 });
 
 test('bloquea proveedores no permitidos', () => {
@@ -78,6 +83,7 @@ test('bloquea proveedores no permitidos', () => {
   });
 
   assert.equal(decision.status, 'blocked');
+  assert.equal(decision.code, 'supplier_not_allowed');
 });
 
 test('mapea reglas de Supabase con valores por defecto', () => {

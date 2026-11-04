@@ -532,6 +532,12 @@
   "decisionOrderCreated": "Preparé un pedido de reposición con tu stock bajo.",
   "decisionNoAction": "Revisé el stock: no hacía falta pedir nada.",
   "decisionBlocked": "Quise pedir, pero tus reglas de gasto lo bloquearon.",
+  "decisionBlockedReason": "No creé el pedido porque {reason}.",
+  "@decisionBlockedReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "decisionFailed": "La revisión falló. Inténtalo de nuevo en un momento.",
   "decisionAutoApproved": "Hice un pedido dentro de tus reglas y lo pagué con PayPal.",
   "decisionRequiresApproval": "Preparé un pedido que necesita tu aprobación.",

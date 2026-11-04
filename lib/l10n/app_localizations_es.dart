@@ -989,6 +989,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Quise pedir, pero tus reglas de gasto lo bloquearon.';
 
   @override
+  String decisionBlockedReason(String reason) {
+    return 'No creé el pedido porque $reason.';
+  }
+
+  @override
   String get decisionFailed =>
       'La revisión falló. Inténtalo de nuevo en un momento.';
 

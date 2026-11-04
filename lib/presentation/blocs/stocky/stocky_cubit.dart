@@ -87,6 +87,9 @@ class StockyCubit extends Cubit<StockyState> {
   /// El último `runAgent` terminó con error.
   bool lastRunFailed = false;
 
+  /// El último `runAgent` no pudo crear el pedido por las reglas de gasto.
+  bool lastRunBlocked = false;
+
   AppLocalizations get l10n => _l10n();
 
   StockyCubit({
@@ -243,16 +246,21 @@ class StockyCubit extends Cubit<StockyState> {
 
     final result = await runAgentUsecase(store.id);
     var failed = false;
+    var blocked = false;
     final message = result.fold<String>(
       (error) {
         failed = true;
         return l10n.describeDetail(error);
       },
-      (r) => r.message.isNotEmpty
-          ? r.message
-          : describeAgentDecision(l10n, r.decision),
+      (r) {
+        blocked = r.decision == 'blocked';
+        return r.message.isNotEmpty
+            ? r.message
+            : describeAgentDecision(l10n, r.decision);
+      },
     );
     lastRunFailed = failed;
+    lastRunBlocked = blocked;
 
     emit(
       state.copyWith(
@@ -490,7 +498,9 @@ class StockyCubit extends Cubit<StockyState> {
       for (final r in recent)
         ChatEntry(
           fromUser: false,
-          text: describeAgentDecision(l10n, r.decision!),
+          text: r.blockedReason != null
+              ? l10n.decisionBlockedReason(r.blockedReason!)
+              : describeAgentDecision(l10n, r.decision!),
           at: r.createdAt?.toLocal() ?? DateTime.now(),
         ),
     ];

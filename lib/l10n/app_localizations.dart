@@ -1765,6 +1765,12 @@ abstract class AppLocalizations {
   /// **'Quise pedir, pero tus reglas de gasto lo bloquearon.'**
   String get decisionBlocked;
 
+  /// No description provided for @decisionBlockedReason.
+  ///
+  /// In es, this message translates to:
+  /// **'No creé el pedido porque {reason}.'**
+  String decisionBlockedReason(String reason);
+
   /// No description provided for @decisionFailed.
   ///
   /// In es, this message translates to:

@@ -7,9 +7,17 @@ export interface SpendingRules {
 
 export type SpendingStatus = 'auto_approved' | 'requires_approval' | 'blocked';
 
+export type SpendingBlockCode =
+  | 'no_amount'
+  | 'supplier_not_allowed'
+  | 'over_max_per_order'
+  | 'over_monthly_limit';
+
 export interface SpendingDecision {
   status: SpendingStatus;
   reason?: string;
+  /** Código estable del motivo, para poder redactarlo con el importe. */
+  code?: SpendingBlockCode;
 }
 
 export function evaluateSpendingRules(params: {
@@ -21,7 +29,7 @@ export function evaluateSpendingRules(params: {
   const { rules, orderTotal, spentThisMonth, supplierId } = params;
 
   if (orderTotal <= 0) {
-    return { status: 'blocked', reason: 'El pedido no tiene importe.' };
+    return { status: 'blocked', code: 'no_amount', reason: 'no tiene importe.' };
   }
 
   if (
@@ -30,21 +38,24 @@ export function evaluateSpendingRules(params: {
   ) {
     return {
       status: 'blocked',
-      reason: 'El proveedor no está en la lista de proveedores permitidos.',
+      code: 'supplier_not_allowed',
+      reason: 'el proveedor no está en la lista de proveedores permitidos.',
     };
   }
 
   if (orderTotal > rules.maxPerOrder) {
     return {
       status: 'blocked',
-      reason: `El pedido supera el máximo por pedido (${rules.maxPerOrder.toFixed(2)}).`,
+      code: 'over_max_per_order',
+      reason: `supera el máximo por pedido (${orderTotal.toFixed(2)} de ${rules.maxPerOrder.toFixed(2)}).`,
     };
   }
 
   if (spentThisMonth + orderTotal > rules.monthlyLimit) {
     return {
       status: 'blocked',
-      reason: `El pedido supera el límite mensual (${rules.monthlyLimit.toFixed(2)}).`,
+      code: 'over_monthly_limit',
+      reason: `supera el límite mensual (${(spentThisMonth + orderTotal).toFixed(2)} de ${rules.monthlyLimit.toFixed(2)}).`,
     };
   }
 

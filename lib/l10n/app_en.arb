@@ -532,6 +532,12 @@
   "decisionOrderCreated": "I prepared a stockying order with your low stock.",
   "decisionNoAction": "I reviewed the stock: nothing needed ordering.",
   "decisionBlocked": "I wanted to order, but your spending rules blocked it.",
+  "decisionBlockedReason": "I didn't create the order because {reason}.",
+  "@decisionBlockedReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "decisionBlockedEs": "Quería pedir, pero mis reglas de gasto lo bloquearon.",
   "@decisionBlockedEs": {
     "placeholders": {}

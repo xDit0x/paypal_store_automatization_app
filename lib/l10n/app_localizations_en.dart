@@ -985,6 +985,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'I wanted to order, but your spending rules blocked it.';
 
   @override
+  String decisionBlockedReason(String reason) {
+    return 'I didn\'t create the order because $reason.';
+  }
+
+  @override
   String get decisionFailed => 'The review failed. Try again in a moment.';
 
   @override

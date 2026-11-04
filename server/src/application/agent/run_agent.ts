@@ -15,6 +15,7 @@ import {
   quoteOrder,
   type OrderQuote,
 } from '../orders/create_order.js';
+import { describeSpendingBlock } from '../orders/describe_spending_block.js';
 import { fulfillOrder } from '../orders/fulfill_order.js';
 import { getSpentThisMonth } from '../orders/spent_this_month.js';
 import type { StoreContext } from '../stores/store_service.js';
@@ -148,8 +149,18 @@ async function handleToolCall(
     return {
       ok: false,
       blocked: true,
-      reason: decision.reason ?? 'El pedido está bloqueado por las reglas de gasto.',
+      code: decision.code,
+      reason: describeSpendingBlock(decision, {
+        orderTotal: quote.subtotal,
+        spentThisMonth,
+        currency: store.currency,
+        maxPerOrder: store.rules.maxPerOrder,
+        monthlyLimit: store.rules.monthlyLimit,
+      }),
       total: quote.subtotal,
+      spent_this_month: spentThisMonth,
+      monthly_limit: store.rules.monthlyLimit,
+      max_per_order: store.rules.maxPerOrder,
     };
   }
 
@@ -329,12 +340,32 @@ export async function runAgent(params: {
     })
     .eq('id', runId);
 
+  const blockedReasons = [
+    ...new Set(
+      executed
+        .filter(
+          (result) =>
+            result.blocked === true && typeof result.reason === 'string',
+        )
+        .map((result) => result.reason as string),
+    ),
+  ];
+
+  const blockedClause =
+    blockedReasons.length === 0
+      ? 'lo bloquean las reglas de gasto'
+      : blockedReasons.join('; ');
+
   const defaultMessage =
     decision === 'order_created'
-      ? 'Pedido de reposición creado.'
+      ? blockedReasons.length > 0
+        ? `Pedido creado. No pude hacer el resto porque ${blockedClause}.`
+        : 'Pedido de reposición creado.'
       : decision === 'blocked'
-        ? 'El pedido quedó bloqueado por las reglas de gasto.'
-        : 'No se creó ningún pedido.';
+        ? `No creé el pedido porque ${blockedClause}.`
+        : finalMessage.trim().length > 0
+          ? finalMessage.trim()
+          : 'No se creó ningún pedido.';
 
   return {
     orderId: orderIds[0] ?? null,
