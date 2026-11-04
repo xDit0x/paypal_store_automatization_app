@@ -119,3 +119,39 @@ test('herramienta desconocida no rompe el chat', async () => {
   const second = provider.seen[1]!;
   assert.match(second[second.length - 1]!.content, /desconocida/);
 });
+
+test('el asistente pregunta primero el producto y luego la cantidad', async () => {
+  const provider = fake([{ content: 'Vale.', toolCalls: [] }]);
+  await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'Quiero añadir un producto nuevo' }],
+    provider,
+    products: [],
+  });
+
+  const system = provider.seen[0]![0]!.content;
+  // El producto va antes que la cantidad y que la región.
+  const product = system.indexOf('PRIMERO, el producto');
+  const quantity = system.indexOf('DESPUÉS, la cantidad');
+  const region = system.indexOf('DESPUÉS, la región');
+  assert.ok(product >= 0, 'el prompt debe pedir primero el producto');
+  assert.ok(quantity > product, 'la cantidad se pregunta después del producto');
+  assert.ok(region > quantity, 'la región se pregunta después de la cantidad');
+});
+
+test('en inglés el prompt también pide primero el producto', async () => {
+  const provider = fake([{ content: 'Sure.', toolCalls: [] }]);
+  await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'I want to add a new product' }],
+    provider,
+    products: [],
+    language: 'en',
+  });
+
+  const system = provider.seen[0]![0]!.content;
+  const product = system.indexOf('FIRST, the product');
+  const quantity = system.indexOf('THEN, the quantity');
+  assert.ok(product >= 0, 'el prompt debe pedir primero el producto');
+  assert.ok(quantity > product, 'la cantidad se pregunta después del producto');
+});

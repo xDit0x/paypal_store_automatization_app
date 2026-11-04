@@ -1385,6 +1385,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get marketChoose => 'Elegir este distribuidor';
 
   @override
+  String get marketDemoBadge => 'Demo';
+
+  @override
+  String get marketDemoNotice =>
+      'Directorio de demostración: los distribuidores y sus precios son ficticios.';
+
+  @override
   String get marketWebTitle => 'También en internet';
 
   @override
@@ -1407,11 +1414,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get marketAdoptQuantity => 'Unidades al mes';
 
   @override
-  String get marketAdoptOrderNow => 'Hacer el primer pedido ahora';
+  String get marketAdoptOrderNow => 'Crear el primer pedido';
 
   @override
   String marketAdoptOrderHint(String total) {
-    return 'Se paga con PayPal (unos $total) si cumple tus reglas de gasto.';
+    return 'Pedido de unos $total: lo apruebas y pagas con PayPal, y el stock sube cuando registres la entrega.';
   }
 
   @override
@@ -1419,17 +1426,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String marketAdoptDone(String product, String supplier) {
-    return '**$product** ya está en tu stock, de **$supplier**.';
-  }
-
-  @override
-  String marketAdoptPaid(String total) {
-    return 'Primer pedido pagado con PayPal: **$total**.';
+    return '**$product** ya está en tu catálogo, de **$supplier**.';
   }
 
   @override
   String marketAdoptOrderCreated(String total) {
-    return 'Primer pedido creado por **$total**. Lo verás en Pedidos.';
+    return 'Primer pedido creado por **$total**. Apruébalo en Pedidos: el stock sube cuando registres el albarán.';
   }
 
   @override

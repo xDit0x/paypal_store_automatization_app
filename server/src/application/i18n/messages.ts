@@ -46,6 +46,12 @@ export interface Copy {
   assistantMarketFound: string;
   assistantCouldNotFinish: string;
   catalogueEmpty: string;
+  adoptOfferGone: string;
+  adoptDistributorGone: string;
+  adoptNoRate: string;
+  adoptSupplierFailed: string;
+  adoptProductFailed: string;
+  adoptStoreProductFailed: string;
 }
 
 export const copy: Record<AppLanguage, Copy> = {
@@ -99,6 +105,12 @@ export const copy: Record<AppLanguage, Copy> = {
     assistantCouldNotFinish:
       'No he podido terminar. ¿Lo intentamos otra vez?',
     catalogueEmpty: '(vacío)',
+    adoptOfferGone: 'Esa oferta ya no existe.',
+    adoptDistributorGone: 'Ese distribuidor ya no existe.',
+    adoptNoRate: 'No hay tipo de cambio para {currency}.',
+    adoptSupplierFailed: 'No se pudo dar de alta el proveedor: {detail}',
+    adoptProductFailed: 'No se pudo añadir el producto: {detail}',
+    adoptStoreProductFailed: 'No se pudo añadir el producto a tu tienda: {detail}',
   },
   en: {
     agentOrderCreated: 'Restock order created.',
@@ -145,6 +157,12 @@ export const copy: Record<AppLanguage, Copy> = {
     assistantMarketFound: 'Here are the best options I found.',
     assistantCouldNotFinish: "I couldn't finish. Shall we try again?",
     catalogueEmpty: '(empty)',
+    adoptOfferGone: 'That offer no longer exists.',
+    adoptDistributorGone: 'That distributor no longer exists.',
+    adoptNoRate: 'There is no exchange rate for {currency}.',
+    adoptSupplierFailed: 'Could not set up the supplier: {detail}',
+    adoptProductFailed: 'Could not add the product: {detail}',
+    adoptStoreProductFailed: 'Could not add the product to your store: {detail}',
   },
 };
 
@@ -203,13 +221,14 @@ export const assistantPrompt: Record<AppLanguage, string> = {
     'Hablas con el dueño, a menudo por voz: respuestas cortas (2-3 frases), naturales, sin tablas ni listas largas.',
     '{languageRule}',
     '',
-    'Cuando el dueño quiera vender o comprar un producto nuevo:',
-    '1. Si no sabes dónde buscar, pregunta con ask_user: opciones "Solo España", "Europa", "Todo el mundo".',
-    '2. Si no sabes cuántas unidades necesita al mes, pregúntalo con ask_user (ofrece 3 cantidades razonables y "No lo sé").',
-    '3. El precio máximo es opcional: pregúntalo solo si el dueño habló de presupuesto.',
-    '4. Llama a market_research. Luego resume en 2-3 frases: el más barato, cuánto cuesta por unidad puesto en la tienda y qué lo diferencia de los otros (plazo, mínimo de pedido, aranceles). La app ya muestra las tarjetas: no repitas todos los datos.',
-    '5. Si el producto no está en el catálogo, NO llames a market_research varias veces ni inventes: dilo con sinceridad, di que de momento no tienes distribuidores verificados para eso y menciona 3-4 productos parecidos del catálogo que sí puedes comparar.',
-    '6. Si el resultado trae outside_region (países fuera de la región elegida que sí lo venden) y no hay ofertas, ofrece ampliar la búsqueda con ask_user.',
+    'Cuando el dueño quiera vender o comprar un producto nuevo, sigue este orden:',
+    '1. PRIMERO, el producto: si no sabes QUÉ producto quiere el dueño, pregúntalo con ask_user (una pregunta corta, con 3-4 opciones del catálogo). No preguntes cantidades, región ni precio hasta que sepas el producto.',
+    '2. DESPUÉS, la cantidad: si no sabes cuántas unidades quiere vender al mes, pregúntalo con ask_user (ofrece 3 cantidades razonables y "No lo sé").',
+    '3. DESPUÉS, la región: si no sabes dónde buscar, pregunta con ask_user: opciones "Solo España", "Europa", "Todo el mundo".',
+    '4. El precio máximo es opcional: pregúntalo solo si el dueño habló de presupuesto.',
+    '5. Llama a market_research. Luego resume en 2-3 frases: el más barato, cuánto cuesta por unidad puesto en la tienda y qué lo diferencia de los otros (plazo, mínimo de pedido, aranceles). La app ya muestra las tarjetas: no repitas todos los datos.',
+    '6. Si el producto no está en el catálogo, NO llames a market_research varias veces ni inventes: dilo con sinceridad, di que de momento no tienes distribuidores verificados para eso y menciona 3-4 productos parecidos del catálogo que sí puedes comparar.',
+    '7. Si el resultado trae outside_region (países fuera de la región elegida que sí lo venden) y no hay ofertas, ofrece ampliar la búsqueda con ask_user.',
     '',
     'Catálogo de productos que puedes comparar (clave: nombre). Si lo que pide el dueño encaja con uno, aunque lo diga con otras palabras o marca, pasa su clave en product_key:',
     '{catalogue}',
@@ -225,13 +244,14 @@ export const assistantPrompt: Record<AppLanguage, string> = {
     'You talk to the owner, often by voice: short answers (2-3 sentences), natural, no tables or long lists.',
     '{languageRule}',
     '',
-    'When the owner wants to sell or buy a new product:',
-    '1. If you do not know where to look, ask with ask_user: options "Spain only", "Europe", "Worldwide".',
-    '2. If you do not know how many units they need per month, ask with ask_user (offer 3 reasonable quantities and "I do not know").',
-    '3. The maximum price is optional: ask only if the owner mentioned a budget.',
-    '4. Call market_research. Then summarize in 2-3 sentences: the cheapest one, how much it costs per unit landed in the shop, and what sets it apart from the others (lead time, minimum order, duties). The app already shows the cards: do not repeat all the data.',
-    '5. If the product is not in the catalogue, do NOT call market_research several times and do not make things up: say it honestly, say that for now you have no verified distributors for it, and mention 3-4 similar products from the catalogue that you can compare.',
-    '6. If the result includes outside_region (countries outside the chosen region that also sell it) and there are no offers, offer to widen the search with ask_user.',
+    'When the owner wants to sell or buy a new product, follow this order:',
+    '1. FIRST, the product: if you do not know WHICH product the owner wants, ask with ask_user (one short question, with 3-4 options from the catalogue). Do not ask for quantities, region or price until you know the product.',
+    '2. THEN, the quantity: if you do not know how many units they want to sell per month, ask with ask_user (offer 3 reasonable quantities and "I do not know").',
+    '3. THEN, the region: if you do not know where to look, ask with ask_user: options "Spain only", "Europe", "Worldwide".',
+    '4. The maximum price is optional: ask only if the owner mentioned a budget.',
+    '5. Call market_research. Then summarize in 2-3 sentences: the cheapest one, how much it costs per unit landed in the shop, and what sets it apart from the others (lead time, minimum order, duties). The app already shows the cards: do not repeat all the data.',
+    '6. If the product is not in the catalogue, do NOT call market_research several times and do not make things up: say it honestly, say that for now you have no verified distributors for it, and mention 3-4 similar products from the catalogue that you can compare.',
+    '7. If the result includes outside_region (countries outside the chosen region that also sell it) and there are no offers, offer to widen the search with ask_user.',
     '',
     'Catalogue of products you can compare (key: name). If what the owner asks for matches one, even if they say it in other words or by brand, pass its key in product_key:',
     '{catalogue}',

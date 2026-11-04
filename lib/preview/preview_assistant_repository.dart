@@ -46,8 +46,8 @@ class PreviewAssistantRepository implements AssistantRepository {
     final users = history.where((t) => t.fromUser).length;
     if (users <= 1) {
       return const Right(AssistantReply(
-        text: '¡Genial! ¿Dónde quieres que busque distribuidores?',
-        quickReplies: ['Solo España', 'Europa', 'Todo el mundo'],
+        text: '¡Genial! ¿Qué producto quieres añadir al catálogo?',
+        quickReplies: ['Leche de avena', 'Café en grano', 'Kombucha', 'Matcha'],
       ));
     }
     if (users == 2) {
@@ -63,6 +63,7 @@ class PreviewAssistantRepository implements AssistantRepository {
         searchId: null, query: 'leche de avena', region: 'europe', monthlyQuantity: 40,
         productName: 'Bebida de avena barista 1 L', compared: 7,
         countries: ['DE', 'ES', 'FR', 'NL', 'PT'], options: _options, webLeads: [], liveRates: true,
+        demoDirectory: true,
       ),
     ));
   }
@@ -88,7 +89,9 @@ class PreviewAssistantRepository implements AssistantRepository {
       order: placeOrder
           ? AdoptedOrder(
               id: 'preview-order', qty: qty, total: option.unitLandedEur * qty,
-              status: 'completed', paid: true, reason: null, warnings: const [],
+              // Igual que en el servidor: el pedido queda pendiente de
+              // aprobación y el stock sube al registrar la entrega.
+              status: 'pending_approval', paid: false, reason: null, warnings: const [],
             )
           : null,
     ));

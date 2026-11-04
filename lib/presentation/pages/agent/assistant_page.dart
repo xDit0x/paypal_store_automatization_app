@@ -237,8 +237,7 @@ class _AssistantPageState extends State<AssistantPage> {
         final lines = [
           l10n.marketAdoptDone(adopted.productName, adopted.supplierName),
           if (order != null && order.blocked) l10n.marketAdoptBlocked(order.reason ?? ''),
-          if (order != null && order.paid) l10n.marketAdoptPaid(l10n.euros(order.total, adopted.currency)),
-          if (order != null && !order.blocked && !order.paid)
+          if (order != null && !order.blocked && order.id != null)
             l10n.marketAdoptOrderCreated(l10n.euros(order.total, adopted.currency)),
         ];
         final note = lines.join(' ');

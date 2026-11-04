@@ -38,6 +38,12 @@ export interface MarketResearchResult {
   offers: RankedOffer[];
   webResults: WebResult[];
   fxSource: 'live' | 'fallback';
+  /**
+   * Si el directorio de distribuidores es el de demostración (dominios
+   * `.example`): la app lo avisa para que nadie pida a empresas que no
+   * existen.
+   */
+  demoDirectory: boolean;
 }
 
 type DistributorRow = {
@@ -167,6 +173,14 @@ export async function runMarketResearch(input: MarketResearchInput): Promise<Mar
   }
 
   const ranked = rankOffers(costs, { maxUnitPriceEur: input.maxUnitPriceEur ?? null, limit: 3 });
+
+  // El directorio de la demo usa dominios `.example` (reservados por la
+  // RFC 2606): ninguna de esas empresas existe de verdad.
+  const demoDirectory =
+    distributors.size > 0 &&
+    [...distributors.values()].every((d) =>
+      (d.website ?? '').toLowerCase().endsWith('.example'),
+    );
   const webResults = await searchDistributorsOnWeb(input.query, input.region);
 
   const result: MarketResearchResult = {
@@ -182,6 +196,7 @@ export async function runMarketResearch(input: MarketResearchInput): Promise<Mar
     offers: ranked,
     webResults,
     fxSource: fx.source,
+    demoDirectory,
   };
 
   const { data, error } = await supabaseAdmin

@@ -52,12 +52,27 @@ class MarketResults extends StatelessWidget {
             style: t.footnote,
           ),
         ),
+        if (research.demoDirectory)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RPill(l10n.marketDemoBadge, tone: RPillTone.warning),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(l10n.marketDemoNotice, style: t.caption),
+                ),
+              ],
+            ),
+          ),
         for (var i = 0; i < research.options.length; i++) ...[
           _OptionCard(
             rank: i + 1,
             option: research.options[i],
             busy: busyOfferId == research.options[i].offerId,
             disabled: busyOfferId != null,
+            demo: research.demoDirectory,
             onChoose: () => onChoose(research.options[i]),
           ),
           const SizedBox(height: 10),
@@ -80,6 +95,7 @@ class _OptionCard extends StatelessWidget {
     required this.busy,
     required this.disabled,
     required this.onChoose,
+    this.demo = false,
   });
 
   final int rank;
@@ -87,6 +103,9 @@ class _OptionCard extends StatelessWidget {
   final bool busy;
   final bool disabled;
   final VoidCallback onChoose;
+
+  /// El distribuidor es del directorio de demostración (empresa ficticia).
+  final bool demo;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +115,7 @@ class _OptionCard extends StatelessWidget {
     final place = [option.city, option.country].whereType<String>().join(', ');
 
     final tags = <Widget>[
+      if (demo) RPill(l10n.marketDemoBadge, tone: RPillTone.warning),
       for (final tag in option.tags)
         RPill(
           switch (tag) {

@@ -2437,6 +2437,18 @@ abstract class AppLocalizations {
   /// **'Elegir este distribuidor'**
   String get marketChoose;
 
+  /// No description provided for @marketDemoBadge.
+  ///
+  /// In es, this message translates to:
+  /// **'Demo'**
+  String get marketDemoBadge;
+
+  /// No description provided for @marketDemoNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Directorio de demostración: los distribuidores y sus precios son ficticios.'**
+  String get marketDemoNotice;
+
   /// No description provided for @marketWebTitle.
   ///
   /// In es, this message translates to:
@@ -2476,13 +2488,13 @@ abstract class AppLocalizations {
   /// No description provided for @marketAdoptOrderNow.
   ///
   /// In es, this message translates to:
-  /// **'Hacer el primer pedido ahora'**
+  /// **'Crear el primer pedido'**
   String get marketAdoptOrderNow;
 
   /// No description provided for @marketAdoptOrderHint.
   ///
   /// In es, this message translates to:
-  /// **'Se paga con PayPal (unos {total}) si cumple tus reglas de gasto.'**
+  /// **'Pedido de unos {total}: lo apruebas y pagas con PayPal, y el stock sube cuando registres la entrega.'**
   String marketAdoptOrderHint(String total);
 
   /// No description provided for @marketAdoptConfirm.
@@ -2494,19 +2506,13 @@ abstract class AppLocalizations {
   /// No description provided for @marketAdoptDone.
   ///
   /// In es, this message translates to:
-  /// **'**{product}** ya está en tu stock, de **{supplier}**.'**
+  /// **'**{product}** ya está en tu catálogo, de **{supplier}**.'**
   String marketAdoptDone(String product, String supplier);
-
-  /// No description provided for @marketAdoptPaid.
-  ///
-  /// In es, this message translates to:
-  /// **'Primer pedido pagado con PayPal: **{total}**.'**
-  String marketAdoptPaid(String total);
 
   /// No description provided for @marketAdoptOrderCreated.
   ///
   /// In es, this message translates to:
-  /// **'Primer pedido creado por **{total}**. Lo verás en Pedidos.'**
+  /// **'Primer pedido creado por **{total}**. Apruébalo en Pedidos: el stock sube cuando registres el albarán.'**
   String marketAdoptOrderCreated(String total);
 
   /// No description provided for @marketAdoptBlocked.

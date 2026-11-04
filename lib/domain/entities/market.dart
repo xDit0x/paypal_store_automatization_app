@@ -92,6 +92,7 @@ class MarketResearch {
     required this.options,
     required this.webLeads,
     required this.liveRates,
+    required this.demoDirectory,
   });
 
   final String? searchId;
@@ -108,6 +109,10 @@ class MarketResearch {
 
   /// false si se usaron tipos de cambio aproximados.
   final bool liveRates;
+
+  /// true si el directorio de distribuidores es el de demostración: las
+  /// empresas y sus precios son ficticios.
+  final bool demoDirectory;
 }
 
 class AssistantReply {

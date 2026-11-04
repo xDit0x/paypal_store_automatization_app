@@ -64,6 +64,7 @@ class MarketModel {
                 ))
             .toList(),
         liveRates: m['fxSource'] != 'fallback',
+        demoDirectory: m['demoDirectory'] == true,
       );
 
   static AssistantReply reply(Map<String, dynamic> m) => AssistantReply(
