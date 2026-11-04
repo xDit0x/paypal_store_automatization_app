@@ -3,6 +3,43 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _orderSelect = '*, order_items(*)';
 
+/// Estados en los que el dinero ya está comprometido o cobrado.
+const _spentStatuses = [
+  'authorized',
+  'delivered',
+  'partially_delivered',
+  'paid',
+  'invoiced',
+  'completed',
+];
+
+/// Un pedido recién aprobado aún no ha movido dinero, pero en cuanto el
+/// servidor crea la orden de PayPal el importe queda comprometido y la app ya
+/// lo presenta como pagado. Se cuenta solo si existe esa orden.
+bool _isCommittedButUnpaid(Map<String, dynamic> row) {
+  if (row['status'] != 'approved') return true;
+  final payoutId = row['payment_payout_id'];
+  return payoutId is String && payoutId.isNotEmpty;
+}
+
+/// Fecha con la que un pedido entra en el gasto del mes: el cobro real, la
+/// autorización, la aprobación o, en último caso, su creación. Si se usa solo
+/// `created_at`, un pedido aprobado el mes pasado y cobrado este no aparecería.
+DateTime? _spentOn(Map<String, dynamic> row) {
+  for (final key in [
+    'payment_at',
+    'authorized_at',
+    'approval_at',
+    'created_at',
+  ]) {
+    final value = row[key];
+    if (value is! String || value.isEmpty) continue;
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) return parsed;
+  }
+  return null;
+}
+
 class SupabaseOrderDatasource {
   final SupabaseClient _client;
   final Dio _dio;
@@ -42,14 +79,22 @@ class SupabaseOrderDatasource {
   Future<double> getSpentSince(String storeId, DateTime since) async {
     final rows = await _client
         .from('orders')
-        .select('total')
+        .select(
+          'status, total, received_total, payment_payout_id, '
+          'created_at, approval_at, authorized_at, payment_at',
+        )
         .eq('store_id', storeId)
-        .inFilter('status', ['paid', 'invoiced', 'completed'])
-        .gte('created_at', since.toUtc().toIso8601String());
-    return rows.fold<double>(
-      0,
-      (sum, row) => sum + ((row['total'] as num?)?.toDouble() ?? 0),
-    );
+        .inFilter('status', [..._spentStatuses, 'approved']);
+    return rows.fold<double>(0, (sum, row) {
+      if (!_isCommittedButUnpaid(row)) return sum;
+      final spentOn = _spentOn(row);
+      if (spentOn == null || spentOn.isBefore(since)) return sum;
+
+      // En una entrega parcial solo se ha cobrado lo que llegó.
+      final captured = (row['received_total'] as num?)?.toDouble();
+      final total = (row['total'] as num?)?.toDouble() ?? 0;
+      return sum + (captured ?? total);
+    });
   }
 
   Future<void> approve(String orderId) async {

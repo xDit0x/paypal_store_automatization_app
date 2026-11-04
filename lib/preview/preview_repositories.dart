@@ -494,6 +494,9 @@ class PreviewOrderRepository implements OrderRepository {
   final PreviewDb db;
 
   static const _spentStatuses = {
+    OrderStatus.authorized,
+    OrderStatus.delivered,
+    OrderStatus.partiallyDelivered,
     OrderStatus.paid,
     OrderStatus.invoiced,
     OrderStatus.completed,
