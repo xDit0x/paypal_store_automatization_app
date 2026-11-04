@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/common/helpers/stocky_format.dart';
+import 'package:store_automatization_app/core/audio/stocky_sounds.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
@@ -74,13 +75,10 @@ class _CatalogPageState extends State<CatalogPage> {
     if (!pageContext.mounted) return;
 
     if (orders.isEmpty) {
-      final error = cubit.state.catalogError;
-      if (error != null) {
-        showStockySnack(
-          pageContext,
-          l10n.describeDetail(error),
-          tone: RSnackTone.warning,
-        );
+      // El error se muestra dentro de la hoja del carrito: un snackbar
+      // quedaría detrás de ella y no se vería. Se mantiene el aviso sonoro.
+      if (cubit.state.catalogError != null) {
+        StockySounds.instance.play(RSound.warning);
       }
       return;
     }
@@ -648,6 +646,10 @@ class _CartSheet extends StatelessWidget {
                     Text(l10n.euros(total, state.currency), style: t.title3),
                   ],
                 ),
+                if (state.catalogError != null) ...[
+                  const SizedBox(height: 12),
+                  _CartWarning(message: _cartWarningMessage(context, state)),
+                ],
                 const SizedBox(height: 16),
                 RPrimaryButton(
                   l10n.catalogOrderButton,
@@ -659,6 +661,74 @@ class _CartSheet extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Explica el fallo del pedido con el motivo concreto (límite por pedido,
+/// tope mensual...) en vez de un aviso genérico.
+String _cartWarningMessage(BuildContext context, StockyState state) {
+  final l10n = context.l10n;
+  // `submitCart` crea un pedido por proveedor, así que el límite se aplica a
+  // cada subtotal, no al total del carrito.
+  final bySupplier = <String, double>{};
+  for (final product in state.cart) {
+    bySupplier.update(
+      product.supplierId,
+      (total) => total + product.price,
+      ifAbsent: () => product.price,
+    );
+  }
+
+  for (final entry in bySupplier.entries) {
+    final reason = blockedSpendingReason(
+      l10n,
+      rules: state.rules,
+      spentThisMonth: state.spentThisMonth,
+      currency: state.currency,
+      orderTotal: entry.value,
+      supplierId: entry.key,
+    );
+    if (reason != null) return reason;
+  }
+
+  return l10n.describeDetail(state.catalogError!);
+}
+
+/// Aviso dentro de la hoja del carrito (un snackbar quedaría detrás de ella).
+class _CartWarning extends StatelessWidget {
+  const _CartWarning({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.rp;
+    final t = context.rt;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: p.warningSoft,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: p.warning.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            CupertinoIcons.exclamationmark_triangle_fill,
+            size: 18,
+            color: p.warning,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: t.footnote.copyWith(color: p.warning, height: 1.35),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

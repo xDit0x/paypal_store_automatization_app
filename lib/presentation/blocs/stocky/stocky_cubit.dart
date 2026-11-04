@@ -540,13 +540,16 @@ class StockyCubit extends Cubit<StockyState> {
     final index = state.cart.lastIndexWhere((c) => c.uid == uid);
     if (index < 0) return;
     final updated = List<CatalogProduct>.from(state.cart)..removeAt(index);
-    emit(state.copyWith(cart: updated));
+    // Si el pedido había fallado por las reglas, al ajustar el carrito el
+    // aviso deja de tener sentido.
+    emit(state.copyWith(cart: updated, clearCatalogError: true));
   }
 
   int quantityInCart(String uid) =>
       state.cart.where((c) => c.uid == uid).length;
 
-  void clearCart() => emit(state.copyWith(cart: const []));
+  void clearCart() =>
+      emit(state.copyWith(cart: const [], clearCatalogError: true));
 
   /// Crea un pedido por cada proveedor del carrito. Devuelve los pedidos
   /// creados; si uno falla, deja en el carrito solo las líneas pendientes.
