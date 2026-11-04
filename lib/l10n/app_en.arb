@@ -135,10 +135,17 @@
       "unit": { "type": "String" }
     }
   },
-  "stockEditorUid": "{uid} · min. {min} {unit}",
+  "stockEditorUid": "{uid} · {unit}",
   "@stockEditorUid": {
     "placeholders": {
       "uid": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "stockThresholdLabel": "Low stock alert",
+  "stockThresholdHelp": "Alerts you when {min} {unit} or fewer are left.",
+  "@stockThresholdHelp": {
+    "placeholders": {
       "min": { "type": "int" },
       "unit": { "type": "String" }
     }
@@ -611,6 +618,7 @@
   "errorProductsLoadFailed": "Could not load the products",
   "errorLowStockLoadFailed": "Could not load the low stock",
   "errorStockUpdateFailed": "Could not update the stock",
+  "errorStockThresholdUpdateFailed": "Could not update the low stock alert",
   "errorProductMissing": "The product is missing.",
   "errorProductNotFound": "There is no product with UID {uid}.",
   "errorProductUidMissing": "Enter a UID.",

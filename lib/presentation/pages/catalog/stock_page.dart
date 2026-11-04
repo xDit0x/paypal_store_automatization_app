@@ -88,7 +88,11 @@ class _StockPageState extends State<StockPage> {
       builder: (_) => _StockEditorSheet(
         product: product,
         cubit: cubit,
-        onSave: (stock) => cubit.updateStock(product.uid, stock),
+        onSave: (stock, threshold) async {
+          final stockError = await cubit.updateStock(product.uid, stock);
+          if (stockError != null) return stockError;
+          return cubit.updateLowStockThreshold(product.uid, threshold);
+        },
       ),
     );
     if (saved == true && context.mounted) {
@@ -151,33 +155,48 @@ class _StockPageState extends State<StockPage> {
                       key: _filterKeys[_Filter.low],
                       label: l10n.stockFilterLow,
                       selected: _filter == _Filter.low,
-                      onTap: () { setState(() => _filter = _Filter.low); _scrollToFilter(_Filter.low); },
+                      onTap: () {
+                        setState(() => _filter = _Filter.low);
+                        _scrollToFilter(_Filter.low);
+                      },
                     ),
                     _FilterTab(
                       key: _filterKeys[_Filter.transit],
                       label: l10n.stockFilterTransit,
                       selected: _filter == _Filter.transit,
-                      onTap: () { setState(() => _filter = _Filter.transit); _scrollToFilter(_Filter.transit); },
+                      onTap: () {
+                        setState(() => _filter = _Filter.transit);
+                        _scrollToFilter(_Filter.transit);
+                      },
                     ),
                     _FilterTab(
                       key: _filterKeys[_Filter.all],
                       label: l10n.stockFilterAll,
                       selected: _filter == _Filter.all,
-                      onTap: () { setState(() => _filter = _Filter.all); _scrollToFilter(_Filter.all); },
+                      onTap: () {
+                        setState(() => _filter = _Filter.all);
+                        _scrollToFilter(_Filter.all);
+                      },
                     ),
                     _FilterTab(
                       key: _filterKeys[_Filter.outOfStock],
                       label: 'Agotados',
                       selected: _filter == _Filter.outOfStock,
                       accent: Colors.amber,
-                      onTap: () { setState(() => _filter = _Filter.outOfStock); _scrollToFilter(_Filter.outOfStock); },
+                      onTap: () {
+                        setState(() => _filter = _Filter.outOfStock);
+                        _scrollToFilter(_Filter.outOfStock);
+                      },
                     ),
                     _FilterTab(
                       key: _filterKeys[_Filter.eliminated],
                       label: 'Eliminados',
                       selected: _filter == _Filter.eliminated,
                       accent: Colors.red,
-                      onTap: () { setState(() => _filter = _Filter.eliminated); _scrollToFilter(_Filter.eliminated); },
+                      onTap: () {
+                        setState(() => _filter = _Filter.eliminated);
+                        _scrollToFilter(_Filter.eliminated);
+                      },
                     ),
                   ],
                 ),
@@ -426,7 +445,7 @@ class _StockEditorSheet extends StatefulWidget {
   final StockyCubit? cubit;
 
   /// Devuelve null si se guardó bien, o el error.
-  final Future<AppError?> Function(int stock) onSave;
+  final Future<AppError?> Function(int stock, int threshold) onSave;
 
   @override
   State<_StockEditorSheet> createState() => _StockEditorSheetState();
@@ -437,12 +456,17 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
   late final TextEditingController _controller = TextEditingController(
     text: '${widget.product.stock}',
   );
+  late int _threshold = widget.product.lowStockThreshold;
+  late final TextEditingController _thresholdController = TextEditingController(
+    text: '${widget.product.lowStockThreshold}',
+  );
   bool _saving = false;
   AppError? _error;
 
   @override
   void dispose() {
     _controller.dispose();
+    _thresholdController.dispose();
     super.dispose();
   }
 
@@ -462,6 +486,27 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
     final parsed = int.tryParse(text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     setState(() {
       _value = parsed;
+      _error = null;
+    });
+  }
+
+  /// El mínimo también se puede escribir a mano; los botones son un atajo.
+  void _stepThreshold(int delta) {
+    final next = (_threshold + delta).clamp(0, 1000000);
+    setState(() {
+      _threshold = next;
+      _error = null;
+      _thresholdController.text = '$next';
+    });
+    _thresholdController.selection = TextSelection.collapsed(
+      offset: _thresholdController.text.length,
+    );
+  }
+
+  void _onThresholdChanged(String text) {
+    final parsed = int.tryParse(text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    setState(() {
+      _threshold = parsed;
       _error = null;
     });
   }
@@ -554,7 +599,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
       _saving = true;
       _error = null;
     });
-    final error = await widget.onSave(_value);
+    final error = await widget.onSave(_value, _threshold);
     if (!mounted) return;
     if (error != null) {
       setState(() {
@@ -572,7 +617,7 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
     final t = context.rt;
     final l10n = context.l10n;
     final inset = MediaQuery.viewInsetsOf(context).bottom;
-    final low = _value <= widget.product.lowStockThreshold;
+    final low = _value <= _threshold;
 
     return Padding(
       padding: EdgeInsets.only(bottom: inset),
@@ -611,7 +656,6 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                         Text(
                           l10n.stockEditorUid(
                             widget.product.uid,
-                            widget.product.lowStockThreshold,
                             widget.product.unit,
                           ),
                           style: t.footnote,
@@ -627,7 +671,11 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                     ),
                   if (!widget.product.active)
                     IconButton(
-                      icon: const Icon(Icons.restore, size: 22, color: Colors.green),
+                      icon: const Icon(
+                        Icons.restore,
+                        size: 22,
+                        color: Colors.green,
+                      ),
                       onPressed: () => _restore(),
                       tooltip: 'Recuperar',
                     ),
@@ -674,6 +722,72 @@ class _StockEditorSheetState extends State<_StockEditorSheet> {
                     onTap: _saving ? null : () => _step(1),
                   ),
                 ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                decoration: BoxDecoration(
+                  color: p.fill,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.stockThresholdLabel,
+                            style: t.footnote.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.stockThresholdHelp(
+                              _threshold,
+                              widget.product.unit,
+                            ),
+                            style: t.caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                    _SmallStepButton(
+                      icon: CupertinoIcons.minus,
+                      label: l10n.actionRemoveOneUnit,
+                      onTap: _saving || _threshold <= 0
+                          ? null
+                          : () => _stepThreshold(-1),
+                    ),
+                    SizedBox(
+                      width: 44,
+                      child: TextField(
+                        controller: _thresholdController,
+                        enabled: !_saving,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        textAlign: TextAlign.center,
+                        onChanged: _onThresholdChanged,
+                        style: t.headline.copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 6),
+                        ),
+                      ),
+                    ),
+                    _SmallStepButton(
+                      icon: CupertinoIcons.plus,
+                      label: l10n.actionAddOneUnit,
+                      onTap: _saving ? null : () => _stepThreshold(1),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
               Center(
@@ -748,6 +862,45 @@ class _StepButton extends StatelessWidget {
             child: Icon(
               icon,
               size: 24,
+              color: onTap == null ? p.chevron : p.accent,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Versión compacta de [_StepButton] para el mínimo de bajo stock.
+class _SmallStepButton extends StatelessWidget {
+  const _SmallStepButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.rp;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: p.surface,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 34,
+            height: 34,
+            child: Icon(
+              icon,
+              size: 18,
               color: onTap == null ? p.chevron : p.accent,
             ),
           ),

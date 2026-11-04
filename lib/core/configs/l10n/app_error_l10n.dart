@@ -71,6 +71,8 @@ extension AppErrorL10n on AppLocalizations {
     AppErrorCode.productsLoadFailed => errorProductsLoadFailed,
     AppErrorCode.lowStockLoadFailed => errorLowStockLoadFailed,
     AppErrorCode.stockUpdateFailed => errorStockUpdateFailed,
+    AppErrorCode.stockThresholdUpdateFailed =>
+      errorStockThresholdUpdateFailed,
     AppErrorCode.productMissing => errorProductMissing,
     AppErrorCode.productNotFound => errorProductNotFound(error.subject ?? ''),
     AppErrorCode.productUidMissing => errorProductUidMissing,

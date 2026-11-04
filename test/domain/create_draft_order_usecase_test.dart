@@ -69,6 +69,13 @@ class _FakeProductRepository implements ProductRepository {
   ) async => const Right(unit);
 
   @override
+  Future<Either<AppError, Unit>> updateLowStockThreshold(
+    String storeId,
+    String uid,
+    int threshold,
+  ) async => const Right(unit);
+
+  @override
   Future<Either<AppError, Unit>> updateStock(
     String storeId,
     String uid,

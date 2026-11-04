@@ -23,6 +23,13 @@ abstract class ProductRepository {
     int stock,
   );
 
+  /// Cambia el mínimo de bajo stock de este producto en esta tienda.
+  Future<Either<AppError, Unit>> updateLowStockThreshold(
+    String storeId,
+    String uid,
+    int threshold,
+  );
+
   /// Marca el producto como eliminado (`active = false`). El agente de
   /// reposición deja de tenerlo en cuenta, así que no lo repone.
   Future<Either<AppError, Unit>> deleteProduct(String storeId, String uid);

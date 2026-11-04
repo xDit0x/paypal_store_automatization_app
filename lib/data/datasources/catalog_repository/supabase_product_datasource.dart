@@ -148,11 +148,7 @@ class SupabaseProductDatasource {
   /// Marcar un producto como eliminado (`active = false`) es lo que hace que
   /// el agente de reposición deje de incluirlo en los pedidos; restaurarlo
   /// (`active = true`) hace que vuelva a contar.
-  Future<void> setProductActive(
-    String storeId,
-    String uid,
-    bool active,
-  ) async {
+  Future<void> setProductActive(String storeId, String uid, bool active) async {
     try {
       await _dio.patch<Map<String, dynamic>>(
         '/catalog/products/$uid/active',
@@ -171,6 +167,25 @@ class SupabaseProductDatasource {
       await _dio.patch<Map<String, dynamic>>(
         '/catalog/products/$uid/stock',
         data: {'store_id': storeId, 'stock': stock},
+      );
+    } on DioException catch (error) {
+      final data = error.response?.data;
+      final message = data is Map<String, dynamic> ? data['error'] : null;
+      throw Exception(message ?? '');
+    }
+  }
+
+  /// El mínimo de bajo stock también es de cada tienda: cada dueño decide a
+  /// partir de cuántas unidades quiere que se le avise.
+  Future<void> updateLowStockThreshold(
+    String storeId,
+    String uid,
+    int threshold,
+  ) async {
+    try {
+      await _dio.patch<Map<String, dynamic>>(
+        '/catalog/products/$uid/threshold',
+        data: {'store_id': storeId, 'low_stock_threshold': threshold},
       );
     } on DioException catch (error) {
       final data = error.response?.data;

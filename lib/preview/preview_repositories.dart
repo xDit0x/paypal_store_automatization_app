@@ -322,8 +322,6 @@ class PreviewAuthRepository implements AuthRepository {
       const Right(unit);
 }
 
-
-
 class PreviewStoreRepository implements StoreRepository {
   PreviewStoreRepository(this.db);
   final PreviewDb db;
@@ -463,6 +461,23 @@ class PreviewProductRepository implements ProductRepository {
     if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
     if (stock < 0) return const Left(AppError(AppErrorCode.stockNegative));
     db.products[index] = db.products[index].copyWith(stock: stock);
+    return const Right(unit);
+  }
+
+  @override
+  Future<Either<AppError, Unit>> updateLowStockThreshold(
+    String storeId,
+    String uid,
+    int threshold,
+  ) async {
+    final index = db.products.indexWhere((p) => p.uid == uid);
+    if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
+    if (threshold < 0) {
+      return const Left(AppError(AppErrorCode.stockNegative));
+    }
+    db.products[index] = db.products[index].copyWith(
+      lowStockThreshold: threshold,
+    );
     return const Right(unit);
   }
 

@@ -22,7 +22,9 @@ class CatalogProductModel {
       currency: map['currency'] as String? ?? 'EUR',
       stock: (map['stock'] as num?)?.toInt(),
       lowStockThreshold: (map['low_stock_threshold'] as num?)?.toInt(),
-      inInventory: map['in_inventory'] == true || (map['stock'] != null && (map['stock'] as num?)!.toInt() > 0),
+      inInventory:
+          map['in_inventory'] == true ||
+          (map['stock'] != null && (map['stock'] as num?)!.toInt() > 0),
       unit: map['unit'] as String? ?? 'unidad',
       imageUrl: map['image_url'] as String?,
       active: map['active'] == true || map['active'] == null,
@@ -84,16 +86,16 @@ class SupabaseProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, Unit>> deleteProduct(String storeId, String uid) async {
+  Future<Either<AppError, Unit>> deleteProduct(
+    String storeId,
+    String uid,
+  ) async {
     try {
       await _datasource.setProductActive(storeId, uid, false);
       return const Right(unit);
     } catch (error) {
       return Left(
-        AppError(
-          AppErrorCode.productDeleteFailed,
-          detail: _message(error),
-        ),
+        AppError(AppErrorCode.productDeleteFailed, detail: _message(error)),
       );
     }
   }
@@ -108,10 +110,7 @@ class SupabaseProductRepository implements ProductRepository {
       return const Right(unit);
     } catch (error) {
       return Left(
-        AppError(
-          AppErrorCode.productRestoreFailed,
-          detail: _message(error),
-        ),
+        AppError(AppErrorCode.productRestoreFailed, detail: _message(error)),
       );
     }
   }
@@ -155,8 +154,24 @@ class SupabaseProductRepository implements ProductRepository {
       return const Right(unit);
     } catch (error) {
       return Left(
+        AppError(AppErrorCode.stockUpdateFailed, detail: _message(error)),
+      );
+    }
+  }
+
+  @override
+  Future<Either<AppError, Unit>> updateLowStockThreshold(
+    String storeId,
+    String uid,
+    int threshold,
+  ) async {
+    try {
+      await _datasource.updateLowStockThreshold(storeId, uid, threshold);
+      return const Right(unit);
+    } catch (error) {
+      return Left(
         AppError(
-          AppErrorCode.stockUpdateFailed,
+          AppErrorCode.stockThresholdUpdateFailed,
           detail: _message(error),
         ),
       );

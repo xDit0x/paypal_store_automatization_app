@@ -94,6 +94,7 @@ enum AppErrorCode {
   productsLoadFailed,
   lowStockLoadFailed,
   stockUpdateFailed,
+  stockThresholdUpdateFailed,
   productMissing,
   productNotFound,
   productUidMissing,

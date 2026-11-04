@@ -24,6 +24,7 @@ import 'package:store_automatization_app/domain/usecases/auth/watch_auth_usecase
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_low_stock_threshold_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
@@ -89,6 +90,9 @@ class PreviewApp extends StatelessWidget {
         evaluateSpendingRules: EvaluateSpendingRulesUsecase(),
       ),
       updateProductStock: UpdateProductStockUsecase(repository: products),
+      updateLowStockThresholdUsecase: UpdateLowStockThresholdUsecase(
+        repository: products,
+      ),
       productRepository: products,
       getAgentRuns: GetAgentRunsUsecase(repository: agent),
       runAgentUsecase: RunAgentUsecase(repository: agent),

@@ -17,6 +17,7 @@ import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_us
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_low_stock_threshold_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
@@ -74,6 +75,7 @@ class StockyShell extends StatelessWidget {
     getSuppliers: sl<GetSuppliersUsecase>(),
     getSupplierCatalog: sl<GetSupplierCatalogUsecase>(),
     updateProductStock: sl<UpdateProductStockUsecase>(),
+    updateLowStockThresholdUsecase: sl<UpdateLowStockThresholdUsecase>(),
     searchCatalogUsecase: sl<SearchCatalogUsecase>(),
     createDraftOrder: sl<CreateDraftOrderUsecase>(),
     // Para eliminar y restaurar productos: el catálogo solo se escribe desde
@@ -125,8 +127,7 @@ final _shellKey = GlobalKey<ShellViewState>();
 class ShellView extends StatefulWidget {
   const ShellView({super.key});
 
-  static void jumpToTab(int index) =>
-      _shellKey.currentState?._goTo(index);
+  static void jumpToTab(int index) => _shellKey.currentState?._goTo(index);
 
   @override
   State<ShellView> createState() => ShellViewState();

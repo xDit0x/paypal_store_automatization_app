@@ -581,8 +581,20 @@ abstract class AppLocalizations {
   /// No description provided for @stockEditorUid.
   ///
   /// In es, this message translates to:
-  /// **'{uid} · mín. {min} {unit}'**
-  String stockEditorUid(String uid, int min, String unit);
+  /// **'{uid} · {unit}'**
+  String stockEditorUid(String uid, String unit);
+
+  /// No description provided for @stockThresholdLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Aviso de bajo mínimo'**
+  String get stockThresholdLabel;
+
+  /// No description provided for @stockThresholdHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Se avisa cuando queden {min} {unit} o menos.'**
+  String stockThresholdHelp(int min, String unit);
 
   /// No description provided for @ordersTitle.
   ///
@@ -2106,6 +2118,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo actualizar el stock'**
   String get errorStockUpdateFailed;
+
+  /// No description provided for @errorStockThresholdUpdateFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo actualizar el mínimo'**
+  String get errorStockThresholdUpdateFailed;
 
   /// No description provided for @errorProductMissing.
   ///

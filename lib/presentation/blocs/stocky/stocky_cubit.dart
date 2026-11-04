@@ -20,6 +20,7 @@ import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_low_stock_threshold_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/services/order_builder.dart';
 import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
@@ -46,6 +47,7 @@ class StockyCubit extends Cubit<StockyState> {
   final GetSuppliersUsecase getSuppliers;
   final GetSupplierCatalogUsecase getSupplierCatalog;
   final UpdateProductStockUsecase updateProductStock;
+  final UpdateLowStockThresholdUsecase updateLowStockThresholdUsecase;
   final GetAgentRunsUsecase getAgentRuns;
   final RunAgentUsecase runAgentUsecase;
   final SearchCatalogUsecase? searchCatalogUsecase;
@@ -96,6 +98,7 @@ class StockyCubit extends Cubit<StockyState> {
     required this.getSuppliers,
     required this.getSupplierCatalog,
     required this.updateProductStock,
+    required this.updateLowStockThresholdUsecase,
     required this.getAgentRuns,
     required this.runAgentUsecase,
     this.searchCatalogUsecase,
@@ -354,6 +357,32 @@ class StockyCubit extends Cubit<StockyState> {
           products: [
             for (final product in state.products)
               product.uid == uid ? product.copyWith(stock: stock) : product,
+          ],
+        ),
+      );
+      return null;
+    });
+  }
+
+  /// Cambia el mínimo de bajo stock de un producto en la tienda actual.
+  /// Devuelve null si todo fue bien.
+  Future<AppError?> updateLowStockThreshold(String uid, int threshold) async {
+    final store = state.store;
+    if (store == null) return const AppError(AppErrorCode.storeNotFound);
+
+    final result = await updateLowStockThresholdUsecase(
+      store.id,
+      uid,
+      threshold,
+    );
+    return result.fold<AppError?>((error) => error, (_) {
+      emit(
+        state.copyWith(
+          products: [
+            for (final product in state.products)
+              product.uid == uid
+                  ? product.copyWith(lowStockThreshold: threshold)
+                  : product,
           ],
         ),
       );

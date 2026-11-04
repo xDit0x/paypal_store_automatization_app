@@ -291,8 +291,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String stockEditorUid(String uid, int min, String unit) {
-    return '$uid · min. $min $unit';
+  String stockEditorUid(String uid, String unit) {
+    return '$uid · $unit';
+  }
+
+  @override
+  String get stockThresholdLabel => 'Low stock alert';
+
+  @override
+  String stockThresholdHelp(int min, String unit) {
+    return 'Alerts you when $min $unit or fewer are left.';
   }
 
   @override
@@ -1179,6 +1187,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorStockUpdateFailed => 'Could not update the stock';
+
+  @override
+  String get errorStockThresholdUpdateFailed =>
+      'Could not update the low stock alert';
 
   @override
   String get errorProductMissing => 'The product is missing.';
