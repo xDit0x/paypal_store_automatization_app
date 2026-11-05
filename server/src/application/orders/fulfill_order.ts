@@ -2,6 +2,7 @@ import { createAndSendInvoice } from '../paypal/invoices.js';
 import { paypalConfigured } from '../paypal/paypal_client.js';
 import { sendPayout } from '../paypal/payouts.js';
 import { supabaseAdmin } from '../../infrastructure/supabase/supabase_client.js';
+import { ReasonError } from '../../domain/reasons.js';
 import { guardOrderAmount } from './guard_order_amount.js';
 
 interface OrderRow {
@@ -235,9 +236,15 @@ export async function sendInvoiceForOrder(
     throw new Error(`No se pudo registrar la factura: ${invoiceError.message}`);
   }
 
+  // Si el pedido ya se entregó, se conserva ese estado (no se pisa con
+  // "completado": una entrega parcial tiene que seguir viéndose).
+  const finalStatus = ['delivered', 'partially_delivered'].includes(order.status)
+    ? order.status
+    : 'completed';
+
   await updateOrder(order.id, {
     invoice_id: invoiceRow?.id ?? null,
-    status: 'completed',
+    status: finalStatus,
   });
 
   return { invoiceId: result.invoiceId, number };
@@ -245,12 +252,15 @@ export async function sendInvoiceForOrder(
 
 export async function fulfillOrder(
   orderId: string,
-  options: { ownerApproved?: boolean } = {},
+  options: { ownerApproved?: boolean; deferStock?: boolean } = {},
 ): Promise<FulfillmentResult> {
   const { order, store, supplier } = await loadOrderContext(orderId);
 
   if (order.status !== 'approved') {
-    throw new Error(`El pedido está en estado "${order.status}".`);
+    throw new ReasonError({
+      code: 'wrong_status',
+      params: { status: order.status },
+    });
   }
 
   // El importe se recalcula desde el catálogo y se vuelven a comprobar las
@@ -280,20 +290,26 @@ export async function fulfillOrder(
 
       payment = { payoutId: payout.batchId, status: payout.status };
 
-      try {
-        await incrementStock(order);
-      } catch (error) {
-        warnings.push(
-          `Pago realizado pero no se actualizó el stock: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+      // Con `deferStock` el pedido se paga (el agente compra solo) pero el
+      // inventario no se toca: el stock sube al registrar la entrega
+      // (albarán), como en el resto de pedidos.
+      if (!options.deferStock) {
+        try {
+          await incrementStock(order);
+        } catch (error) {
+          warnings.push(
+            `Pago realizado pero no se actualizó el stock: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      // El motivo técnico se queda en el log; en la app se muestra un texto
+      // traducible ("No se pudo pagar"), no el error crudo.
       await updateOrder(order.id, {
         status: 'payment_failed',
-        payment_status: message,
+        payment_status: 'PAYMENT_FAILED',
       });
       throw error;
     }
@@ -305,14 +321,18 @@ export async function fulfillOrder(
 
   let invoice: FulfillmentResult['invoice'] = null;
 
-  try {
-    invoice = await sendInvoiceForOrder(order.id);
-  } catch (error) {
-    warnings.push(
-      `No se pudo emitir la factura: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+  // La factura del proveedor se emite cuando la mercancía llega: si el stock
+  // está en espera (albarán pendiente), la emite la entrega.
+  if (!options.deferStock) {
+    try {
+      invoice = await sendInvoiceForOrder(order.id);
+    } catch (error) {
+      warnings.push(
+        `No se pudo emitir la factura: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   return {

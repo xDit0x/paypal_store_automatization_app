@@ -23,6 +23,8 @@
   "actionReviewStockNow": "Revisar stock ahora",
   "actionRemoveOneUnit": "Quitar una unidad",
   "actionAddOneUnit": "Añadir una unidad",
+  "actionDelete": "Eliminar",
+  "actionRestore": "Recuperar",
 
   "semanticsBackTo": "Volver a {label}",
   "@semanticsBackTo": {
@@ -49,6 +51,12 @@
   "homeAgentWorking": "Trabajando…",
   "homeAgentActive": "Agente activo",
   "homeBudgetOfMonth": "Presupuesto de {month}",
+  "budgetRingSemantics": "{percent} % del presupuesto usado",
+  "@budgetRingSemantics": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
   "@homeBudgetOfMonth": {
     "placeholders": {
       "month": { "type": "String" }
@@ -101,10 +109,13 @@
     }
   },
   "catalogOrderButton": "Tramitar pedido",
+  "catalogSupplierHint": "Proveedor",
   "catalogOrderCreated": "Pedido creado. Apruébalo para pagar y sumar el stock.",
   "stockFilterAll": "Todos",
   "stockFilterLow": "Bajo mínimo",
   "stockFilterTransit": "En camino",
+  "stockFilterOut": "Agotados",
+  "stockFilterDeleted": "Eliminados",
   "stockEmptyTitle": "Aún no hay productos",
   "stockEmptyFilterTitle": "Nada con ese filtro",
   "stockEmptyMessage": "Los catálogos de tus proveedores aparecerán aquí.",
@@ -128,6 +139,13 @@
   },
   "stockUpdated": "Stock actualizado",
   "stockUpdatedMessage": "{name}: {stock} {unit}.",
+  "stockRestored": "Recuperado",
+  "stockRestoredMessage": "¡Producto {name} recuperado!",
+  "@stockRestoredMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "@stockUpdatedMessage": {
     "placeholders": {
       "name": { "type": "String" },
@@ -135,10 +153,17 @@
       "unit": { "type": "String" }
     }
   },
-  "stockEditorUid": "{uid} · mín. {min} {unit}",
+  "stockEditorUid": "{uid} · {unit}",
   "@stockEditorUid": {
     "placeholders": {
       "uid": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "stockThresholdLabel": "Aviso de bajo mínimo",
+  "stockThresholdHelp": "Se avisa cuando queden {min} {unit} o menos.",
+  "@stockThresholdHelp": {
+    "placeholders": {
       "min": { "type": "int" },
       "unit": { "type": "String" }
     }
@@ -207,6 +232,7 @@
   "deliveryReceivedTotal": "Recibido",
   "deliveryMissingTotal": "Faltante",
   "deliveryToCapture": "A cobrar",
+  "deliveryAlreadyPaid": "Ya pagado (no se cobra nada más)",
   "deliveryConfirm": "Confirmar entrega y cobrar",
   "deliveryConfirming": "Confirmando…",
   "deliverySuccess": "Entrega confirmada. Pago capturado.",
@@ -281,7 +307,7 @@
   "orderPaymentStatusSent": "enviado",
   "orderBlockedByRules": "Bloqueado por tus reglas",
   "orderBlockedHint": "Cambia tus reglas en la pestaña Reglas si quieres permitirlo.",
-  "orderApproveHint": "Al aprobar, el servidor paga a {supplier} y genera la factura.",
+  "orderApproveHint": "Al aprobar, autorizas el pago en PayPal: el dinero queda retenido hasta que confirmes la entrega (albarán).",
   "@orderApproveHint": {
     "placeholders": {
       "supplier": { "type": "String" }
@@ -302,14 +328,9 @@
   },
   "orderLegendSpent": "Ya gastado",
   "orderLegendThisOrder": "Este pedido",
-  "orderPaymentSent": "Pago enviado",
-  "orderPaymentSentMessage": "{amount} enviados a {supplier} con PayPal.",
-  "@orderPaymentSentMessage": {
-    "placeholders": {
-      "amount": { "type": "String" },
-      "supplier": { "type": "String" }
-    }
-  },
+  "orderPaymentAuthorizeTitle": "Continúa en PayPal",
+  "orderPaymentAuthorizeMessage": "{amount} para {supplier}: autoriza el pago en PayPal. El dinero queda retenido hasta que confirmes la entrega.",
+  "@orderPaymentAuthorizeMessage": {"placeholders": {"amount": {"type": "String"}, "supplier": {"type": "String"}}},
   "orderPaymentFailed": "No se pudo pagar",
   "orderBlockedByRules": "No se puede pedir por las reglas establecidas",
   "@orderBlockedByRules": {
@@ -395,6 +416,7 @@
   "assistantSubtitle": "Tu agente de reposición",
   "assistantGreeting": "Hola. Reviso tu stock, preparo pedidos a tus proveedores y los pago con PayPal, siempre dentro de tus reglas de gasto.",
   "assistantChipReview": "Revisa el stock ahora",
+  "assistantBudgetUpdated": "He actualizado tus límites de gasto. Ya se aplican al agente.",
   "assistantChipPending": "¿Qué tengo por aprobar?",
   "assistantChipSpent": "¿Cuánto llevo gastado?",
   "assistantInputHint": "Pregunta lo que quieras",
@@ -470,6 +492,9 @@
   "rulesLanguageAuto": "Auto",
   "rulesLanguageSpanish": "Español",
   "rulesLanguageEnglish": "English",
+  "supplierFallback": "Proveedor",
+  "productFallback": "Producto",
+  "unitFallback": "unidad",
   "rulesSounds": "Sonidos",
   "rulesSignOutQuestion": "¿Cerrar sesión?",
   "rulesSignOutCancel": "Cancelar",
@@ -525,6 +550,12 @@
   "decisionOrderCreated": "Preparé un pedido de reposición con tu stock bajo.",
   "decisionNoAction": "Revisé el stock: no hacía falta pedir nada.",
   "decisionBlocked": "Quise pedir, pero tus reglas de gasto lo bloquearon.",
+  "decisionBlockedReason": "No creé el pedido porque {reason}.",
+  "@decisionBlockedReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "decisionFailed": "La revisión falló. Inténtalo de nuevo en un momento.",
   "decisionAutoApproved": "Hice un pedido dentro de tus reglas y lo pagué con PayPal.",
   "decisionRequiresApproval": "Preparé un pedido que necesita tu aprobación.",
@@ -610,11 +641,14 @@
   "errorProductsLoadFailed": "No se pudieron cargar los productos",
   "errorLowStockLoadFailed": "No se pudo cargar el stock bajo",
   "errorStockUpdateFailed": "No se pudo actualizar el stock",
+  "errorStockThresholdUpdateFailed": "No se pudo actualizar el mínimo",
   "errorProductMissing": "Falta el producto.",
   "errorProductNotFound": "No existe ningún producto con UID {uid}.",
   "@errorProductNotFound": { "placeholders": { "uid": {"type": "String"} } },
   "errorProductUidMissing": "Introduce un UID.",
   "errorStockNegative": "El stock no puede ser negativo.",
+  "errorProductDeleteFailed": "No se pudo eliminar el producto",
+  "errorProductRestoreFailed": "No se pudo recuperar el producto",
   "errorAgentUnreachable": "El agente no respondió",
   "errorAgentFailed": "Error del agente",
   "errorAgentRunsLoadFailed": "No se pudieron cargar las ejecuciones",
@@ -654,6 +688,8 @@
   "@marketOriginalPrice": {"placeholders": {"price": {"type": "String"}}},
   "marketOutsideEu": "Fuera de la UE: incluye aranceles",
   "marketChoose": "Elegir este distribuidor",
+  "marketDemoBadge": "Demo",
+  "marketDemoNotice": "Directorio de demostración: los distribuidores y sus precios son ficticios.",
   "marketWebTitle": "También en internet",
   "marketWebHint": "Encontrados en la web, sin precio verificado.",
   "marketFxFallback": "Tipos de cambio aproximados.",
@@ -662,15 +698,13 @@
   "marketAdoptFrom": "De {distributor}",
   "@marketAdoptFrom": {"placeholders": {"distributor": {"type": "String"}}},
   "marketAdoptQuantity": "Unidades al mes",
-  "marketAdoptOrderNow": "Hacer el primer pedido ahora",
-  "marketAdoptOrderHint": "Se paga con PayPal (unos {total}) si cumple tus reglas de gasto.",
+  "marketAdoptOrderNow": "Crear el primer pedido",
+  "marketAdoptOrderHint": "Pedido de unos {total}: lo apruebas y pagas con PayPal, y el stock sube cuando registres la entrega.",
   "@marketAdoptOrderHint": {"placeholders": {"total": {"type": "String"}}},
   "marketAdoptConfirm": "Añadir a mi tienda",
-  "marketAdoptDone": "**{product}** ya está en tu stock, de **{supplier}**.",
+  "marketAdoptDone": "**{product}** ya está en tu catálogo, de **{supplier}**.",
   "@marketAdoptDone": {"placeholders": {"product": {"type": "String"}, "supplier": {"type": "String"}}},
-  "marketAdoptPaid": "Primer pedido pagado con PayPal: **{total}**.",
-  "@marketAdoptPaid": {"placeholders": {"total": {"type": "String"}}},
-  "marketAdoptOrderCreated": "Primer pedido creado por **{total}**. Lo verás en Pedidos.",
+  "marketAdoptOrderCreated": "Primer pedido creado por **{total}**. Apruébalo en Pedidos: el stock sube cuando registres el albarán.",
   "@marketAdoptOrderCreated": {"placeholders": {"total": {"type": "String"}}},
   "marketAdoptBlocked": "No hice el pedido: {reason}",
   "@marketAdoptBlocked": {"placeholders": {"reason": {"type": "String"}}},

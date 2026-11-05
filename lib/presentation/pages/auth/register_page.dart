@@ -158,6 +158,11 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: RBackLink(l10n.actionSignIn),
                     ),
                     const SizedBox(height: 6),
+                    const Align(
+                      alignment: Alignment.centerRight,
+                      child: RLanguageToggle(),
+                    ),
+                    const SizedBox(height: 6),
                     RLargeTitle(
                       l10n.authCreateTitle,
                       subtitle: l10n.authCreateSubtitle,

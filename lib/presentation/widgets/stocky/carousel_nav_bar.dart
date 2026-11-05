@@ -43,23 +43,39 @@ class CarouselNavBar extends StatefulWidget {
 }
 
 class _CarouselNavBarState extends State<CarouselNavBar>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const _spring = SpringDescription(
     mass: 1,
     stiffness: 240,
     damping: 23,
   );
 
+  /// Duración de la cascada: un salto de pestaña vecina tarda [_hopBaseMs] y
+  /// cada pestaña extra añade [_hopExtraStepMs]. Cruzar el dock entero ronda
+  /// los 0,4 s: rápido, pero da tiempo a ver pasar la píldora por cada
+  /// pestaña.
+  static const _hopBaseMs = 180;
+  static const _hopExtraStepMs = 70;
+
   late final AnimationController _settle;
+
+  /// Cascada: la píldora recorre una a una las pestañas intermedias hasta
+  /// llegar a la elegida, mientras el contenido ya está en su destino.
+  late final AnimationController _hop = AnimationController(vsync: this)
+    ..addListener(_onHopTick)
+    ..addStatusListener(_onHopStatus);
+
+  double _hopFrom = 0;
+  double _hopTo = 0;
+  int _hopSteps = 0;
+  bool _hopping = false;
+
   double _slot = 0;
   double _lastPage = 0;
   double? _dragPage;
   double? _settlePage;
   int _dragIndex = 0;
   int _settleToken = 0;
-  bool _traveling = false;
-  double _travelFrom = 0;
-  double _travelTo = 0;
 
   @override
   void initState() {
@@ -83,6 +99,7 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   void dispose() {
     widget.controller.removeListener(_handleController);
     _settle.dispose();
+    _hop.dispose();
     super.dispose();
   }
 
@@ -98,10 +115,6 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     if (controller.hasClients && controller.position.haveDimensions) {
       final page = controller.page;
       if (page != null) _lastPage = page;
-    }
-    if (!_traveling) return;
-    if ((_page() - _travelTo).abs() < 0.001) {
-      setState(() => _traveling = false);
     }
   }
 
@@ -119,7 +132,84 @@ class _CarouselNavBarState extends State<CarouselNavBar>
 
   double _maxPage() => (widget.items.length - 1).toDouble();
 
+  /// Arranca la cascada: la píldora va pasando una a una por las pestañas
+  /// intermedias hasta llegar a [to]. El contenido, en cambio, ya salta
+  /// directo (lo hace el shell con `jumpToPage`).
+  void _startHop(double from, double to) {
+    _hopFrom = from;
+    _hopTo = to;
+    final distance = (to - from).abs();
+    _hopSteps = distance.round();
+    if (_hopSteps <= 0) {
+      _hopping = false;
+      return;
+    }
+    _hopping = true;
+    // La duración crece con la distancia, pero poco: cruzar el dock entero
+    // sigue siendo cosa de menos de medio segundo.
+    _hop.duration = Duration(
+      milliseconds: (_hopBaseMs + _hopExtraStepMs * (distance - 1))
+          .round()
+          .clamp(120, 600),
+    );
+    _hop.forward(from: 0);
+  }
+
+  void _onHopTick() {
+    // La píldora se redibuja desde el `AnimatedBuilder`, que ya escucha la
+    // cascada: aquí no hace falta reconstruir toda la barra.
+  }
+
+  void _onHopStatus(AnimationStatus status) {
+    if (!mounted) return;
+    // Solo `completed` cierra la cascada. `forward(from: 0)` pasa antes por
+    // `dismissed`, y si se atendiera la píldora se saltaría el viaje y
+    // aparecería ya en su destino (el fallo del "teletransporte").
+    if (status == AnimationStatus.completed) {
+      setState(() => _hopping = false);
+    }
+  }
+
+  /// Posición de la píldora durante la cascada.
+  ///
+  /// Una sola curva para todo el recorrido: la píldora acelera al salir, pasa
+  /// sin frenarse por encima de cada pestaña intermedia y desacelera al
+  /// llegar. Nada de parar en cada pestaña: eso es lo que hacía que la
+  /// animación se viera a trompicones.
+  double _hopPage() {
+    if (_hopSteps <= 0) return _hopTo;
+    // Aceleración y frenada suaves, sin el latigazo central de la curva
+    // "emphasized": así se ve la píldora recorrer cada pestaña.
+    final eased = Curves.easeInOutCubic.transform(_hop.value.clamp(0.0, 1.0));
+    return ui.lerpDouble(_hopFrom, _hopTo, eased)!.clamp(0.0, _maxPage());
+  }
+
+  /// Efecto burbuja durante la cascada.
+  ///
+  /// 1 = tamaño real; 0 = burbuja (34 px). Se deshincha al salir de la
+  /// pestaña, viaja pequeña durante todo el trayecto y se expande al llegar
+  /// con un pequeño rebote. Al ser una sola curva sobre el recorrido total
+  /// (y no una por pestaña), el tamaño acompaña al movimiento sin tirones.
+  double _bubbleEmphasis() {
+    const shrinkEnd = 0.22;
+    const growStart = 0.6;
+    final t = _hop.value.clamp(0.0, 1.0);
+
+    // Al salir: se deshincha hasta quedarse en burbuja.
+    if (t < shrinkEnd) {
+      return 1 - Curves.easeOutCubic.transform(t / shrinkEnd);
+    }
+    // En el camino: burbuja pequeña, estable.
+    if (t <= growStart) return 0.0;
+    // Al llegar: se hincha de nuevo, con un rebote suave.
+    final grow = (t - growStart) / (1 - growStart);
+    return Curves.easeOutBack.transform(grow).clamp(0.0, 1.06);
+  }
+
   double _visualPage() {
+    if (_hopping) {
+      return _hopPage();
+    }
     if (_settlePage != null) {
       return _settlePage!.clamp(0.0, _maxPage());
     }
@@ -161,14 +251,11 @@ class _CarouselNavBarState extends State<CarouselNavBar>
     setState(() {
       _dragPage = null;
       _settlePage = null;
-      if ((current - index).abs() > 0.001) {
-        _traveling = true;
-        _travelFrom = current;
-        _travelTo = index.toDouble();
-      } else {
-        _traveling = false;
-      }
     });
+
+    // Efecto cascada: la píldora pasa una a una por las pestañas
+    // intermedias hasta llegar a la elegida.
+    _startHop(current, index.toDouble());
 
     widget.onSelect(index);
   }
@@ -176,7 +263,8 @@ class _CarouselNavBarState extends State<CarouselNavBar>
   void _onDragStart(DragStartDetails details) {
     _settleToken++;
     _settle.stop();
-    _traveling = false;
+    _hopping = false;
+    _hop.stop();
     _dragPage = _settlePage ?? _dragPage ?? _page();
     _settlePage = null;
     _dragIndex = _magnet(_dragPage!).round().clamp(0, widget.items.length - 1);
@@ -252,37 +340,26 @@ class _CarouselNavBarState extends State<CarouselNavBar>
                   onHorizontalDragEnd: _onDragEnd,
                   onHorizontalDragCancel: _onDragEnd,
                   child: AnimatedBuilder(
-                    animation: widget.controller,
+                    // Escucha también la cascada: así la píldora se anima
+                    // sin tener que reconstruir la barra (con su blur).
+                    animation: Listenable.merge([widget.controller, _hop]),
                     builder: (context, _) {
                       final visualPage = _visualPage();
-                      final travel = _traveling;
-                      final progress = travel
-                          ? ((_page() - _travelFrom) /
-                                    (_travelTo - _travelFrom))
-                                .clamp(0.0, 1.0)
-                          : 0.0;
 
-                      final actives = <double>[];
-                      if (travel) {
-                        final src = _activeWeights(_travelFrom);
-                        final dst = _activeWeights(_travelTo);
-                        for (var i = 0; i < widget.items.length; i++) {
-                          actives.add(ui.lerpDouble(src[i], dst[i], progress)!);
-                        }
-                      } else {
-                        actives.addAll(_activeWeights(visualPage));
-                      }
+                      // Las pestañas se resaltan según dónde esté la píldora:
+                      // en la cascada se va encendiendo una a una al pasar.
+                      final actives = _activeWeights(visualPage);
                       for (var i = 0; i < actives.length; i++) {
                         actives[i] = _easeActive(actives[i]);
                       }
 
                       final total = actives.fold<double>(
                         0,
-                        (a, active) => a + 1 + 0.38 * active,
+                        (a, active) => a + 1 + 0.46 * active,
                       );
                       final widths = [
                         for (final active in actives)
-                          constraints.maxWidth * (1 + 0.38 * active) / total,
+                          constraints.maxWidth * (1 + 0.46 * active) / total,
                       ];
                       final lefts = <double>[];
                       var x = 0.0;
@@ -297,52 +374,47 @@ class _CarouselNavBarState extends State<CarouselNavBar>
                       // 0 cuando la píldora está en una pestaña, 1 a mitad de
                       // camino entre dos.
                       final double transit;
-                      if (travel) {
-                        final fromIndex = _travelFrom.round().clamp(
-                          0,
-                          widget.items.length - 1,
-                        );
-                        final toIndex = _travelTo.round().clamp(
-                          0,
-                          widget.items.length - 1,
-                        );
-                        pillCenter = ui.lerpDouble(
-                          centerOf(fromIndex),
-                          centerOf(toIndex),
-                          progress,
-                        )!;
-                        transit = (1 - (2 * progress - 1).abs()).clamp(0.0, 1.0);
-                      } else {
-                        final from = visualPage.floor().clamp(
-                          0,
-                          widget.items.length - 1,
-                        );
-                        final to = visualPage.ceil().clamp(
-                          0,
-                          widget.items.length - 1,
-                        );
-                        final t = (visualPage - from).clamp(0.0, 1.0);
-                        pillCenter = ui.lerpDouble(
-                          centerOf(from),
-                          centerOf(to),
-                          t,
-                        )!;
-                        transit = (2 * (visualPage - visualPage.round()).abs())
-                            .clamp(0.0, 1.0);
-                      }
+                      final from = visualPage.floor().clamp(
+                        0,
+                        widget.items.length - 1,
+                      );
+                      final to = visualPage.ceil().clamp(
+                        0,
+                        widget.items.length - 1,
+                      );
+                      final t = (visualPage - from).clamp(0.0, 1.0);
+                      pillCenter = ui.lerpDouble(
+                        centerOf(from),
+                        centerOf(to),
+                        t,
+                      )!;
+                      transit = (2 * (visualPage - visualPage.round()).abs())
+                          .clamp(0.0, 1.0);
 
-                      // Coseno: se encoge y crece con una curva suave, sin
-                      // frenazos al entrar o salir de cada pestaña.
-                      final emphasis = 0.5 + 0.5 * math.cos(math.pi * transit);
+                      // Burbuja: la píldora se deshincha al salir de una
+                      // pestaña, viaja pequeña (34 px) y se hincha otra vez
+                      // al llegar, con un rebote final.
+                      final double emphasis;
+                      // Cuánto se eleva la píldora del centro de la barra.
+                      final double lift;
+                      // Cuánto se aclara el azul mientras está en camino.
+                      final double travelMix;
+                      if (_hopping) {
+                        emphasis = _bubbleEmphasis();
+                        lift = 1 - emphasis;
+                        // El rebote final deja `emphasis` por encima de 1:
+                        // se recorta para que el color no se pase de azul.
+                        travelMix = (1 - emphasis).clamp(0.0, 1.0) * 0.6;
+                      } else {
+                        // Coseno: se encoge y crece con una curva suave, sin
+                        // frenazos al entrar o salir de cada pestaña.
+                        emphasis = 0.5 + 0.5 * math.cos(math.pi * transit);
+                        lift = 1 - emphasis;
+                        travelMix = transit.clamp(0.0, 1.0) * 0.75;
+                      }
                       final pillWidth = ui.lerpDouble(34, 84, emphasis)!;
                       final pillHeight = ui.lerpDouble(34, 66, emphasis)!;
 
-                      final lift = 1 - emphasis;
-
-                      // Durante el trayecto la píldora se aclara un poco (para
-                      // que se note que está "en camino"); al posarse sobre
-                      // una pestaña vuelve al azul de la app.
-                      final travelMix = transit.clamp(0.0, 1.0) * 0.75;
                       final pillColor = Color.lerp(
                         p.accent,
                         p.accentLight,
@@ -449,7 +521,7 @@ class _NavButton extends StatelessWidget {
               children: [
                 Icon(
                   item.icon,
-                  size: ui.lerpDouble(21, 25, active),
+                  size: ui.lerpDouble(20, 27, active),
                   color: foreground,
                 ),
                 const SizedBox(height: 3),
@@ -458,7 +530,7 @@ class _NavButton extends StatelessWidget {
                   maxLines: 1,
                   softWrap: false,
                   style: TextStyle(
-                    fontSize: ui.lerpDouble(11, 13.5, active),
+                    fontSize: ui.lerpDouble(10.5, 14, active),
                     fontWeight: FontWeight.w600,
                     color: foreground,
                   ),

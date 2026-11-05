@@ -23,6 +23,8 @@
   "actionReviewStockNow": "Review stock now",
   "actionRemoveOneUnit": "Remove one unit",
   "actionAddOneUnit": "Add one unit",
+  "actionDelete": "Delete",
+  "actionRestore": "Restore",
 
   "semanticsBackTo": "Back to {label}",
   "@semanticsBackTo": {
@@ -52,6 +54,12 @@
   "@homeBudgetOfMonth": {
     "placeholders": {
       "month": { "type": "String" }
+    }
+  },
+  "budgetRingSemantics": "{percent}% of the budget used",
+  "@budgetRingSemantics": {
+    "placeholders": {
+      "percent": { "type": "int" }
     }
   },
   "homeRemaining": "{amount} left",
@@ -101,10 +109,13 @@
     }
   },
   "catalogOrderButton": "Place order",
+  "catalogSupplierHint": "Supplier",
   "catalogOrderCreated": "Order created. Approve it to pay and add the stock.",
   "stockFilterAll": "All",
   "stockFilterLow": "Low stock",
   "stockFilterTransit": "On the way",
+  "stockFilterOut": "Out of stock",
+  "stockFilterDeleted": "Deleted",
   "stockEmptyTitle": "No products yet",
   "stockEmptyFilterTitle": "Nothing matches this filter",
   "stockEmptyMessage": "Your suppliers' catalogues will show up here.",
@@ -128,6 +139,8 @@
   },
   "stockUpdated": "Stock updated",
   "stockUpdatedMessage": "{name}: {stock} {unit}.",
+  "stockRestored": "Restored",
+  "stockRestoredMessage": "Product {name} restored!",
   "@stockUpdatedMessage": {
     "placeholders": {
       "name": { "type": "String" },
@@ -135,10 +148,17 @@
       "unit": { "type": "String" }
     }
   },
-  "stockEditorUid": "{uid} · min. {min} {unit}",
+  "stockEditorUid": "{uid} · {unit}",
   "@stockEditorUid": {
     "placeholders": {
       "uid": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "stockThresholdLabel": "Low stock alert",
+  "stockThresholdHelp": "Alerts you when {min} {unit} or fewer are left.",
+  "@stockThresholdHelp": {
+    "placeholders": {
       "min": { "type": "int" },
       "unit": { "type": "String" }
     }
@@ -207,6 +227,7 @@
   "deliveryReceivedTotal": "Received",
   "deliveryMissingTotal": "Missing",
   "deliveryToCapture": "To capture",
+  "deliveryAlreadyPaid": "Already paid (nothing else to charge)",
   "deliveryConfirm": "Confirm delivery and capture payment",
   "deliveryConfirming": "Confirming…",
   "deliverySuccess": "Delivery confirmed. Payment captured.",
@@ -280,7 +301,7 @@
   "orderPaymentStatusSent": "sent",
   "orderBlockedByRules": "Blocked by your rules",
   "orderBlockedHint": "Change your rules in the Rules tab if you want to allow it.",
-  "orderApproveHint": "On approval, the server pays {supplier} and issues the invoice.",
+  "orderApproveHint": "When you approve, you authorize the payment in PayPal: the money is held until you confirm the delivery note.",
   "@orderApproveHint": {
     "placeholders": {
       "supplier": { "type": "String" }
@@ -301,14 +322,9 @@
   },
   "orderLegendSpent": "Already spent",
   "orderLegendThisOrder": "This order",
-  "orderPaymentSent": "Payment sent",
-  "orderPaymentSentMessage": "{amount} sent to {supplier} with PayPal.",
-  "@orderPaymentSentMessage": {
-    "placeholders": {
-      "amount": { "type": "String" },
-      "supplier": { "type": "String" }
-    }
-  },
+  "orderPaymentAuthorizeTitle": "Continue in PayPal",
+  "orderPaymentAuthorizeMessage": "{amount} for {supplier}: authorize the payment in PayPal. The money is held until you confirm the delivery.",
+  "@orderPaymentAuthorizeMessage": {"placeholders": {"amount": {"type": "String"}, "supplier": {"type": "String"}}},
   "orderPaymentFailed": "Could not pay",
   "orderBlockedByRules": "Cannot order due to spending rules",
   "@orderBlockedByRules": {
@@ -394,6 +410,7 @@
   "assistantSubtitle": "Your stockying agent",
   "assistantGreeting": "Hi. I review your stock, prepare orders for your suppliers and pay them with PayPal, always within your spending rules.",
   "assistantChipReview": "Review the stock now",
+  "assistantBudgetUpdated": "I updated your spending limits. The agent already uses them.",
   "assistantChipPending": "What do I need to approve?",
   "assistantChipSpent": "How much have I spent?",
   "assistantInputHint": "Ask anything",
@@ -469,6 +486,9 @@
   "rulesLanguageAuto": "Auto",
   "rulesLanguageSpanish": "Spanish",
   "rulesLanguageEnglish": "English",
+  "supplierFallback": "Supplier",
+  "productFallback": "Product",
+  "unitFallback": "unit",
   "rulesSounds": "Sounds",
   "rulesSignOutQuestion": "Sign out?",
   "rulesSignOutCancel": "Cancel",
@@ -525,9 +545,11 @@
   "decisionOrderCreated": "I prepared a stockying order with your low stock.",
   "decisionNoAction": "I reviewed the stock: nothing needed ordering.",
   "decisionBlocked": "I wanted to order, but your spending rules blocked it.",
-  "decisionBlockedEs": "Quería pedir, pero mis reglas de gasto lo bloquearon.",
-  "@decisionBlockedEs": {
-    "placeholders": {}
+  "decisionBlockedReason": "I didn't create the order because {reason}.",
+  "@decisionBlockedReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
   },
   "decisionFailed": "The review failed. Try again in a moment.",
   "decisionAutoApproved": "I placed an order within your rules and paid it with PayPal.",
@@ -611,10 +633,13 @@
   "errorProductsLoadFailed": "Could not load the products",
   "errorLowStockLoadFailed": "Could not load the low stock",
   "errorStockUpdateFailed": "Could not update the stock",
+  "errorStockThresholdUpdateFailed": "Could not update the low stock alert",
   "errorProductMissing": "The product is missing.",
   "errorProductNotFound": "There is no product with UID {uid}.",
   "errorProductUidMissing": "Enter a UID.",
   "errorStockNegative": "Stock cannot be negative.",
+  "errorProductDeleteFailed": "Could not delete the product",
+  "errorProductRestoreFailed": "Could not restore the product",
   "errorAgentUnreachable": "The agent did not respond",
   "errorAgentFailed": "Agent error",
   "errorAgentRunsLoadFailed": "Could not load the runs",
@@ -648,18 +673,19 @@
   "marketOriginalPrice": "Source price: {price}",
   "marketOutsideEu": "Outside the EU: duties included",
   "marketChoose": "Choose this distributor",
+  "marketDemoBadge": "Demo",
+  "marketDemoNotice": "Demo directory: the distributors and their prices are fictional.",
   "marketWebTitle": "Also on the web",
   "marketWebHint": "Found online, price not verified.",
   "marketFxFallback": "Approximate exchange rates.",
   "marketAdoptTitle": "Add {product}",
   "marketAdoptFrom": "From {distributor}",
   "marketAdoptQuantity": "Units per month",
-  "marketAdoptOrderNow": "Place the first order now",
-  "marketAdoptOrderHint": "Paid with PayPal (about {total}) if it fits your spending rules.",
+  "marketAdoptOrderNow": "Create the first order",
+  "marketAdoptOrderHint": "Order of about {total}: you approve it and pay with PayPal, and the stock goes up when you record the delivery.",
   "marketAdoptConfirm": "Add to my store",
-  "marketAdoptDone": "**{product}** is now in your stock, from **{supplier}**.",
-  "marketAdoptPaid": "First order paid with PayPal: **{total}**.",
-  "marketAdoptOrderCreated": "First order created for **{total}**. You'll find it in Orders.",
+  "marketAdoptDone": "**{product}** is now in your catalogue, from **{supplier}**.",
+  "marketAdoptOrderCreated": "First order created for **{total}**. Approve it in Orders: the stock goes up when you record the delivery note.",
   "marketAdoptBlocked": "I didn't place the order: {reason}",
   "marketAdoptSuccessTitle": "Product added",
   "marketVoiceNoSpeech": "I didn't hear you. Tap the microphone and speak close to the device.",

@@ -7,10 +7,13 @@ class RunAgentUsecase {
   final AgentRepository repository;
   RunAgentUsecase({required this.repository});
 
-  Future<Either<AppError, AgentRunResult>> call(String storeId) {
+  Future<Either<AppError, AgentRunResult>> call(
+    String storeId, {
+    String? locale,
+  }) {
     if (storeId.isEmpty) {
       return Future.value(const Left(AppError(AppErrorCode.agentStoreMissing)));
     }
-    return repository.run(storeId);
+    return repository.run(storeId, locale: locale);
   }
 }

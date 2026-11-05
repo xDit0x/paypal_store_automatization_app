@@ -9,8 +9,12 @@ import {
   startAuthorization,
 } from '../../../application/orders/escrow_flow.js';
 import { previewOrderAmount } from '../../../application/orders/guard_order_amount.js';
+import { errorCopy } from '../../../application/i18n/errors.js';
+import { describeReason } from '../../../application/i18n/reasons.js';
+import { ReasonError } from '../../../domain/reasons.js';
 import { supabaseAdmin } from '../../../infrastructure/supabase/supabase_client.js';
 import { authenticate } from '../auth.js';
+import { browserLanguage, requestLanguage } from '../language.js';
 import { createRateLimiter } from '../rate_limit.js';
 
 interface OrderRow {
@@ -64,29 +68,80 @@ interface OrderStatusRow {
     | null;
 }
 
+/**
+ * Texto de un error del dominio, en el idioma de la app.
+ *
+ * Si el error no trae motivo estructurado (es un fallo técnico), se devuelve
+ * `fallback` para no enseñar un volcado de excepción.
+ */
+function reasonText(
+  error: unknown,
+  language: 'es' | 'en',
+  fallback: string,
+): string {
+  if (error instanceof ReasonError) {
+    return describeReason(error.reason, language);
+  }
+  return fallback;
+}
+
 export async function orderRoutes(app: FastifyInstance): Promise<void> {
   // Página a la que PayPal redirige al pagador tras aprobar. Confirma la
   // autorización para que el pedido quede listo para la entrega.
-  app.get<{ Querystring: { order_id?: string; token?: string } }>(
+  app.get<{ Querystring: { order_id?: string; token?: string; locale?: string } }>(
     '/paypal/return',
     async (request, reply) => {
+      const language =
+        request.query.locale === 'en' || request.query.locale === 'es'
+          ? request.query.locale
+          : browserLanguage(request);
       const orderId = request.query.order_id;
+
+      const page = {
+        es: {
+          missingTitle: 'Faltan datos',
+          missingMessage: 'No hemos podido identificar el pedido.',
+          notFoundTitle: 'Pedido no encontrado',
+          notFoundMessage: 'Vuelve a la app y revisa el pedido.',
+          okTitle: 'Pago autorizado',
+          okMessage:
+            'El importe queda retenido y se cobrará al confirmar la entrega.',
+          errorTitle: 'No se pudo confirmar',
+          errorMessage:
+            'Vuelve a Stocky y pulsa «Ya he autorizado el pago».',
+          back: 'Ya puedes volver a Stocky.',
+        },
+        en: {
+          missingTitle: 'Missing data',
+          missingMessage: 'We could not identify the order.',
+          notFoundTitle: 'Order not found',
+          notFoundMessage: 'Go back to the app and check the order.',
+          okTitle: 'Payment authorized',
+          okMessage:
+            'The amount is held and will be charged when the delivery is confirmed.',
+          errorTitle: 'Could not confirm',
+          errorMessage:
+            'Go back to Stocky and tap "I have authorized the payment".',
+          back: 'You can go back to Stocky now.',
+        },
+      }[language];
+
       const html = (title: string, message: string, ok: boolean) =>
-        `<!doctype html><html lang="es"><head><meta charset="utf-8">` +
+        `<!doctype html><html lang="${language}"><head><meta charset="utf-8">` +
         `<meta name="viewport" content="width=device-width,initial-scale=1">` +
         `<title>${title}</title></head>` +
         `<body style="font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:48px 24px;background:#f6f6f8">` +
         `<div style="font-size:48px">${ok ? '✅' : '⚠️'}</div>` +
         `<h1 style="font-size:22px">${title}</h1>` +
         `<p style="color:#555;line-height:1.5">${message}</p>` +
-        `<p style="color:#888;font-size:13px">Ya puedes volver a Stocky.</p>` +
+        `<p style="color:#888;font-size:13px">${page.back}</p>` +
         `</body></html>`;
 
       if (!orderId) {
         return reply
           .code(400)
           .type('text/html; charset=utf-8')
-          .send(html('Faltan datos', 'No hemos podido identificar el pedido.', false));
+          .send(html(page.missingTitle, page.missingMessage, false));
       }
 
       try {
@@ -100,7 +155,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
           return reply
             .code(404)
             .type('text/html; charset=utf-8')
-            .send(html('Pedido no encontrado', 'Vuelve a la app y revisa el pedido.', false));
+            .send(html(page.notFoundTitle, page.notFoundMessage, false));
         }
 
         if (data.status === 'approved') {
@@ -109,25 +164,13 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
 
         return reply
           .type('text/html; charset=utf-8')
-          .send(
-            html(
-              'Pago autorizado',
-              'El importe queda retenido y se cobrará al confirmar la entrega.',
-              true,
-            ),
-          );
+          .send(html(page.okTitle, page.okMessage, true));
       } catch (error) {
         request.log.error(error);
         return reply
           .code(502)
           .type('text/html; charset=utf-8')
-          .send(
-            html(
-              'No se pudo confirmar',
-              'Vuelve a Stocky y pulsa «Ya he autorizado el pago».',
-              false,
-            ),
-          );
+          .send(html(page.errorTitle, page.errorMessage, false));
       }
     },
   );
@@ -137,15 +180,18 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { id: string } }>(
     '/orders/:id/status',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
       if (!user) {
-        return reply.code(401).send({ error: 'Sesión no válida.' });
+        return reply.code(401).send({ error: text.sessionInvalid });
       }
 
       try {
         const owned = await loadOwnedOrder(request.params.id, user.id);
         if (!owned) {
-          return reply.code(404).send({ error: 'Pedido no encontrado.' });
+          return reply.code(404).send({ error: text.orderNotFound });
         }
 
         const { data, error } = await supabaseAdmin
@@ -187,7 +233,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         });
       } catch (error) {
         request.log.error(error);
-        return reply.code(500).send({ error: 'No se pudo consultar el pedido.' });
+        return reply.code(500).send({ error: text.orderLoadFailed });
       }
     },
   );
@@ -195,15 +241,18 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { id: string } }>(
     '/orders/:id/amount',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
       if (!user) {
-        return reply.code(401).send({ error: 'Sesión no válida.' });
+        return reply.code(401).send({ error: text.sessionInvalid });
       }
 
       try {
         const owned = await loadOwnedOrder(request.params.id, user.id);
         if (!owned) {
-          return reply.code(404).send({ error: 'Pedido no encontrado.' });
+          return reply.code(404).send({ error: text.orderNotFound });
         }
 
         // Importe que se pagaría ahora, con el catálogo vigente.
@@ -213,13 +262,13 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
           total: review.total,
           previous_total: review.previousTotal,
           changed: review.changed,
+          blockedReason: review.blockedReason
+            ? describeReason(review.blockedReason, language)
+            : null,
         });
       } catch (error) {
         return reply.code(409).send({
-          error:
-            error instanceof Error
-              ? error.message
-              : 'No se pudo calcular el importe del pedido.',
+          error: reasonText(error, language, text.orderAmountFailed),
         });
       }
     },
@@ -228,9 +277,12 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string } }>(
     '/orders/:id/approve',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
       if (!user) {
-        return reply.code(401).send({ error: 'Sesión no válida.' });
+        return reply.code(401).send({ error: text.sessionInvalid });
       }
 
       const { allowed, retryAfterSeconds } = paymentLimiter.check(user.id);
@@ -238,18 +290,21 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         reply.header('Retry-After', String(retryAfterSeconds));
         return reply
           .code(429)
-          .send({ error: 'Demasiadas aprobaciones seguidas. Espera un momento.' });
+          .send({ error: text.approvalsRateLimited });
       }
 
       try {
         const order = await loadOwnedOrder(request.params.id, user.id);
         if (!order) {
-          return reply.code(404).send({ error: 'Pedido no encontrado.' });
+          return reply.code(404).send({ error: text.orderNotFound });
         }
         if (!['draft', 'pending_approval'].includes(order.status)) {
-          return reply
-            .code(409)
-            .send({ error: `El pedido está en estado "${order.status}".` });
+          return reply.code(409).send({
+            error: describeReason(
+              { code: 'wrong_status', params: { status: order.status } },
+              language,
+            ),
+          });
         }
 
         // Al aprobar no se cobra: se crea una autorización de PayPal y se
@@ -257,13 +312,13 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         // retenido hasta que confirme la entrega.
         let auth;
         try {
-          auth = await startAuthorization(order.id, { ownerApproved: true });
+          auth = await startAuthorization(order.id, {
+            ownerApproved: true,
+            locale: language,
+          });
         } catch (error) {
           return reply.code(409).send({
-            error:
-              error instanceof Error
-                ? error.message
-                : 'El pedido no supera la comprobación de importe.',
+            error: reasonText(error, language, text.orderAmountMismatch),
           });
         }
 
@@ -293,7 +348,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
       } catch (error) {
         request.log.error(error);
         return reply.code(502).send({
-          error: 'No se pudo completar el pago del pedido.',
+          error: text.paymentFailed,
         });
       }
     },
@@ -302,21 +357,29 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { id: string } }>(
     '/orders/:id/approve-url',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
-      if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+      if (!user) return reply.code(401).send({ error: text.sessionInvalid });
 
       try {
         const order = await loadOwnedOrder(request.params.id, user.id);
-        if (!order) return reply.code(404).send({ error: 'Pedido no encontrado.' });
+        if (!order) return reply.code(404).send({ error: text.orderNotFound });
         if (order.status !== 'approved') {
-          return reply.code(409).send({ error: `El pedido está en estado "${order.status}".` });
+          return reply.code(409).send({
+            error: describeReason(
+              { code: 'wrong_status', params: { status: order.status } },
+              language,
+            ),
+          });
         }
 
         const approveUrl = await approvalUrlForOrder(order.id);
         return reply.send({ order_id: order.id, approve_url: approveUrl });
       } catch (error) {
         request.log.error(error);
-        return reply.code(502).send({ error: 'No se pudo obtener el enlace de PayPal.' });
+        return reply.code(502).send({ error: text.paypalLinkFailed });
       }
     },
   );
@@ -324,14 +387,22 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string }; Body: { paypal_order_id?: string } | null }>(
     '/orders/:id/confirm-auth',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
-      if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+      if (!user) return reply.code(401).send({ error: text.sessionInvalid });
 
       try {
         const order = await loadOwnedOrder(request.params.id, user.id);
-        if (!order) return reply.code(404).send({ error: 'Pedido no encontrado.' });
+        if (!order) return reply.code(404).send({ error: text.orderNotFound });
         if (order.status !== 'approved') {
-          return reply.code(409).send({ error: `El pedido está en estado "${order.status}".` });
+          return reply.code(409).send({
+            error: describeReason(
+              { code: 'wrong_status', params: { status: order.status } },
+              language,
+            ),
+          });
         }
 
         const auth = await confirmAuthorization(
@@ -341,7 +412,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         return reply.send({ order_id: order.id, ...auth });
       } catch (error) {
         request.log.error(error);
-        return reply.code(502).send({ error: 'No se pudo confirmar la autorización.' });
+        return reply.code(502).send({ error: text.authConfirmFailed });
       }
     },
   );
@@ -349,19 +420,24 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string }; Body: { lines: DeliveryLine[] } }>(
     '/orders/:id/capture',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
-      if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+      if (!user) return reply.code(401).send({ error: text.sessionInvalid });
 
       try {
         const order = await loadOwnedOrder(request.params.id, user.id);
-        if (!order) return reply.code(404).send({ error: 'Pedido no encontrado.' });
-        
-        const capture = await captureDelivery(order.id, request.body.lines);
+        if (!order) return reply.code(404).send({ error: text.orderNotFound });
+
+        const capture = await captureDelivery(order.id, request.body.lines, {
+          locale: language,
+        });
         return reply.send({ order_id: order.id, ...capture });
       } catch (error) {
         request.log.error(error);
-        return reply.code(502).send({ 
-          error: error instanceof Error ? error.message : 'No se pudo capturar el pago.' 
+        return reply.code(502).send({
+          error: reasonText(error, language, text.captureFailed),
         });
       }
     },
@@ -370,38 +446,47 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string }; Body: { amount?: number } }>(
     '/orders/:id/refund',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
-      if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+      if (!user) return reply.code(401).send({ error: text.sessionInvalid });
 
       try {
         const order = await loadOwnedOrder(request.params.id, user.id);
-        if (!order) return reply.code(404).send({ error: 'Pedido no encontrado.' });
-        
+        if (!order) return reply.code(404).send({ error: text.orderNotFound });
+
         const refund = await refundOrder(order.id, request.body.amount);
         return reply.send({ order_id: order.id, ...refund });
       } catch (error) {
         request.log.error(error);
-        return reply.code(502).send({ error: 'No se pudo reembolsar el pago.' });
+        return reply.code(502).send({ error: text.refundFailed });
       }
     },
   );
   app.post<{ Params: { id: string } }>(
     '/orders/:id/reject',
     async (request, reply) => {
+      const language = requestLanguage(request);
+      const text = errorCopy[language];
+
       const user = await authenticate(request);
       if (!user) {
-        return reply.code(401).send({ error: 'Sesión no válida.' });
+        return reply.code(401).send({ error: text.sessionInvalid });
       }
 
       try {
         const order = await loadOwnedOrder(request.params.id, user.id);
         if (!order) {
-          return reply.code(404).send({ error: 'Pedido no encontrado.' });
+          return reply.code(404).send({ error: text.orderNotFound });
         }
         if (!['draft', 'pending_approval'].includes(order.status)) {
-          return reply
-            .code(409)
-            .send({ error: `El pedido está en estado "${order.status}".` });
+          return reply.code(409).send({
+            error: describeReason(
+              { code: 'wrong_status', params: { status: order.status } },
+              language,
+            ),
+          });
         }
 
         const { error } = await supabaseAdmin
@@ -420,7 +505,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         return reply.send({ order_id: order.id, status: 'rejected' });
       } catch (error) {
         request.log.error(error);
-        return reply.code(500).send({ error: 'No se pudo rechazar el pedido.' });
+        return reply.code(500).send({ error: text.rejectFailed });
       }
     },
   );

@@ -9,7 +9,7 @@ import {
   evaluateSpendingRules,
   type SpendingDecision,
 } from '../../domain/spending_rules.js';
-import { getLowStockProducts } from '../catalog/get_low_stock.js';
+import { getLowStockProducts, getInactiveProductUids } from '../catalog/get_low_stock.js';
 import {
   createOrder,
   quoteOrder,
@@ -17,44 +17,54 @@ import {
 } from '../orders/create_order.js';
 import { fulfillOrder } from '../orders/fulfill_order.js';
 import { getSpentThisMonth } from '../orders/spent_this_month.js';
+import {
+  agentPrompt,
+  copy,
+  fill,
+  type AppLanguage,
+} from '../i18n/messages.js';
+import { describeReason } from '../i18n/reasons.js';
+import { ReasonError } from '../../domain/reasons.js';
 import type { StoreContext } from '../stores/store_service.js';
 
-const tools: AiToolDefinition[] = [
-  {
-    type: 'function',
-    function: {
-      name: 'create_restock_order',
-      description:
-        'Crea un pedido de reposición a un proveedor con productos que están por debajo de su stock mínimo.',
-      parameters: {
-        type: 'object',
-        properties: {
-          supplier_id: {
-            type: 'string',
-            description: 'UUID del proveedor del pedido.',
-          },
-          items: {
-            type: 'array',
-            description: 'Productos a reponer.',
+function buildTools(language: AppLanguage): AiToolDefinition[] {
+  const text = copy[language];
+  return [
+    {
+      type: 'function',
+      function: {
+        name: 'create_restock_order',
+        description: text.toolCreateOrder,
+        parameters: {
+          type: 'object',
+          properties: {
+            supplier_id: {
+              type: 'string',
+              description: text.toolSupplierId,
+            },
             items: {
-              type: 'object',
-              properties: {
-                product_uid: { type: 'string' },
-                qty: { type: 'integer', minimum: 1 },
+              type: 'array',
+              description: text.toolItems,
+              items: {
+                type: 'object',
+                properties: {
+                  product_uid: { type: 'string' },
+                  qty: { type: 'integer', minimum: 1 },
+                },
+                required: ['product_uid', 'qty'],
               },
-              required: ['product_uid', 'qty'],
+            },
+            reasoning: {
+              type: 'string',
+              description: text.toolCreateOrderReason,
             },
           },
-          reasoning: {
-            type: 'string',
-            description: 'Motivo breve de la reposición.',
-          },
+          required: ['supplier_id', 'items'],
         },
-        required: ['supplier_id', 'items'],
       },
     },
-  },
-];
+  ];
+}
 
 export interface AgentRunResult {
   orderId: string | null;
@@ -72,16 +82,22 @@ async function handleToolCall(
   call: AiToolCall,
   store: StoreContext,
   agentRunId: string,
+  language: AppLanguage,
 ): Promise<Record<string, unknown>> {
+  const text = copy[language];
+
   if (call.function.name !== 'create_restock_order') {
-    return { ok: false, error: `Herramienta desconocida: ${call.function.name}` };
+    return {
+      ok: false,
+      error: fill(text.toolUnknown, { name: call.function.name }),
+    };
   }
 
   let args: StockyArgs;
   try {
     args = JSON.parse(call.function.arguments) as StockyArgs;
   } catch {
-    return { ok: false, error: 'Los argumentos de la herramienta no son JSON válido.' };
+    return { ok: false, error: text.toolInvalidArgs };
   }
 
   const supplierId = typeof args.supplier_id === 'string' ? args.supplier_id : '';
@@ -95,7 +111,7 @@ async function handleToolCall(
   });
 
   if (!supplierId || lines.length === 0) {
-    return { ok: false, error: 'Faltan el proveedor o las líneas del pedido.' };
+    return { ok: false, error: text.toolMissingSupplier };
   }
 
   const lowStock = await getLowStockProducts({ storeId: store.id });
@@ -105,11 +121,23 @@ async function handleToolCall(
       .map((product) => [product.uid, product]),
   );
 
+  // Un producto eliminado no se repone: se comprueba aparte para poder
+  // explicarlo con claridad (y no pedir un producto que ya no existe).
+  const inactive = await getInactiveProductUids(
+    lines.map((line) => line.productUid),
+  );
+
   for (const line of lines) {
+    if (inactive.has(line.productUid)) {
+      return {
+        ok: false,
+        error: fill(text.productDeleted, { uid: line.productUid }),
+      };
+    }
     if (!available.has(line.productUid)) {
       return {
         ok: false,
-        error: `El producto ${line.productUid} no está bajo de stock o no pertenece al proveedor.`,
+        error: fill(text.productNotLowStock, { uid: line.productUid }),
       };
     }
   }
@@ -130,14 +158,19 @@ async function handleToolCall(
     orderTotal: quote.subtotal,
     spentThisMonth,
     supplierId,
+    currency: store.currency,
   });
 
   if (decision.status === 'blocked') {
     return {
       ok: false,
       blocked: true,
-      reason: decision.reason ?? 'El pedido está bloqueado por las reglas de gasto.',
+      code: decision.code,
+      reason: describeReason(decision.reason ?? { code: 'blocked_by_rules' }, language),
       total: quote.subtotal,
+      spent_this_month: spentThisMonth,
+      monthly_limit: store.rules.monthlyLimit,
+      max_per_order: store.rules.maxPerOrder,
     };
   }
 
@@ -160,9 +193,16 @@ async function handleToolCall(
 
   if (status === 'approved') {
     try {
-      fulfillment = await fulfillOrder(order.id);
+      // El agente compra y paga solo, pero el inventario no se adelanta: el
+      // stock sube cuando llega la mercancía y se registra el albarán.
+      fulfillment = await fulfillOrder(order.id, { deferStock: true });
     } catch (error) {
-      warning = error instanceof Error ? error.message : String(error);
+      warning =
+        error instanceof ReasonError
+          ? describeReason(error.reason, language)
+          : error instanceof Error
+            ? error.message
+            : String(error);
     }
   }
 
@@ -180,33 +220,37 @@ async function handleToolCall(
 function buildSystemPrompt(
   store: StoreContext,
   spentThisMonth: number,
+  language: AppLanguage,
 ): string {
-  return [
-    `Eres el agente de reposición de la tienda "${store.name}".`,
-    'Tu objetivo es reponer los productos con stock bajo creando pedidos a proveedores con la herramienta create_restock_order.',
-    'IMPORTANTE: SI se te proporciona una lista de productos con stock bajo (como en el mensaje del usuario), DEBES llamar inmediatamente a `create_restock_order` con los datos correspondientes. No expliques sin actuar: primero crea el pedido.',
-    'Reglas obligatorias:',
-    '- Solo puedes reponer productos que aparezcan en la lista de stock bajo.',
-    '- No repitas productos que ya estén en un pedido abierto.',
-    '- Crea **un pedido por proveedor**: agrupa los productos de la lista por `supplier_id`. Llama `create_restock_order` una vez por cada proveedor que tenga productos bajos, creando pedidos separados.',
-    '- No inventes UIDs, proveedores ni precios.',
-    '- Usa cantidades razonables basadas en suggestedQty; no pidas más de lo necesario.',
-    `- Máximo por pedido: ${store.rules.maxPerOrder.toFixed(2)} ${store.currency}.`,
-    `- Límite mensual: ${store.rules.monthlyLimit.toFixed(2)} ${store.currency}; gastado este mes: ${spentThisMonth.toFixed(2)} ${store.currency}.`,
+  const text = copy[language];
+  const approvalRule =
     store.rules.requireApprovalAbove <= 0
-      ? '- Cualquier pedido queda pendiente de aprobación: pregunta siempre antes de comprar.'
-      : `- Por encima de ${store.rules.requireApprovalAbove.toFixed(2)} ${store.currency} el pedido quedará pendiente de aprobación.`,
-    '- Si no hace falta reponer nada, no llames a la herramienta y explica por qué.',
-    'Responde siempre en español, con una explicación breve de lo que hiciste.',
-    '- Usa **negrita** (doble asterisco) para el nombre del proveedor, el nombre del producto y el importe total del pedido. No uses otros formatos.',
-  ].join('\n');
+      ? text.agentApprovalAlways
+      : fill(text.agentApprovalAbove, {
+          amount: `${store.rules.requireApprovalAbove.toFixed(2)} ${store.currency}`,
+        });
+
+  return fill(agentPrompt[language], {
+    store: store.name,
+    currency: store.currency,
+    maxPerOrder: store.rules.maxPerOrder.toFixed(2),
+    monthlyLimit: store.rules.monthlyLimit.toFixed(2),
+    spentThisMonth: spentThisMonth.toFixed(2),
+    approvalRule,
+    languageRule: text.agentLanguageRule,
+  });
 }
 
 export async function runAgent(params: {
   store: StoreContext;
   userId: string;
+  /** Idioma en el que contesta el agente (el que está usando la app). */
+  language?: AppLanguage;
 }): Promise<AgentRunResult> {
   const provider = new GroqProvider();
+  const language = params.language ?? 'es';
+  const text = copy[language];
+  const tools = buildTools(language);
 
   const { data: runData, error: runError } = await supabaseAdmin
     .from('agent_runs')
@@ -236,17 +280,20 @@ export async function runAgent(params: {
     return {
       orderId: null,
       decision: 'no_action',
-      message: 'No low-stock products. No order was created.',
+      message: text.agentNoLowStock,
     };
   }
 
   const spentThisMonth = await getSpentThisMonth(params.store.id);
 
   const messages: AiMessage[] = [
-    { role: 'system', content: buildSystemPrompt(params.store, spentThisMonth) },
+    {
+      role: 'system',
+      content: buildSystemPrompt(params.store, spentThisMonth, language),
+    },
     {
       role: 'user',
-      content: `Inventario con stock bajo:\n${JSON.stringify(lowStock, null, 2)}`,
+      content: `${text.agentLowStockList}\n${JSON.stringify(lowStock, null, 2)}`,
     },
   ];
 
@@ -271,7 +318,12 @@ export async function runAgent(params: {
       for (const call of response.toolCalls) {
         let output: Record<string, unknown>;
         try {
-          output = await handleToolCall(call, params.store, runId);
+          output = await handleToolCall(
+            call,
+            params.store,
+            runId,
+            language,
+          );
         } catch (error) {
           output = {
             ok: false,
@@ -316,12 +368,41 @@ export async function runAgent(params: {
     })
     .eq('id', runId);
 
+  const blockedReasons = [
+    ...new Set(
+      executed
+        .filter(
+          (result) =>
+            result.blocked === true && typeof result.reason === 'string',
+        )
+        .map((result) => result.reason as string),
+    ),
+  ];
+
+  const blockedClause =
+    blockedReasons.length === 0
+      ? text.blockFallback
+      : blockedReasons.join('; ');
+
+  // El agente puede comprar solo: en ese caso el pedido queda pagado y
+  // esperando la entrega, así que se avisa de que el stock llega con el
+  // albarán.
+  const paidPendingDelivery = executed.some(
+    (result) => result.ok === true && result.status === 'paid',
+  );
+
   const defaultMessage =
     decision === 'order_created'
-      ? 'Pedido de reposición creado.'
+      ? blockedReasons.length > 0
+        ? fill(text.agentPartialBlocked, { reason: blockedClause })
+        : paidPendingDelivery
+          ? text.agentOrderPaidPendingDelivery
+          : text.agentOrderCreated
       : decision === 'blocked'
-        ? 'El pedido quedó bloqueado por las reglas de gasto.'
-        : 'No se creó ningún pedido.';
+        ? fill(text.agentBlocked, { reason: blockedClause })
+        : finalMessage.trim().length > 0
+          ? finalMessage.trim()
+          : text.agentNoOrder;
 
   return {
     orderId: orderIds[0] ?? null,

@@ -8,6 +8,8 @@ import { catalogRoutes } from './routes/catalog.js';
 import { catalogSyncRoutes } from './routes/catalog_sync.js';
 import { healthRoutes } from './routes/health.js';
 import { orderRoutes } from './routes/orders.js';
+import { errorCopy } from '../../application/i18n/errors.js';
+import { requestLanguage } from './language.js';
 import { createRateLimiter } from './rate_limit.js';
 
 /**
@@ -46,7 +48,9 @@ export function buildServer(): FastifyInstance {
     const { allowed, retryAfterSeconds } = globalLimiter.check(request.ip);
     if (!allowed) {
       reply.header('Retry-After', String(retryAfterSeconds));
-      return reply.code(429).send({ error: 'Demasiadas peticiones. Espera un momento.' });
+      return reply
+        .code(429)
+        .send({ error: errorCopy[requestLanguage(request)].tooManyRequests });
     }
   });
 

@@ -13,6 +13,7 @@ import 'package:store_automatization_app/domain/entities/market.dart';
 import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
+import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
 import 'package:store_automatization_app/presentation/widgets/market/adopt_sheet.dart';
 import 'package:store_automatization_app/presentation/widgets/market/market_results.dart';
 import 'package:store_automatization_app/presentation/widgets/market/voice_bar.dart';
@@ -40,11 +41,21 @@ class _Item {
 }
 
 class _AssistantPageState extends State<AssistantPage> {
-  final _input = TextEditingController();
+  late final TextEditingController _input;
   final _scroll = ScrollController();
 
   /// Conversación por voz en curso (la barra azul sustituye a la caja de texto).
   VoiceConversation? _voiceSession;
+
+  @override
+  void initState() {
+    super.initState();
+    // Si el dueño dejó algo escrito y cambió de pestaña, el borrador sigue
+    // en el cubit: se recupera al volver.
+    _input = TextEditingController(
+      text: context.read<AssistantCubit>().state.draft,
+    );
+  }
 
   @override
   void dispose() {
@@ -115,17 +126,42 @@ class _AssistantPageState extends State<AssistantPage> {
     if (store == null || assistant.state.sending || text.trim().isEmpty) return;
 
     StockySounds.instance.play(RSound.tap);
-    _input.clear();
     _scrollToEnd();
-    final reply = await assistant.send(store.id, text, viaVoice: viaVoice);
+    final reply = await assistant.send(
+      store.id,
+      text,
+      viaVoice: viaVoice,
+      locale: context.l10n.localeName,
+    );
     if (!mounted) return;
     // Eligió un distribuidor escribiendo ("me quedo con el primero").
     if (reply?.adopted != null) context.read<StockyCubit>().load();
+    // El mensaje ya está en la conversación: el campo y el borrador se
+    // vacían (el cubit ya lo ha hecho al enviar).
+    if (_input.text.trim() == text.trim()) _input.clear();
     StockySounds.instance.play(RSound.message);
     if (reply != null && (viaVoice || assistant.state.speakReplies)) {
       _say(reply.text);
     }
+    await _syncRules();
     _scrollToEnd();
+  }
+
+  /// El asistente puede cambiar el presupuesto desde el chat: la app
+  /// recarga las reglas y avisa con un atajo a la pestaña Reglas.
+  Future<void> _syncRules() async {
+    final changed = await context.read<StockyCubit>().refreshRules();
+    if (!changed || !mounted) return;
+
+    final l10n = context.l10n;
+    showStockySnack(
+      context,
+      l10n.assistantBudgetUpdated,
+      title: l10n.rulesSaved,
+      tone: RSnackTone.success,
+      actionLabel: l10n.tabRules,
+      onAction: () => ShellView.jumpToTab(3),
+    );
   }
 
   void _send() => _sendText(_input.text);
@@ -185,6 +221,7 @@ class _AssistantPageState extends State<AssistantPage> {
       option: option,
       quantity: choice.quantity,
       placeOrder: choice.placeOrder,
+      locale: l10n.localeName,
     );
     if (!mounted) return;
 
@@ -195,8 +232,7 @@ class _AssistantPageState extends State<AssistantPage> {
         final lines = [
           l10n.marketAdoptDone(adopted.productName, adopted.supplierName),
           if (order != null && order.blocked) l10n.marketAdoptBlocked(order.reason ?? ''),
-          if (order != null && order.paid) l10n.marketAdoptPaid(l10n.euros(order.total, adopted.currency)),
-          if (order != null && !order.blocked && !order.paid)
+          if (order != null && !order.blocked && order.id != null)
             l10n.marketAdoptOrderCreated(l10n.euros(order.total, adopted.currency)),
         ];
         final note = lines.join(' ');
@@ -356,6 +392,8 @@ class _AssistantPageState extends State<AssistantPage> {
                 Expanded(
                   child: TextField(
                     controller: _input,
+                    onChanged: (value) =>
+                        context.read<AssistantCubit>().setDraft(value),
                     onSubmitted: (_) => _send(),
                     textInputAction: TextInputAction.send,
                     style: t.body,

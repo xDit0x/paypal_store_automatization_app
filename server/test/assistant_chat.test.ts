@@ -59,6 +59,56 @@ test('respuesta normal y historial recortado', async () => {
   assert.ok(sent.every((m) => m.content.length <= 2000 || m.role === 'system'));
 });
 
+test('el asistente ajusta el presupuesto cuando el dueño lo pide', async () => {
+  const provider = fake([
+    { content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'adjust_budget', arguments: JSON.stringify({ monthly_limit: 200 }) } }] },
+    { content: 'He ajustado el presupuesto mensual a 200 euros.', toolCalls: [] },
+  ]);
+  const reply = await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'Sí, ajusta el presupuesto máximo a 200 euros' }],
+    provider,
+    products: [],
+    updateRules: async () => ({ ...store.rules }),
+  });
+  assert.equal(reply.reply, 'He ajustado el presupuesto mensual a 200 euros.');
+  assert.deepEqual(reply.quickReplies, []);
+});
+
+test('el asistente no ajusta con valores inválidos', async () => {
+  const provider = fake([
+    { content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'adjust_budget', arguments: JSON.stringify({ max_per_order: 0 }) } }] },
+    { content: 'No puedo ajustar ese presupuesto.', toolCalls: [] },
+  ]);
+  const reply = await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'Quiero un presupuesto de 0 euros' }],
+    provider,
+    products: [],
+    updateRules: async () => ({ ...store.rules }),
+  });
+  assert.equal(reply.reply, 'No puedo ajustar ese presupuesto.');
+  const second = provider.seen[1]!;
+  const toolMessage = second.find((m) => m.role === 'tool');
+  assert.ok(toolMessage?.content !== undefined);
+  assert.match(String(toolMessage?.content), /mayor que 0/);
+});
+
+test('el asistente contesta en el idioma que pide la app', async () => {
+  const provider = fake([{ content: 'Your budget is updated.', toolCalls: [] }]);
+  await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'Raise my budget' }],
+    provider,
+    products: [],
+    language: 'en',
+  });
+
+  const system = provider.seen[0]![0]!.content;
+  assert.match(system, /Always reply in English/);
+  assert.doesNotMatch(system, /español por defecto/);
+});
+
 test('herramienta desconocida no rompe el chat', async () => {
   const provider = fake([
     { content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'borrar_todo', arguments: '{}' } }] },
@@ -111,4 +161,40 @@ test('elige un distribuidor por voz solo con confirmación', async () => {
   assert.equal(r2.adopted?.order?.paid, true);
   assert.deepEqual(calls, ['o1:true']);
   assert.match(second.seen[0]![0]!.content, /MODO CONVERSACIÓN/);
+});
+
+test('el asistente pregunta primero el producto y luego la cantidad', async () => {
+  const provider = fake([{ content: 'Vale.', toolCalls: [] }]);
+  await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'Quiero añadir un producto nuevo' }],
+    provider,
+    products: [],
+  });
+
+  const system = provider.seen[0]![0]!.content;
+  // El producto va antes que la cantidad y que la región.
+  const product = system.indexOf('PRIMERO, el producto');
+  const quantity = system.indexOf('DESPUÉS, la cantidad');
+  const region = system.indexOf('DESPUÉS, la región');
+  assert.ok(product >= 0, 'el prompt debe pedir primero el producto');
+  assert.ok(quantity > product, 'la cantidad se pregunta después del producto');
+  assert.ok(region > quantity, 'la región se pregunta después de la cantidad');
+});
+
+test('en inglés el prompt también pide primero el producto', async () => {
+  const provider = fake([{ content: 'Sure.', toolCalls: [] }]);
+  await assistantChat({
+    store,
+    history: [{ role: 'user', content: 'I want to add a new product' }],
+    provider,
+    products: [],
+    language: 'en',
+  });
+
+  const system = provider.seen[0]![0]!.content;
+  const product = system.indexOf('FIRST, the product');
+  const quantity = system.indexOf('THEN, the quantity');
+  assert.ok(product >= 0, 'el prompt debe pedir primero el producto');
+  assert.ok(quantity > product, 'la cantidad se pregunta después del producto');
 });

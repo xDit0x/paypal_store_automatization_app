@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
 
 /// Anillo de presupuesto al estilo de los anillos de actividad de Apple.
@@ -17,7 +18,7 @@ class BudgetRing extends StatelessWidget {
     final p = context.rp;
     final value = progress.clamp(0, 1).toDouble();
     return Semantics(
-      label: '${(value * 100).round()} % del presupuesto usado',
+      label: context.l10n.budgetRingSemantics((value * 100).round()),
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: value),
         duration: const Duration(milliseconds: 900),

@@ -12,6 +12,13 @@ import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 
+/// La entrega se puede confirmar si el dinero ya está comprometido:
+/// retenido en PayPal ('authorized') o ya pagado por el agente ('paid').
+bool _canConfirmDelivery(OrderStatus status) =>
+    status == OrderStatus.authorized ||
+    status == OrderStatus.paid ||
+    status == OrderStatus.invoiced;
+
 /// Confirma la entrega de un pedido autorizado y captura el pago
 /// (total o parcial según lo recibido).
 ///
@@ -64,12 +71,17 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
     final state = context.watch<StockyCubit>().state;
     final order = state.orderById(widget.orderId);
 
-    if (order == null || order.status != OrderStatus.authorized) {
+    if (order == null || !_canConfirmDelivery(order.status)) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.deliveryScreenTitle)),
         body: Center(child: Text(l10n.deliveryNotAuthorized)),
       );
     }
+
+    // Si el pedido ya está pagado (el agente compró solo), no hay nada que
+    // cobrar: solo se confirma lo recibido y se sube el stock.
+    final alreadyPaid =
+        order.status == OrderStatus.paid || order.status == OrderStatus.invoiced;
 
     final receivedTotal = _receivedTotal(order);
     final orderedTotal = order.total;
@@ -102,7 +114,9 @@ class _DeliveryCheckPageState extends State<DeliveryCheckPage> {
                   ),
                   const Divider(),
                   _TotalRow(
-                    label: l10n.deliveryToCapture,
+                    label: alreadyPaid
+                        ? l10n.deliveryAlreadyPaid
+                        : l10n.deliveryToCapture,
                     value: l10n.eurosShort(receivedTotal, state.currency),
                     bold: true,
                   ),

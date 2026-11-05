@@ -14,23 +14,31 @@ import 'package:store_automatization_app/presentation/widgets/stocky/carousel_na
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
 /// Texto y tono de cada estado de pedido.
-(String, RPillTone) orderStatusLabel(AppLocalizations l10n, OrderStatus status) =>
-    switch (status) {
-      OrderStatus.draft => (l10n.statusDraft, RPillTone.neutral),
-      OrderStatus.pendingApproval => (l10n.statusPendingApproval, RPillTone.warning),
-      OrderStatus.approved => (l10n.statusApproved, RPillTone.warning),
-      OrderStatus.authorized => (l10n.statusAuthorized, RPillTone.transit),
-      OrderStatus.paying => (l10n.statusPaying, RPillTone.neutral),
-      OrderStatus.paid => (l10n.statusPaid, RPillTone.info),
-      OrderStatus.invoiced => (l10n.statusInvoiced, RPillTone.info),
-      OrderStatus.completed => (l10n.statusCompleted, RPillTone.neutral),
-      OrderStatus.partiallyDelivered => (l10n.statusPartiallyDelivered, RPillTone.info),
-      OrderStatus.delivered => (l10n.statusDelivered, RPillTone.neutral),
-      OrderStatus.claimed => (l10n.statusClaimed, RPillTone.warning),
-      OrderStatus.refunded => (l10n.statusRefunded, RPillTone.neutral),
-      OrderStatus.rejected => (l10n.statusRejected, RPillTone.neutral),
-      OrderStatus.paymentFailed => (l10n.statusPaymentFailed, RPillTone.warning),
-    };
+(String, RPillTone) orderStatusLabel(
+  AppLocalizations l10n,
+  OrderStatus status,
+) => switch (status) {
+  OrderStatus.draft => (l10n.statusDraft, RPillTone.neutral),
+  OrderStatus.pendingApproval => (
+    l10n.statusPendingApproval,
+    RPillTone.warning,
+  ),
+  OrderStatus.approved => (l10n.statusApproved, RPillTone.warning),
+  OrderStatus.authorized => (l10n.statusAuthorized, RPillTone.transit),
+  OrderStatus.paying => (l10n.statusPaying, RPillTone.neutral),
+  OrderStatus.paid => (l10n.statusPaid, RPillTone.info),
+  OrderStatus.invoiced => (l10n.statusInvoiced, RPillTone.info),
+  OrderStatus.completed => (l10n.statusCompleted, RPillTone.neutral),
+  OrderStatus.partiallyDelivered => (
+    l10n.statusPartiallyDelivered,
+    RPillTone.info,
+  ),
+  OrderStatus.delivered => (l10n.statusDelivered, RPillTone.neutral),
+  OrderStatus.claimed => (l10n.statusClaimed, RPillTone.warning),
+  OrderStatus.refunded => (l10n.statusRefunded, RPillTone.neutral),
+  OrderStatus.rejected => (l10n.statusRejected, RPillTone.neutral),
+  OrderStatus.paymentFailed => (l10n.statusPaymentFailed, RPillTone.warning),
+};
 
 Color pillToneColor(BuildContext context, RPillTone tone) {
   final p = context.rp;
@@ -39,6 +47,40 @@ Color pillToneColor(BuildContext context, RPillTone tone) {
     RPillTone.transit => p.transit,
     RPillTone.info => p.accent,
     RPillTone.neutral => p.inkSecondary,
+  };
+}
+
+/// Motivo corto por el que un importe no se puede tramitar con las reglas
+/// actuales. `null` si no está bloqueado.
+String? blockedSpendingReason(
+  AppLocalizations l10n, {
+  required SpendingRules rules,
+  required double spentThisMonth,
+  required String currency,
+  required double orderTotal,
+  required String supplierId,
+}) {
+  final decision = rules.evaluate(
+    orderTotal: orderTotal,
+    spentThisMonth: spentThisMonth,
+    supplierId: supplierId,
+  );
+  if (!decision.isBlocked) return null;
+
+  if (orderTotal > rules.maxPerOrder) {
+    return l10n.reasonOverMaxPerOrder(
+      l10n.eurosShort(rules.maxPerOrder, currency),
+    );
+  }
+  if (spentThisMonth + orderTotal > rules.monthlyLimit) {
+    return l10n.reasonOverMonthlyLimit(
+      l10n.eurosShort(rules.monthlyLimit, currency),
+    );
+  }
+  return switch (decision.reason) {
+    SpendingReason.noAmount => l10n.reasonNoAmount,
+    SpendingReason.supplierNotAllowed => l10n.reasonSupplierNotAllowed,
+    _ => null,
   };
 }
 
@@ -51,17 +93,14 @@ String? shortDecisionReason(
   final decision = state.evaluate(order);
   final c = state.currency;
   if (decision.isBlocked) {
-    if (order.total > state.rules.maxPerOrder) {
-      return l10n.reasonOverMaxPerOrder(l10n.eurosShort(state.rules.maxPerOrder, c));
-    }
-    if (state.spentThisMonth + order.total > state.rules.monthlyLimit) {
-      return l10n.reasonOverMonthlyLimit(l10n.eurosShort(state.rules.monthlyLimit, c));
-    }
-    return switch (decision.reason) {
-      SpendingReason.noAmount => l10n.reasonNoAmount,
-      SpendingReason.supplierNotAllowed => l10n.reasonSupplierNotAllowed,
-      _ => null,
-    };
+    return blockedSpendingReason(
+      l10n,
+      rules: state.rules,
+      spentThisMonth: state.spentThisMonth,
+      currency: c,
+      orderTotal: order.total,
+      supplierId: order.supplierId,
+    );
   }
   if (decision.needsApproval) {
     if (state.rules.requireApprovalAbove <= 0) {
@@ -79,7 +118,8 @@ Future<T?> pushStockyPage<T>(BuildContext context, Widget page) {
   final cubit = context.read<StockyCubit>();
   return Navigator.of(context).push<T>(
     CupertinoPageRoute<T>(
-      builder: (_) => BlocProvider<StockyCubit>.value(value: cubit, child: page),
+      builder: (_) =>
+          BlocProvider<StockyCubit>.value(value: cubit, child: page),
     ),
   );
 }
@@ -128,7 +168,12 @@ class RTabPage extends StatelessWidget {
       onRefresh: () => context.read<StockyCubit>().load(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(16, top + 16, 16, navBarClearance(context)),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          top + 16,
+          16,
+          navBarClearance(context),
+        ),
         children: [
           if (state.error != null) ...[
             _ErrorBanner(message: context.l10n.describe(state.error!)),
@@ -154,9 +199,18 @@ class _ErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
-          Icon(CupertinoIcons.exclamationmark_circle, size: 18, color: p.warning),
+          Icon(
+            CupertinoIcons.exclamationmark_circle,
+            size: 18,
+            color: p.warning,
+          ),
           const SizedBox(width: 8),
-          Expanded(child: Text(message, style: TextStyle(fontSize: 13, color: p.warning))),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(fontSize: 13, color: p.warning),
+            ),
+          ),
         ],
       ),
     );

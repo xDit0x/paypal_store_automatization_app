@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:store_automatization_app/core/configs/assets/app_assets.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
+import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 
 /// Marca de la app: el icono real de Stocky, recortado como una teja.
 class RBrandMark extends StatelessWidget {
@@ -165,6 +167,38 @@ class _RAuthPasswordFieldState extends State<RAuthPasswordField> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Selector de idioma (ES / EN) de las pantallas de acceso: así el dueño
+/// elige el idioma antes de entrar, sin llegar a Reglas.
+class RLanguageToggle extends StatelessWidget {
+  const RLanguageToggle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.rp;
+    final t = context.rt;
+    final locale = context.watch<LocaleCubit>().effectiveLocale.languageCode;
+    final style = t.footnote.copyWith(fontWeight: FontWeight.w600);
+
+    return Semantics(
+      label: context.l10n.rulesLanguage,
+      child: CupertinoSlidingSegmentedControl<String>(
+        groupValue: locale,
+        backgroundColor: p.fill,
+        thumbColor: p.surface,
+        children: {
+          'es': Text('ES', style: style),
+          'en': Text('EN', style: style),
+        },
+        onValueChanged: (value) {
+          if (value == null || value == locale) return;
+          HapticFeedback.selectionClick();
+          context.read<LocaleCubit>().updateLocale(Locale(value));
+        },
       ),
     );
   }

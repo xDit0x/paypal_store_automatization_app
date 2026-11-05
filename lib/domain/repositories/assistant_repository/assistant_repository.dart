@@ -11,6 +11,8 @@ abstract class AssistantRepository {
     required String storeId,
     required List<AssistantTurn> history,
     LastMarket? lastMarket,
+    /// Idioma de la app ('es' o 'en') para que el asistente conteste en él.
+    String? locale,
   });
 
   /// Modo conversación: manda el audio (WAV) y recibe la respuesta con voz.
@@ -31,5 +33,7 @@ abstract class AssistantRepository {
     String? searchId,
     int? quantity,
     required bool placeOrder,
+    /// Idioma de la app ('es' o 'en').
+    String? locale,
   });
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,6 +16,7 @@ import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.da
 import 'package:store_automatization_app/domain/usecases/auth/watch_auth_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_low_stock_threshold_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
@@ -24,6 +26,7 @@ import 'package:store_automatization_app/domain/usecases/settings/get_spending_r
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/store/get_current_store_usecase.dart';
 import 'package:store_automatization_app/l10n/app_localizations.dart';
+import 'package:store_automatization_app/presentation/blocs/assistant/assistant_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 
@@ -33,6 +36,7 @@ import 'package:store_automatization_app/presentation/blocs/theme/theme_cubit.da
 import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
 
+import 'package:store_automatization_app/preview/preview_assistant_repository.dart';
 import 'package:store_automatization_app/preview/preview_repositories.dart';
 
 class _MemoryStorage implements Storage {
@@ -90,11 +94,23 @@ StockyCubit _restockCubit() {
     ),
     getSupplierCatalog: GetSupplierCatalogUsecase(repository: products),
     updateProductStock: UpdateProductStockUsecase(repository: products),
+    updateLowStockThresholdUsecase: UpdateLowStockThresholdUsecase(
+      repository: products,
+    ),
     getAgentRuns: GetAgentRunsUsecase(repository: agent),
     runAgentUsecase: RunAgentUsecase(repository: agent),
     approveOrder: ApproveOrderUsecase(repository: orders),
     rejectOrder: RejectOrderUsecase(repository: orders),
   );
+}
+
+/// Tamaño del icono de la pestaña con ese icono, dentro del dock.
+double _iconSize(WidgetTester tester, IconData icon) {
+  final finder = find.descendant(
+    of: find.byType(CarouselNavBar),
+    matching: find.byIcon(icon),
+  );
+  return tester.getSize(finder.first).width;
 }
 
 /// Rectángulo de la píldora azul del dock.
@@ -220,7 +236,223 @@ void main() {
     expect(_page(tester), 1);
   });
 
-  testWidgets('el selector de idioma traduce la app al inglés', (tester) async {
+  testWidgets('la píldora se encoge al viajar y recupera su tamaño al llegar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StockyShell(
+            createCubit: _restockCubit,
+            createAssistantCubit: () =>
+                AssistantCubit(repository: PreviewAssistantRepository()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final resting = _pillRect(tester);
+    expect(resting.width, closeTo(84, 1));
+
+    // De Inicio (0) a Asistente (4): la cascada dura ~390 ms.
+    await tester.tap(find.text('Asistente').last);
+    await tester.pump();
+
+    // A lo largo del recorrido la píldora se deshincha hasta ser una burbuja
+    // pequeña (34 px, ~50 % del alto) en mitad de cada salto.
+    var smallest = resting;
+    for (var i = 0; i < 28; i++) {
+      await tester.pump(const Duration(milliseconds: 25));
+      final r = _pillRect(tester);
+      if (r.width < smallest.width) smallest = r;
+    }
+    expect(smallest.width, lessThan(resting.width * 0.55));
+    expect(smallest.height, lessThan(resting.height * 0.75));
+
+    await tester.pumpAndSettle();
+
+    // Al llegar se expande hasta su tamaño real, en la pestaña correcta.
+    final arrived = _pillRect(tester);
+    expect(arrived.width, closeTo(resting.width, 1));
+    expect(arrived.height, closeTo(resting.height, 1));
+    expect(_page(tester), 4);
+  });
+
+  testWidgets('la píldora también viaja en el segundo cambio de pestaña', (
+    tester,
+  ) async {
+    // Regresión: `forward(from: 0)` pasa por el estado `dismissed`, y si se
+    // toma por "cascada terminada" la píldora aparece ya en el destino en
+    // todos los cambios menos el primero.
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StockyShell(
+            createCubit: _restockCubit,
+            createAssistantCubit: () =>
+                AssistantCubit(repository: PreviewAssistantRepository()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Asistente').last);
+    await tester.pumpAndSettle();
+    final atAssistant = _pillRect(tester);
+
+    // Segundo cambio: de Asistente (4) a Stock (1).
+    await tester.tap(find.text('Stock').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    final moving = _pillRect(tester);
+
+    // En pleno vuelo no puede estar donde estaba ni donde va.
+    expect(moving.width, lessThan(atAssistant.width - 8));
+    expect(moving.center.dx, lessThan(atAssistant.center.dx - 20));
+
+    await tester.pumpAndSettle();
+    final atStock = _pillRect(tester);
+    expect(
+      (moving.center.dx - atStock.center.dx).abs(),
+      greaterThan(20),
+      reason: 'la píldora se teletransportó al destino sin recorrerlo',
+    );
+    expect(atStock.width, closeTo(atAssistant.width, 1));
+    expect(_page(tester), 1);
+  });
+
+  testWidgets('las pestañas se encienden una a una al pasar la píldora', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StockyShell(
+            createCubit: _restockCubit,
+            createAssistantCubit: () =>
+                AssistantCubit(repository: PreviewAssistantRepository()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final home = CupertinoIcons.house;
+    final stock = CupertinoIcons.cube_box;
+    final orders = CupertinoIcons.doc_text;
+    final rules = CupertinoIcons.slider_horizontal_3;
+    final assistant = CupertinoIcons.chat_bubble;
+
+    final homeRest = _iconSize(tester, home);
+    final stockRest = _iconSize(tester, stock);
+    expect(stockRest, lessThan(homeRest));
+
+    // De Inicio (0) a Asistente (4): la cascada pasa por todas.
+    await tester.tap(find.text('Asistente').last);
+    await tester.pump();
+
+    // Se guarda en qué momento cada pestaña intermedia llega a estar casi
+    // activa: así se comprueba que la píldora las visita en orden.
+    int? stockAt;
+    int? ordersAt;
+    int? rulesAt;
+    var homeMin = homeRest;
+    var elapsed = 0;
+    for (var i = 0; i < 45; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+      elapsed += 10;
+      if (stockAt == null && _iconSize(tester, stock) > 25) stockAt = elapsed;
+      if (ordersAt == null && _iconSize(tester, orders) > 25) {
+        ordersAt = elapsed;
+      }
+      if (rulesAt == null && _iconSize(tester, rules) > 25) rulesAt = elapsed;
+      final homeNow = _iconSize(tester, home);
+      if (homeNow < homeMin) homeMin = homeNow;
+    }
+
+    // Cada pestaña intermedia se enciende, y lo hace en orden.
+    expect(stockAt, isNotNull, reason: 'la píldora no llegó a Stock');
+    expect(ordersAt, isNotNull, reason: 'la píldora no llegó a Pedidos');
+    expect(rulesAt, isNotNull, reason: 'la píldora no llegó a Reglas');
+    expect(stockAt!, lessThan(ordersAt!));
+    expect(ordersAt, lessThan(rulesAt!));
+    // Al arrancar, Inicio deja de estar activa.
+    expect(homeMin, lessThan(homeRest - 3));
+
+    await tester.pumpAndSettle();
+
+    // Al llegar, Asistente se queda grande y el resto vuelve a su tamaño.
+    expect(_iconSize(tester, assistant), greaterThan(stockRest + 3));
+    expect(_iconSize(tester, home), lessThan(homeRest - 3));
+    expect(_page(tester), 4);
+  });
+
+  testWidgets('la cascada de extremo a extremo dura menos de medio segundo', (
+    tester,
+  ) async {
+    // Antes tardaba 4 x 165 ms = 660 ms; ahora tiene que ser ágil.
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => LocaleCubit()),
+          BlocProvider(create: (_) => SoundCubit()),
+        ],
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StockyShell(
+            createCubit: _restockCubit,
+            createAssistantCubit: () =>
+                AssistantCubit(repository: PreviewAssistantRepository()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final resting = _pillRect(tester);
+    await tester.tap(find.text('Asistente').last);
+    await tester.pump();
+
+    // A los 450 ms ya está posada y del tamaño real.
+    await tester.pump(const Duration(milliseconds: 450));
+    final arrived = _pillRect(tester);
+    expect(arrived.width, closeTo(resting.width, 1));
+    expect(arrived.height, closeTo(resting.height, 1));
+    expect(
+      _iconSize(tester, CupertinoIcons.chat_bubble),
+      greaterThan(26),
+      reason: 'la cascada todavía estaba en marcha a los 450 ms',
+    );
+  });
+
+  testWidgets('la app arranca en inglés y el selector cambia al español', (
+    tester,
+  ) async {
     final locale = LocaleCubit();
 
     await tester.pumpWidget(
@@ -233,7 +465,7 @@ void main() {
         ],
         child: BlocBuilder<LocaleCubit, Locale?>(
           builder: (context, selected) => MaterialApp(
-            locale: selected ?? const Locale('es'),
+            locale: selected ?? const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: StockyShell(createCubit: _restockCubit),
@@ -243,10 +475,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Reglas').last);
+    // El idioma por defecto de la app es el inglés.
+    expect(locale.state, const Locale('en'));
+    expect(find.text('Rules'), findsWidgets);
+    expect(find.text('Reglas'), findsNothing);
+
+    await tester.tap(find.text('Rules').last);
     await tester.pumpAndSettle();
 
-    final english = find.text('English');
+    final spanish = find.text('Spanish');
     // La tarjeta de cuenta está al final de la pestaña: baja del todo para
     // que el selector quede por encima del dock.
     await tester.fling(
@@ -255,11 +492,11 @@ void main() {
       1500,
     );
     await tester.pumpAndSettle();
-    await tester.tap(english);
+    await tester.tap(spanish);
     await tester.pumpAndSettle();
 
-    expect(locale.state, const Locale('en'));
-    expect(find.text('Rules'), findsWidgets);
-    expect(find.text('Reglas'), findsNothing);
+    expect(locale.state, const Locale('es'));
+    expect(find.text('Reglas'), findsWidgets);
+    expect(find.text('Rules'), findsNothing);
   });
 }

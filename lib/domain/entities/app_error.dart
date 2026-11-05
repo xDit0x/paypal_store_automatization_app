@@ -94,10 +94,13 @@ enum AppErrorCode {
   productsLoadFailed,
   lowStockLoadFailed,
   stockUpdateFailed,
+  stockThresholdUpdateFailed,
   productMissing,
   productNotFound,
   productUidMissing,
   stockNegative,
+  productDeleteFailed,
+  productRestoreFailed,
 
   // Agente.
   agentUnreachable,

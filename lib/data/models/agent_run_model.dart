@@ -12,8 +12,14 @@ class AgentRunModel {
       provider: map['provider'] as String? ?? 'groq',
       model: map['model'] as String? ?? '',
       decision: map['decision'] as String?,
-      confidence: map['confidence'] == null ? null : asDouble(map['confidence']),
+      confidence: map['confidence'] == null
+          ? null
+          : asDouble(map['confidence']),
       createdAt: asDateTime(map['created_at']),
+      toolCalls: [
+        for (final call in (map['tool_calls'] as List<dynamic>? ?? const []))
+          if (call is Map) Map<String, dynamic>.from(call),
+      ],
     );
   }
 }

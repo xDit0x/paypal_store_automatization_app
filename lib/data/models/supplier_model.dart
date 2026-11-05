@@ -7,7 +7,7 @@ class SupplierModel {
   static Supplier fromMap(Map<String, dynamic> map) {
     return Supplier(
       id: map['id'] as String,
-      name: map['name'] as String? ?? 'Proveedor',
+      name: map['name'] as String? ?? '',
       paypalEmail: map['paypal_email'] as String?,
       category: map['category'] as String?,
       logoUrl: map['logo_url'] as String?,

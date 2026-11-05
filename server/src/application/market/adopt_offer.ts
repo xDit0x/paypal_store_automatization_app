@@ -1,7 +1,8 @@
 import { supabaseAdmin } from '../../infrastructure/supabase/supabase_client.js';
 import { evaluateSpendingRules } from '../../domain/spending_rules.js';
+import { copy, fill, type AppLanguage } from '../i18n/messages.js';
+import { describeReason } from '../i18n/reasons.js';
 import { createOrder } from '../orders/create_order.js';
-import { fulfillOrder } from '../orders/fulfill_order.js';
 import { getSpentThisMonth } from '../orders/spent_this_month.js';
 import type { StoreContext } from '../stores/store_service.js';
 import { getEurRates } from './fx_rates.js';
@@ -16,6 +17,8 @@ export interface AdoptOfferInput {
   /** Unidades al mes que necesita la tienda (para el primer pedido). */
   quantity?: number | null;
   placeOrder: boolean;
+  /** Idioma de los mensajes (el que está usando la app). */
+  language?: AppLanguage;
 }
 
 export interface AdoptOfferResult {
@@ -43,17 +46,24 @@ const round2 = (value: number): number => Math.round(value * 100) / 100;
  * 1. el distribuidor pasa a ser un proveedor (código mkt-<código>),
  * 2. el producto se añade al catálogo con su coste real por unidad,
  * 3. la tienda empieza a controlar su stock,
- * 4. opcional: primer pedido pagado con PayPal (respetando las reglas).
+ * 4. opcional: primer pedido pendiente de aprobación (respetando las reglas).
  *
  * El precio se recalcula aquí: nunca se fía del que manda la app.
+ *
+ * El stock del producto sale de cero: solo sube cuando llega la entrega
+ * (albarán) y se captura el pago, como en cualquier otro pedido.
  */
 export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOfferResult> {
+  // Todos los mensajes de error van en el idioma que está usando la app.
+  const language = input.language ?? 'es';
+  const text = copy[language];
+
   const { data: offerRow, error: offerError } = await supabaseAdmin
     .from('market_offers')
     .select('*')
     .eq('id', input.offerId)
     .maybeSingle();
-  if (offerError || !offerRow) throw new Error('La oferta ya no existe.');
+  if (offerError || !offerRow) throw new Error(text.adoptOfferGone);
   const offer = mapOffer(offerRow);
 
   const { data: distRow, error: distError } = await supabaseAdmin
@@ -61,7 +71,7 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
     .select('*')
     .eq('id', offer.distributorId)
     .maybeSingle();
-  if (distError || !distRow) throw new Error('El distribuidor ya no existe.');
+  if (distError || !distRow) throw new Error(text.adoptDistributorGone);
   const distributor = mapDistributor(distRow);
 
   const { rates } = await getEurRates();
@@ -70,7 +80,9 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
   // Precio en la moneda de la tienda (normalmente EUR).
   const storeCurrency = input.store.currency.toUpperCase();
   const storeRate = storeCurrency === 'EUR' ? 1 : rates[storeCurrency];
-  if (!storeRate) throw new Error(`No hay tipo de cambio para ${storeCurrency}.`);
+  if (!storeRate) {
+    throw new Error(fill(text.adoptNoRate, { currency: storeCurrency }));
+  }
   const unitPrice = round2(cost.unitLandedEur * storeRate);
 
   // 1. Proveedor
@@ -90,7 +102,9 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
     .select('id, name')
     .single();
   if (supplierError || !supplier) {
-    throw new Error(`No se pudo dar de alta el proveedor: ${supplierError?.message}`);
+    throw new Error(
+      fill(text.adoptSupplierFailed, { detail: supplierError?.message ?? 'sin detalle' }),
+    );
   }
 
   // 2. Producto
@@ -115,7 +129,7 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
     { onConflict: 'uid' },
   );
   if (productError) {
-    throw new Error(`No se pudo añadir el producto: ${productError.message}`);
+    throw new Error(fill(text.adoptProductFailed, { detail: productError.message }));
   }
 
   // 3. Stock de la tienda (si ya existía no se toca)
@@ -131,7 +145,9 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
     { onConflict: 'store_id,product_uid', ignoreDuplicates: true },
   );
   if (stockError) {
-    throw new Error(`No se pudo añadir el producto a tu tienda: ${stockError.message}`);
+    throw new Error(
+      fill(text.adoptStoreProductFailed, { detail: stockError.message }),
+    );
   }
 
   if (input.searchId) {
@@ -161,6 +177,7 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
     orderTotal: total,
     spentThisMonth: await getSpentThisMonth(input.store.id),
     supplierId: supplier.id as string,
+    currency: storeCurrency,
   });
 
   if (decision.status === 'blocked') {
@@ -170,43 +187,35 @@ export async function adoptMarketOffer(input: AdoptOfferInput): Promise<AdoptOff
       total,
       status: 'blocked',
       paid: false,
-      reason: decision.reason ?? 'Tus reglas de gasto no permiten este pedido.',
+      reason:
+        describeReason(decision.reason ?? { code: 'blocked_by_rules' }, language) ||
+        copy[language].blockNotAllowedFallback,
       warnings: [],
     };
     return result;
   }
 
-  // Elegir la oferta en la app cuenta como aprobación del dueño.
+  // Elegir la oferta en la app cuenta como aprobación del dueño, pero el
+  // pedido sigue el flujo normal: queda pendiente de aprobación, se autoriza
+  // con PayPal y el stock entra solo cuando se registra la entrega (albarán).
+  // Así el inventario nunca muestra mercancía que todavía no ha llegado.
   const order = await createOrder({
     storeId: input.store.id,
     supplierId: supplier.id as string,
     lines: [{ productUid, qty }],
-    status: 'approved',
+    status: 'pending_approval',
     createdByType: 'user',
     createdById: input.userId,
   });
 
-  try {
-    const fulfillment = await fulfillOrder(order.id, { ownerApproved: true });
-    result.order = {
-      id: order.id,
-      qty,
-      total: order.total,
-      status: fulfillment.orderStatus,
-      paid: fulfillment.payment !== null,
-      reason: null,
-      warnings: fulfillment.warnings,
-    };
-  } catch (error) {
-    result.order = {
-      id: order.id,
-      qty,
-      total: order.total,
-      status: 'payment_failed',
-      paid: false,
-      reason: error instanceof Error ? error.message : String(error),
-      warnings: [],
-    };
-  }
+  result.order = {
+    id: order.id,
+    qty,
+    total: order.total,
+    status: order.status,
+    paid: false,
+    reason: null,
+    warnings: [],
+  };
   return result;
 }

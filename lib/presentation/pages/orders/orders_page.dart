@@ -8,6 +8,7 @@ import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/pages/order/delivery_check_page.dart';
 import 'package:store_automatization_app/presentation/pages/order/order_detail_page.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/animated_amount.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
@@ -29,9 +30,12 @@ class OrdersPage extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   label: l10n.ordersSpentInMonth(l10n.currentMonthName()),
-                  value: l10n.eurosShort(
-                    state.spentThisMonth.roundToDouble(),
-                    state.currency,
+                  value: AnimatedAmount(
+                    value: state.spentThisMonth,
+                    builder: (context, spent) => Text(
+                      l10n.eurosShort(spent.roundToDouble(), state.currency),
+                      style: _statStyle(context),
+                    ),
                   ),
                 ),
               ),
@@ -39,9 +43,12 @@ class OrdersPage extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   label: l10n.ordersCreatedByAgent,
-                  value: l10n.ordersCreatedByAgentValue(
-                    state.agentCreatedCount,
-                    state.orders.length,
+                  value: Text(
+                    l10n.ordersCreatedByAgentValue(
+                      state.agentCreatedCount,
+                      state.orders.length,
+                    ),
+                    style: _statStyle(context),
                   ),
                 ),
               ),
@@ -74,23 +81,36 @@ class _StatCard extends StatelessWidget {
   const _StatCard({required this.label, required this.value});
 
   final String label;
-  final String value;
+  final Widget value;
 
   @override
   Widget build(BuildContext context) {
-    final p = context.rp;
     return RCard(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: context.rt.footnote, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            label,
+            style: context.rt.footnote,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: p.ink)),
+          value,
         ],
       ),
     );
   }
+}
+
+TextStyle _statStyle(BuildContext context) {
+  return TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.4,
+    color: context.rp.ink,
+  );
 }
 
 class _DeliveryBanner extends StatelessWidget {

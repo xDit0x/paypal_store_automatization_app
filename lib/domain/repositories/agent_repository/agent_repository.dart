@@ -16,6 +16,10 @@ class AgentRunResult {
 }
 
 abstract class AgentRepository {
-  Future<Either<AppError, AgentRunResult>> run(String storeId);
+  Future<Either<AppError, AgentRunResult>> run(
+    String storeId, {
+    /// Idioma de la app ('es' o 'en') para que el agente conteste en él.
+    String? locale,
+  });
   Future<Either<AppError, List<AgentRun>>> getRuns(String storeId);
 }

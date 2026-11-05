@@ -30,21 +30,25 @@ void main() {
     HydratedBloc.storage = _MemoryStorage();
   });
 
-  test('arranca en "Auto": sin Locale propio', () {
-    expect(LocaleCubit().state, isNull);
+  test('arranca en inglés por defecto', () {
+    expect(LocaleCubit().state, const Locale('en'));
+    expect(LocaleCubit().effectiveLocale.languageCode, 'en');
   });
 
   test('guarda y recupera el idioma elegido', () {
     final cubit = LocaleCubit();
 
-    expect(cubit.toJson(null), isNull);
+    // "Auto" se guarda para que siga el idioma del dispositivo.
+    expect(cubit.toJson(null), {'locale': 'auto'});
     expect(cubit.toJson(const Locale('en')), {'locale': 'en'});
+    expect(cubit.toJson(const Locale('es')), {'locale': 'es'});
 
     expect(cubit.fromJson({'locale': 'en'}), const Locale('en'));
     expect(cubit.fromJson({'locale': 'es'}), const Locale('es'));
-    // Un idioma que ya no se ofrece vuelve a "Auto".
-    expect(cubit.fromJson({'locale': 'fr'}), isNull);
-    expect(cubit.fromJson(const {}), isNull);
+    expect(cubit.fromJson({'locale': 'auto'}), isNull);
+    // Un idioma que ya no se ofrece vuelve al de por defecto.
+    expect(cubit.fromJson({'locale': 'fr'}), const Locale('en'));
+    expect(cubit.fromJson(const {}), const Locale('en'));
   });
 
   test('los textos siguen al idioma elegido', () {

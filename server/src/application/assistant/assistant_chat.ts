@@ -10,6 +10,15 @@ import { adoptMarketOffer, type AdoptOfferResult } from '../market/adopt_offer.j
 import { parseRegion } from '../market/market_math.js';
 import { getSpentThisMonth } from '../orders/spent_this_month.js';
 import type { StoreContext } from '../stores/store_service.js';
+import type { SpendingRules } from '../../domain/spending_rules.js';
+import {
+  assistantPrompt,
+  copy,
+  fill,
+  toolTexts,
+  type AppLanguage,
+} from '../i18n/messages.js';
+import { updateStoreRules } from '../stores/update_store_rules.js';
 
 export interface ChatTurn {
   role: 'user' | 'assistant';
@@ -54,87 +63,101 @@ const ADOPT_TOOL: AiToolDefinition = {
   },
 };
 
-function buildTools(productKeys: string[], canAdopt: boolean): AiToolDefinition[] {
+function buildTools(
+  productKeys: string[],
+  language: AppLanguage,
+  canAdopt: boolean,
+): AiToolDefinition[] {
+  const text = toolTexts[language];
   return [
-  ...(canAdopt ? [ADOPT_TOOL] : []),
-  {
-    type: 'function',
-    function: {
-      name: 'ask_user',
-      description:
-        'Haz UNA pregunta corta al dueño cuando falte un dato, con 2-4 respuestas rápidas que pueda tocar.',
-      parameters: {
-        type: 'object',
-        properties: {
-          question: { type: 'string' },
-          options: { type: 'array', items: { type: 'string' }, maxItems: 4 },
-        },
-        required: ['question', 'options'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'market_research',
-      description:
-        'Compara distribuidores de varios países para un producto nuevo y devuelve los 3 más asequibles con el coste real (precio, envío, aranceles, cambio de moneda). La app muestra las tarjetas sola.',
-      parameters: {
-        type: 'object',
-        properties: {
-          product: { type: 'string', description: 'Producto tal como lo describe el dueño.' },
-          product_key: {
-            type: 'string',
-            description: 'Clave del catálogo que corresponde al producto. Omitir si ninguna encaja.',
-            ...(productKeys.length > 0 ? { enum: productKeys } : {}),
+    ...(canAdopt ? [ADOPT_TOOL] : []),
+    {
+      type: 'function',
+      function: {
+        name: 'ask_user',
+        description: text.askUser,
+        parameters: {
+          type: 'object',
+          properties: {
+            question: { type: 'string' },
+            options: { type: 'array', items: { type: 'string' }, maxItems: 4 },
           },
-          region: { type: 'string', enum: ['spain', 'europe', 'world'] },
-          monthly_quantity: { type: 'number', description: 'Unidades al mes. Omitir si no lo sabe.' },
-          max_unit_price_eur: { type: 'number', description: 'Precio máximo por unidad. Omitir si no hay.' },
+          required: ['question', 'options'],
         },
-        required: ['product', 'region'],
       },
     },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_store_summary',
-      description: 'Estado de la tienda: productos con stock bajo, gasto del mes y reglas de gasto.',
-      parameters: { type: 'object', properties: {} },
+    {
+      type: 'function',
+      function: {
+        name: 'market_research',
+        description: text.marketResearch,
+        parameters: {
+          type: 'object',
+          properties: {
+            product: { type: 'string', description: text.marketResearchProduct },
+            product_key: {
+              type: 'string',
+              description: text.marketResearchProductKey,
+              ...(productKeys.length > 0 ? { enum: productKeys } : {}),
+            },
+            region: { type: 'string', enum: ['spain', 'europe', 'world'] },
+            monthly_quantity: {
+              type: 'number',
+              description: text.marketResearchQuantity,
+            },
+            max_unit_price_eur: {
+              type: 'number',
+              description: text.marketResearchMaxPrice,
+            },
+          },
+          required: ['product', 'region'],
+        },
+      },
     },
-  },
+    {
+      type: 'function',
+      function: {
+        name: 'get_store_summary',
+        description: text.storeSummary,
+        parameters: { type: 'object', properties: {} },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'adjust_budget',
+        description: text.adjustBudget,
+        parameters: {
+          type: 'object',
+          properties: {
+            monthly_limit: {
+              type: 'number',
+              description: text.adjustMonthly,
+            },
+            max_per_order: {
+              type: 'number',
+              description: text.adjustMaxPerOrder,
+            },
+            require_approval_above: {
+              type: 'number',
+              description: text.adjustApprovalAbove,
+            },
+          },
+          required: [],
+        },
+      },
+    },
   ];
 }
 
 function systemPrompt(
   store: StoreContext,
   products: { key: string; name: string }[],
+  language: AppLanguage,
   options: { voice: boolean; lastMarket: LastMarketContext | null },
 ): string {
-  const catalogue = products.length
-    ? products.map((p) => `- ${p.key}: ${p.name}`).join('\n')
-    : '(vacío)';
   return [
-    `Eres el asistente de compras de "${store.name}", una tienda pequeña. Moneda: ${store.currency}.`,
-    'Hablas con el dueño, a menudo por voz: respuestas cortas (2-3 frases), naturales, sin tablas ni listas largas.',
-    'Responde en el idioma del dueño (español por defecto).',
-    '',
-    'Cuando el dueño quiera vender o comprar un producto nuevo:',
-    '1. Si no sabes dónde buscar, pregunta con ask_user: opciones "Solo España", "Europa", "Todo el mundo".',
-    '2. Si no sabes cuántas unidades necesita al mes, pregúntalo con ask_user (ofrece 3 cantidades razonables y "No lo sé").',
-    '3. El precio máximo es opcional: pregúntalo solo si el dueño habló de presupuesto.',
-    '4. Llama a market_research. Luego resume en 2-3 frases: el más barato, cuánto cuesta por unidad puesto en la tienda y qué lo diferencia de los otros (plazo, mínimo de pedido, aranceles). La app ya muestra las tarjetas: no repitas todos los datos.',
-    '5. Si el producto no está en el catálogo, NO llames a market_research varias veces ni inventes: dilo con sinceridad, di que de momento no tienes distribuidores verificados para eso y menciona 3-4 productos parecidos del catálogo que sí puedes comparar.',
-    '6. Si el resultado trae outside_region (países fuera de la región elegida que sí lo venden) y no hay ofertas, ofrece ampliar la búsqueda con ask_user.',
-    '',
-    'Catálogo de productos que puedes comparar (clave: nombre). Si lo que pide el dueño encaja con uno, aunque lo diga con otras palabras o marca, pasa su clave en product_key:',
-    catalogue,
-    '',
-    'Si el dueño da detalles (marca, tamaño) de un producto del catálogo, no vuelvas a preguntarlos: busca directamente.',
-    'Haz una sola pregunta cada vez. No inventes precios ni distribuidores: usa solo lo que devuelven las herramientas.',
-    'Para preguntas sobre el stock o el gasto usa get_store_summary.',
-    'Usa **negrita** solo para nombres de distribuidor e importes.',
+    baseSystemPrompt(store, products, language),
     ...(options.lastMarket && options.lastMarket.options.length > 0
       ? [
           '',
@@ -154,6 +177,19 @@ function systemPrompt(
         ]
       : []),
   ].join('\n');
+}
+
+function baseSystemPrompt(store: StoreContext, products: { key: string; name: string }[], language: AppLanguage): string {
+  const catalogue = products.length
+    ? products.map((p) => `- ${p.key}: ${p.name}`).join('\n')
+    : copy[language].catalogueEmpty;
+
+  return fill(assistantPrompt[language], {
+    store: store.name,
+    currency: store.currency,
+    catalogue,
+    languageRule: copy[language].assistantLanguageRule,
+  });
 }
 
 function sanitize(history: ChatTurn[]): AiMessage[] {
@@ -214,16 +250,21 @@ export async function assistantChat(params: {
   userId?: string;
   /** Para tests: sustituye el alta real del distribuidor. */
   adopt?: typeof adoptMarketOffer;
+  /** Para tests: actualización de reglas sin tocar Supabase. */
+  updateRules?: (storeId: string, rules: SpendingRules) => Promise<SpendingRules>;
+  /** Idioma en el que contesta el asistente (el que está usando la app). */
+  language?: AppLanguage;
 }): Promise<AssistantReply> {
   const provider = params.provider ?? new GroqProvider();
+  const language = params.language ?? 'es';
   const products = params.products ?? (await listMarketProducts());
   const lastMarket = params.lastMarket?.options.length ? params.lastMarket : null;
   const canAdopt = Boolean(lastMarket && params.userId);
-  const tools = buildTools(products.map((p) => p.key), canAdopt);
+  const tools = buildTools(products.map((p) => p.key), language, canAdopt);
   const messages: AiMessage[] = [
     {
       role: 'system',
-      content: systemPrompt(params.store, products, { voice: params.voice === true, lastMarket }),
+      content: systemPrompt(params.store, products, language, { voice: params.voice === true, lastMarket }),
     },
     ...sanitize(params.history),
   ];
@@ -235,7 +276,12 @@ export async function assistantChat(params: {
     const result = await provider.chat(messages, tools);
 
     if (result.toolCalls.length === 0) {
-      return { reply: (result.content ?? '').trim() || '¿En qué te ayudo?', quickReplies: [], market, adopted };
+      return {
+        reply: (result.content ?? '').trim() || copy[language].assistantFallback,
+        quickReplies: [],
+        market,
+        adopted,
+      };
     }
 
     messages.push({ role: 'assistant', content: result.content ?? '', toolCalls: result.toolCalls });
@@ -248,7 +294,9 @@ export async function assistantChat(params: {
           ? args.options.map(String).filter(Boolean).slice(0, 4)
           : [];
         return {
-          reply: String(args.question ?? result.content ?? '').trim() || '¿Me das más detalles?',
+          reply:
+            String(args.question ?? result.content ?? '').trim() ||
+            copy[language].assistantMoreDetails,
           quickReplies: options,
           market,
           adopted,
@@ -310,8 +358,59 @@ export async function assistantChat(params: {
             spent_this_month: spent,
             rules: params.store.rules,
           };
+        } else if (call.function.name === 'adjust_budget') {
+          const monthlyLimit =
+            args.monthly_limit == null ? params.store.rules.monthlyLimit : Number(args.monthly_limit);
+          const maxPerOrder =
+            args.max_per_order == null ? params.store.rules.maxPerOrder : Number(args.max_per_order);
+          const requireApprovalAbove =
+            args.require_approval_above == null
+              ? params.store.rules.requireApprovalAbove
+              : Number(args.require_approval_above);
+
+          const invalid =
+            !Number.isFinite(maxPerOrder) ||
+            !Number.isFinite(monthlyLimit) ||
+            !Number.isFinite(requireApprovalAbove)
+              ? copy[language].assistantBudgetNumbers
+              : maxPerOrder <= 0
+                ? copy[language].assistantBudgetMaxPerOrder
+                : monthlyLimit < maxPerOrder
+                  ? fill(copy[language].assistantBudgetMonthlyBelowMax, {
+                      max: maxPerOrder.toFixed(2),
+                    })
+                  : requireApprovalAbove > maxPerOrder
+                    ? fill(copy[language].assistantBudgetApprovalAboveMax, {
+                        max: maxPerOrder.toFixed(2),
+                      })
+                    : null;
+
+          if (invalid) {
+            output = { ok: false, error: invalid };
+          } else {
+            const updated = await (
+              params.updateRules ?? ((id: string, rules: SpendingRules) => updateStoreRules(id, rules))
+            )(params.store.id, {
+              maxPerOrder,
+              monthlyLimit,
+              requireApprovalAbove,
+              allowedSupplierIds: params.store.rules.allowedSupplierIds,
+            });
+            output = {
+              ok: true,
+              updated: {
+                max_per_order: updated.maxPerOrder,
+                monthly_limit: updated.monthlyLimit,
+                require_approval_above: updated.requireApprovalAbove,
+              },
+            };
+          }
         } else {
-          output = { error: `Herramienta desconocida: ${call.function.name}` };
+          output = {
+            error: fill(copy[language].assistantToolUnknown, {
+              name: call.function.name,
+            }),
+          };
         }
       } catch (error) {
         output = { error: error instanceof Error ? error.message : String(error) };
@@ -327,7 +426,9 @@ export async function assistantChat(params: {
   }
 
   return {
-    reply: market ? 'Aquí tienes las mejores opciones que he encontrado.' : 'No he podido terminar. ¿Lo intentamos otra vez?',
+    reply: market
+      ? copy[language].assistantMarketFound
+      : copy[language].assistantCouldNotFinish,
     quickReplies: [],
     market,
     adopted,

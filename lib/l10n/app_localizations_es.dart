@@ -73,6 +73,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionAddOneUnit => 'Añadir una unidad';
 
   @override
+  String get actionDelete => 'Eliminar';
+
+  @override
+  String get actionRestore => 'Recuperar';
+
+  @override
   String semanticsBackTo(String label) {
     return 'Volver a $label';
   }
@@ -129,6 +135,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String homeBudgetOfMonth(String month) {
     return 'Presupuesto de $month';
+  }
+
+  @override
+  String budgetRingSemantics(int percent) {
+    return '$percent % del presupuesto usado';
   }
 
   @override
@@ -233,6 +244,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get catalogOrderButton => 'Tramitar pedido';
 
   @override
+  String get catalogSupplierHint => 'Proveedor';
+
+  @override
   String get catalogOrderCreated =>
       'Pedido creado. Apruébalo para pagar y sumar el stock.';
 
@@ -244,6 +258,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get stockFilterTransit => 'En camino';
+
+  @override
+  String get stockFilterOut => 'Agotados';
+
+  @override
+  String get stockFilterDeleted => 'Eliminados';
 
   @override
   String get stockEmptyTitle => 'Aún no hay productos';
@@ -293,8 +313,24 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String stockEditorUid(String uid, int min, String unit) {
-    return '$uid · mín. $min $unit';
+  String get stockRestored => 'Recuperado';
+
+  @override
+  String stockRestoredMessage(String name) {
+    return '¡Producto $name recuperado!';
+  }
+
+  @override
+  String stockEditorUid(String uid, String unit) {
+    return '$uid · $unit';
+  }
+
+  @override
+  String get stockThresholdLabel => 'Aviso de bajo mínimo';
+
+  @override
+  String stockThresholdHelp(int min, String unit) {
+    return 'Se avisa cuando queden $min $unit o menos.';
   }
 
   @override
@@ -388,6 +424,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deliveryToCapture => 'A cobrar';
+
+  @override
+  String get deliveryAlreadyPaid => 'Ya pagado (no se cobra nada más)';
 
   @override
   String get deliveryConfirm => 'Confirmar entrega y cobrar';
@@ -527,7 +566,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String orderApproveHint(String supplier) {
-    return 'Al aprobar, el servidor paga a $supplier y genera la factura.';
+    return 'Al aprobar, autorizas el pago en PayPal: el dinero queda retenido hasta que confirmes la entrega (albarán).';
   }
 
   @override
@@ -547,11 +586,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get orderLegendThisOrder => 'Este pedido';
 
   @override
-  String get orderPaymentSent => 'Pago enviado';
+  String get orderPaymentAuthorizeTitle => 'Continúa en PayPal';
 
   @override
-  String orderPaymentSentMessage(String amount, String supplier) {
-    return '$amount enviados a $supplier con PayPal.';
+  String orderPaymentAuthorizeMessage(String amount, String supplier) {
+    return '$amount para $supplier: autoriza el pago en PayPal. El dinero queda retenido hasta que confirmes la entrega.';
   }
 
   @override
@@ -685,6 +724,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get assistantChipReview => 'Revisa el stock ahora';
 
   @override
+  String get assistantBudgetUpdated =>
+      'He actualizado tus límites de gasto. Ya se aplican al agente.';
+
+  @override
   String get assistantChipPending => '¿Qué tengo por aprobar?';
 
   @override
@@ -809,6 +852,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rulesLanguageEnglish => 'English';
+
+  @override
+  String get supplierFallback => 'Proveedor';
+
+  @override
+  String get productFallback => 'Producto';
+
+  @override
+  String get unitFallback => 'unidad';
 
   @override
   String get rulesSounds => 'Sonidos';
@@ -979,6 +1031,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get decisionBlocked =>
       'Quise pedir, pero tus reglas de gasto lo bloquearon.';
+
+  @override
+  String decisionBlockedReason(String reason) {
+    return 'No creé el pedido porque $reason.';
+  }
 
   @override
   String get decisionFailed =>
@@ -1191,6 +1248,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get errorStockUpdateFailed => 'No se pudo actualizar el stock';
 
   @override
+  String get errorStockThresholdUpdateFailed =>
+      'No se pudo actualizar el mínimo';
+
+  @override
   String get errorProductMissing => 'Falta el producto.';
 
   @override
@@ -1203,6 +1264,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get errorStockNegative => 'El stock no puede ser negativo.';
+
+  @override
+  String get errorProductDeleteFailed => 'No se pudo eliminar el producto';
+
+  @override
+  String get errorProductRestoreFailed => 'No se pudo recuperar el producto';
 
   @override
   String get errorAgentUnreachable => 'El agente no respondió';
@@ -1321,6 +1388,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get marketChoose => 'Elegir este distribuidor';
 
   @override
+  String get marketDemoBadge => 'Demo';
+
+  @override
+  String get marketDemoNotice =>
+      'Directorio de demostración: los distribuidores y sus precios son ficticios.';
+
+  @override
   String get marketWebTitle => 'También en internet';
 
   @override
@@ -1343,11 +1417,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get marketAdoptQuantity => 'Unidades al mes';
 
   @override
-  String get marketAdoptOrderNow => 'Hacer el primer pedido ahora';
+  String get marketAdoptOrderNow => 'Crear el primer pedido';
 
   @override
   String marketAdoptOrderHint(String total) {
-    return 'Se paga con PayPal (unos $total) si cumple tus reglas de gasto.';
+    return 'Pedido de unos $total: lo apruebas y pagas con PayPal, y el stock sube cuando registres la entrega.';
   }
 
   @override
@@ -1355,17 +1429,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String marketAdoptDone(String product, String supplier) {
-    return '**$product** ya está en tu stock, de **$supplier**.';
-  }
-
-  @override
-  String marketAdoptPaid(String total) {
-    return 'Primer pedido pagado con PayPal: **$total**.';
+    return '**$product** ya está en tu catálogo, de **$supplier**.';
   }
 
   @override
   String marketAdoptOrderCreated(String total) {
-    return 'Primer pedido creado por **$total**. Lo verás en Pedidos.';
+    return 'Primer pedido creado por **$total**. Apruébalo en Pedidos: el stock sube cuando registres el albarán.';
   }
 
   @override

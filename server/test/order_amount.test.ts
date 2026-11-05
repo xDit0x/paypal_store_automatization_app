@@ -7,6 +7,7 @@ import {
   type CatalogPrice,
 } from '../src/application/orders/guard_order_amount.js';
 import type { SpendingRules } from '../src/domain/spending_rules.js';
+import { describeReason } from '../src/application/i18n/reasons.js';
 
 const rules: SpendingRules = {
   maxPerOrder: 200,
@@ -39,7 +40,12 @@ test('un producto que no está en el catálogo invalida el pedido', () => {
     products,
   );
 
-  assert.match(result.reason ?? '', /no está en el catálogo/);
+  assert.equal(result.reason?.code, 'product_not_in_catalog');
+  assert.equal(result.reason?.params?.uid, 'PRD-999');
+  assert.match(
+    describeReason(result.reason!),
+    /no está en el catálogo/,
+  );
 });
 
 test('un producto inactivo invalida el pedido', () => {
@@ -48,7 +54,8 @@ test('un producto inactivo invalida el pedido', () => {
     products,
   );
 
-  assert.match(result.reason ?? '', /no está activo/);
+  assert.equal(result.reason?.code, 'product_not_active');
+  assert.match(describeReason(result.reason!), /no está activo/);
 });
 
 test('una cantidad inválida invalida el pedido', () => {
@@ -57,7 +64,8 @@ test('una cantidad inválida invalida el pedido', () => {
     products,
   );
 
-  assert.match(result.reason ?? '', /Cantidad inválida/);
+  assert.equal(result.reason?.code, 'invalid_qty');
+  assert.match(describeReason(result.reason!), /cantidad inválida/i);
 });
 
 test('un importe desactualizado se recalcula con el catálogo vigente', () => {
@@ -116,7 +124,8 @@ test('un pedido por encima del máximo por pedido no se paga', () => {
   });
 
   assert.equal(check.ok, false);
-  assert.match(check.reason ?? '', /máximo por pedido/);
+  assert.equal(check.reason?.code, 'over_max_per_order');
+  assert.match(describeReason(check.reason!), /máximo por pedido/);
 });
 
 test('un pedido que necesita aprobación no se paga automáticamente', () => {
@@ -130,7 +139,8 @@ test('un pedido que necesita aprobación no se paga automáticamente', () => {
   });
 
   assert.equal(check.ok, false);
-  assert.match(check.reason ?? '', /aprobación/);
+  assert.equal(check.reason?.code, 'approval_threshold');
+  assert.match(describeReason(check.reason!), /aprobación/);
 });
 
 test('un pedido que necesita aprobación se paga cuando el dueño lo aprueba', () => {
@@ -159,5 +169,6 @@ test('un producto de otro proveedor invalida el pedido', () => {
   });
 
   assert.equal(check.ok, false);
-  assert.match(check.reason ?? '', /no pertenece al proveedor/);
+  assert.equal(check.reason?.code, 'product_wrong_supplier');
+  assert.match(describeReason(check.reason!), /no pertenece al proveedor/);
 });

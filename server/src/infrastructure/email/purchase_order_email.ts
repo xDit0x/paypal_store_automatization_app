@@ -1,3 +1,4 @@
+import type { AppLanguage } from '../../application/i18n/messages.js';
 import { sendEmail } from './resend_client.js';
 
 export interface PurchaseEmailLine {
@@ -150,33 +151,54 @@ export async function sendPaymentFailedEmail(input: {
   storeName: string;
   reason: string;
   ownerEmail: string | null;
+  /** Idioma del dueño: el aviso se manda en su idioma. */
+  locale?: AppLanguage;
 }): Promise<boolean> {
   if (!input.ownerEmail) return false;
 
+  const language = input.locale ?? 'es';
+  const text =
+    language === 'en'
+      ? {
+          subject: `Payment failed for order ${input.orderNumber}`,
+          intro: `We could not pay order ${input.orderNumber} to ${input.supplierName}.`,
+          reasonLabel: 'Reason',
+          footer: 'The supplier did not receive any purchase notice.',
+          title: 'Payment failed',
+          htmlIntro: `We could not pay order <strong>${input.orderNumber}</strong> to <strong>${input.supplierName}</strong>.`,
+        }
+      : {
+          subject: `Pago fallido del pedido ${input.orderNumber}`,
+          intro: `No se pudo pagar el pedido ${input.orderNumber} a ${input.supplierName}.`,
+          reasonLabel: 'Motivo',
+          footer: 'El proveedor no ha recibido ningún aviso de compra.',
+          title: 'Pago fallido',
+          htmlIntro: `No se pudo pagar el pedido <strong>${input.orderNumber}</strong> a <strong>${input.supplierName}</strong>.`,
+        };
+
   await sendEmail({
     to: [input.ownerEmail],
-    subject: `Pago fallido del pedido ${input.orderNumber}`,
+    subject: text.subject,
     text: [
-      `No se pudo pagar el pedido ${input.orderNumber} a ${input.supplierName}.`,
+      text.intro,
       '',
-      `Motivo: ${input.reason}`,
+      `${text.reasonLabel}: ${input.reason}`,
       '',
-      'El proveedor no ha recibido ningún aviso de compra.',
+      text.footer,
     ].join('\n'),
     html: `<!doctype html>
-<html lang="es">
+<html lang="${language}">
   <body style="margin:0;padding:24px;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111">
     <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:24px">
-      <h1 style="margin:0 0 8px;font-size:20px">Pago fallido</h1>
+      <h1 style="margin:0 0 8px;font-size:20px">${text.title}</h1>
       <p style="margin:0 0 16px;color:#666">
-        No se pudo pagar el pedido <strong>${input.orderNumber}</strong>
-        a <strong>${input.supplierName}</strong>.
+        ${text.htmlIntro}
       </p>
       <div style="padding:12px;background:#fff4f4;border-radius:8px;font-size:13px">
-        <strong>Motivo:</strong> ${input.reason}
+        <strong>${text.reasonLabel}:</strong> ${input.reason}
       </div>
       <p style="margin:16px 0 0;font-size:12px;color:#888">
-        El proveedor no ha recibido ningún aviso de compra.
+        ${text.footer}
       </p>
     </div>
   </body>

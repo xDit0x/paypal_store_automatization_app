@@ -14,6 +14,7 @@ import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.da
 import 'package:store_automatization_app/domain/usecases/auth/watch_auth_usecase.dart';
 import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/auth/register_page.dart';
 import 'package:store_automatization_app/preview/preview_repositories.dart';
 
@@ -55,8 +56,11 @@ AuthCubit _authCubit() {
 
 Widget _register() => ScreenUtilInit(
   designSize: const Size(375, 812),
-  builder: (_, _) => BlocProvider.value(
-    value: _authCubit(),
+  builder: (_, _) => MultiBlocProvider(
+    providers: [
+      BlocProvider.value(value: _authCubit()),
+      BlocProvider(create: (_) => LocaleCubit()),
+    ],
     child: MaterialApp(
       theme: ThemeData.light(),
       locale: const Locale('es'),

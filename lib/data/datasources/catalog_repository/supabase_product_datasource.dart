@@ -57,7 +57,7 @@ class SupabaseProductDatasource {
     return rows.map((r) {
       final map = Map<String, dynamic>.from(r as Map);
       final sup = (r['suppliers'] as Map?) ?? {};
-      map['supplier_name'] = sup['name'] ?? 'Proveedor';
+      map['supplier_name'] = sup['name'] ?? '';
       map['supplier_id'] = r['supplier_id'];
       map['in_inventory'] = false;
       return map;
@@ -129,7 +129,7 @@ class SupabaseProductDatasource {
       final sup = (r['suppliers'] as Map?) ?? {};
       final uid = r['uid'] as String;
       final stock = inventory[uid];
-      map['supplier_name'] = sup['name'] ?? 'Proveedor';
+      map['supplier_name'] = sup['name'] ?? '';
       map['in_inventory'] = stock != null;
       if (stock != null) {
         map['stock'] = stock['stock'];
@@ -143,11 +143,21 @@ class SupabaseProductDatasource {
     );
   }
 
-  Future<void> deleteProduct(String uid) async {
+  /// El catálogo solo se escribe con service_role, así que pasa por la API.
+  ///
+  /// Marcar un producto como eliminado (`active = false`) es lo que hace que
+  /// el agente de reposición deje de incluirlo en los pedidos; restaurarlo
+  /// (`active = true`) hace que vuelva a contar.
+  Future<void> setProductActive(String storeId, String uid, bool active) async {
     try {
-      await _client.from('products').update({'active': false}).eq('uid', uid);
-    } catch (error) {
-      throw Exception('No se pudo eliminar: $error');
+      await _dio.patch<Map<String, dynamic>>(
+        '/catalog/products/$uid/active',
+        data: {'store_id': storeId, 'active': active},
+      );
+    } on DioException catch (error) {
+      final data = error.response?.data;
+      final message = data is Map<String, dynamic> ? data['error'] : null;
+      throw Exception(message ?? '');
     }
   }
 
@@ -157,6 +167,25 @@ class SupabaseProductDatasource {
       await _dio.patch<Map<String, dynamic>>(
         '/catalog/products/$uid/stock',
         data: {'store_id': storeId, 'stock': stock},
+      );
+    } on DioException catch (error) {
+      final data = error.response?.data;
+      final message = data is Map<String, dynamic> ? data['error'] : null;
+      throw Exception(message ?? '');
+    }
+  }
+
+  /// El mínimo de bajo stock también es de cada tienda: cada dueño decide a
+  /// partir de cuántas unidades quiere que se le avise.
+  Future<void> updateLowStockThreshold(
+    String storeId,
+    String uid,
+    int threshold,
+  ) async {
+    try {
+      await _dio.patch<Map<String, dynamic>>(
+        '/catalog/products/$uid/threshold',
+        data: {'store_id': storeId, 'low_stock_threshold': threshold},
       );
     } on DioException catch (error) {
       final data = error.response?.data;

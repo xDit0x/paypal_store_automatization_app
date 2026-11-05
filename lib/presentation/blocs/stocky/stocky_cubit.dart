@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:store_automatization_app/core/service_locator.dart';
 import 'package:store_automatization_app/domain/repositories/product_repository/product_repository.dart';
 
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
@@ -21,6 +20,7 @@ import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/search_catalog_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_low_stock_threshold_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/services/order_builder.dart';
 import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
@@ -47,6 +47,7 @@ class StockyCubit extends Cubit<StockyState> {
   final GetSuppliersUsecase getSuppliers;
   final GetSupplierCatalogUsecase getSupplierCatalog;
   final UpdateProductStockUsecase updateProductStock;
+  final UpdateLowStockThresholdUsecase updateLowStockThresholdUsecase;
   final GetAgentRunsUsecase getAgentRuns;
   final RunAgentUsecase runAgentUsecase;
   final SearchCatalogUsecase? searchCatalogUsecase;
@@ -66,6 +67,10 @@ class StockyCubit extends Cubit<StockyState> {
   /// previa ni los tests que no ejercitan la compra.
   final CreateDraftOrderUsecase? createDraftOrder;
 
+  /// Elimina y restaura productos del catálogo. Opcional: sin él (vista
+  /// previa, tests) el cambio es solo local.
+  final ProductRepository? productRepository;
+
   /// Cambios en tiempo real de la tienda. Opcional: sin él (vista previa,
   /// tests) la app solo se actualiza al cargar o tras una acción.
   final WatchStoreChangesUsecase? watchStoreChanges;
@@ -82,6 +87,9 @@ class StockyCubit extends Cubit<StockyState> {
   /// El último `runAgent` terminó con error.
   bool lastRunFailed = false;
 
+  /// El último `runAgent` no pudo crear el pedido por las reglas de gasto.
+  bool lastRunBlocked = false;
+
   AppLocalizations get l10n => _l10n();
 
   StockyCubit({
@@ -93,6 +101,7 @@ class StockyCubit extends Cubit<StockyState> {
     required this.getSuppliers,
     required this.getSupplierCatalog,
     required this.updateProductStock,
+    required this.updateLowStockThresholdUsecase,
     required this.getAgentRuns,
     required this.runAgentUsecase,
     this.searchCatalogUsecase,
@@ -102,6 +111,7 @@ class StockyCubit extends Cubit<StockyState> {
     this.confirmAuthorizationUsecase,
     this.reviewOrderAmountUsecase,
     this.createDraftOrder,
+    this.productRepository,
     this.watchStoreChanges,
     AppLocalizations Function()? l10n,
   }) : _l10n = l10n ?? (() => l10nFor(deviceLocale())),
@@ -180,6 +190,7 @@ class StockyCubit extends Cubit<StockyState> {
         chat: chat,
         error: errors.isEmpty ? null : errors.first,
         clearError: errors.isEmpty,
+        supplierFallback: l10n.supplierFallback,
       ),
     );
 
@@ -234,18 +245,23 @@ class StockyCubit extends Cubit<StockyState> {
     }
     emit(state.copyWith(agentRunning: true, chat: chat));
 
-    final result = await runAgentUsecase(store.id);
+    final result = await runAgentUsecase(store.id, locale: l10n.localeName);
     var failed = false;
+    var blocked = false;
     final message = result.fold<String>(
       (error) {
         failed = true;
         return l10n.describeDetail(error);
       },
-      (r) => r.message.isNotEmpty
-          ? r.message
-          : describeAgentDecision(l10n, r.decision),
+      (r) {
+        blocked = r.decision == 'blocked';
+        return r.message.isNotEmpty
+            ? r.message
+            : describeAgentDecision(l10n, r.decision);
+      },
     );
     lastRunFailed = failed;
+    lastRunBlocked = blocked;
 
     emit(
       state.copyWith(
@@ -357,37 +373,105 @@ class StockyCubit extends Cubit<StockyState> {
     });
   }
 
-  Future<AppError?> deleteProduct(String uid) async {
-    // Offline-first: siempre se marca como eliminado localmente.
-    emit(
-      state.copyWith(
-        products: [
-          for (final product in state.products)
-            product.uid == uid ? product.copyWith(active: false, stock: 0) : product,
-        ],
-      ),
+  /// Cambia el mínimo de bajo stock de un producto en la tienda actual.
+  /// Devuelve null si todo fue bien.
+  Future<AppError?> updateLowStockThreshold(String uid, int threshold) async {
+    final store = state.store;
+    if (store == null) return const AppError(AppErrorCode.storeNotFound);
+
+    final result = await updateLowStockThresholdUsecase(
+      store.id,
+      uid,
+      threshold,
     );
-    try {
-      final repo = sl<ProductRepository>();
-      final result = await repo.deleteProduct(uid);
-      return result.fold<AppError?>((e) => e, (_) => null);
-    } catch (error) {
-      return AppError(AppErrorCode.catalogLoadFailed, detail: error.toString());
-    }
+    return result.fold<AppError?>((error) => error, (_) {
+      emit(
+        state.copyWith(
+          products: [
+            for (final product in state.products)
+              product.uid == uid
+                  ? product.copyWith(lowStockThreshold: threshold)
+                  : product,
+          ],
+        ),
+      );
+      return null;
+    });
   }
 
-  /// Restaura un producto eliminado: devuelve `active` a `true` en el estado
-  /// local para que aparezca de nuevo en "Todos".
-  Future<AppError?> restoreProduct(String uid) async {
+  Future<AppError?> deleteProduct(String uid) async {
+    final product = _productByUid(uid);
+    if (product == null) return const AppError(AppErrorCode.productMissing);
+
+    // Offline-first: primero se marca como eliminado para que la interfaz
+    // reaccione al instante.
     emit(
       state.copyWith(
         products: [
-          for (final product in state.products)
-            product.uid == uid ? product.copyWith(active: true) : product,
+          for (final p in state.products)
+            p.uid == uid ? p.copyWith(active: false, stock: 0) : p,
         ],
       ),
     );
+
+    final repository = productRepository;
+    final store = state.store;
+    if (repository == null || store == null) return null;
+
+    final result = await repository.deleteProduct(store.id, uid);
+    return result.fold<AppError?>((error) {
+      // El servidor no sabe que está eliminado: el agente seguiría
+      // reponeiéndolo, así que se deshace el cambio local.
+      _putProduct(product);
+      return error;
+    }, (_) => null);
+  }
+
+  /// Restaura un producto eliminado: vuelve a estar activo y el agente de
+  /// reposición vuelve a tenerlo en cuenta.
+  Future<AppError?> restoreProduct(String uid) async {
+    final product = _productByUid(uid);
+    if (product == null) return const AppError(AppErrorCode.productMissing);
+
+    emit(
+      state.copyWith(
+        products: [
+          for (final p in state.products)
+            p.uid == uid ? p.copyWith(active: true) : p,
+        ],
+      ),
+    );
+
+    final repository = productRepository;
+    final store = state.store;
+    if (repository == null || store == null) return null;
+
+    final result = await repository.restoreProduct(store.id, uid);
+    return result.fold<AppError?>((error) {
+      // Si el servidor no lo ha guardado, el producto sigue eliminado allí:
+      // se deshace el cambio local para no mentir.
+      _putProduct(product);
+      return error;
+    }, (_) => null);
+  }
+
+  /// Producto del estado actual con ese uid.
+  Product? _productByUid(String uid) {
+    for (final product in state.products) {
+      if (product.uid == uid) return product;
+    }
     return null;
+  }
+
+  /// Vuelve a dejar el producto como estaba (deshace un cambio fallido).
+  void _putProduct(Product product) {
+    emit(
+      state.copyWith(
+        products: [
+          for (final p in state.products) p.uid == product.uid ? product : p,
+        ],
+      ),
+    );
   }
 
   Future<AppError?> saveRules(SpendingRules rules) async {
@@ -398,6 +482,27 @@ class StockyCubit extends Cubit<StockyState> {
       emit(state.copyWith(rules: rules));
       return null;
     });
+  }
+
+  /// Vuelve a leer las reglas de gasto. El asistente puede cambiarlas desde
+  /// el chat, y la app tiene que enterarse sin que el dueño toque nada.
+  /// Devuelve true si algún límite cambió.
+  Future<bool> refreshRules() async {
+    final store = state.store;
+    if (store == null) return false;
+
+    final result = await getSpendingRules(store.id);
+    final rules = result.fold<SpendingRules?>((_) => null, (r) => r);
+    if (rules == null) return false;
+
+    final changed =
+        rules.monthlyLimit != state.rules.monthlyLimit ||
+        rules.maxPerOrder != state.rules.maxPerOrder ||
+        rules.requireApprovalAbove != state.rules.requireApprovalAbove;
+    if (!changed) return false;
+
+    emit(state.copyWith(rules: rules));
+    return true;
   }
 
   List<ChatEntry> _chatFromRuns(List<AgentRun> runs) {
@@ -415,7 +520,9 @@ class StockyCubit extends Cubit<StockyState> {
       for (final r in recent)
         ChatEntry(
           fromUser: false,
-          text: describeAgentDecision(l10n, r.decision!),
+          text: r.blockedReason != null
+              ? l10n.decisionBlockedReason(r.blockedReason!)
+              : describeAgentDecision(l10n, r.decision!),
           at: r.createdAt?.toLocal() ?? DateTime.now(),
         ),
     ];
@@ -465,13 +572,16 @@ class StockyCubit extends Cubit<StockyState> {
     final index = state.cart.lastIndexWhere((c) => c.uid == uid);
     if (index < 0) return;
     final updated = List<CatalogProduct>.from(state.cart)..removeAt(index);
-    emit(state.copyWith(cart: updated));
+    // Si el pedido había fallado por las reglas, al ajustar el carrito el
+    // aviso deja de tener sentido.
+    emit(state.copyWith(cart: updated, clearCatalogError: true));
   }
 
   int quantityInCart(String uid) =>
       state.cart.where((c) => c.uid == uid).length;
 
-  void clearCart() => emit(state.copyWith(cart: const []));
+  void clearCart() =>
+      emit(state.copyWith(cart: const [], clearCatalogError: true));
 
   /// Crea un pedido por cada proveedor del carrito. Devuelve los pedidos
   /// creados; si uno falla, deja en el carrito solo las líneas pendientes.

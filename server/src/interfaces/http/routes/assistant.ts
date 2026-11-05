@@ -10,15 +10,19 @@ import {
   synthesizeSpeech,
   transcribeAudio,
 } from '../../../application/voice/voice_io.js';
+import { errorCopy } from '../../../application/i18n/errors.js';
 import { adoptMarketOffer } from '../../../application/market/adopt_offer.js';
 import { getStoreForOwner } from '../../../application/stores/store_service.js';
 import { authenticate } from '../auth.js';
+import { requestLanguage } from '../language.js';
 import { createRateLimiter } from '../rate_limit.js';
 
 interface MessageBody {
   store_id?: string;
   messages?: ChatTurn[];
   last_market?: unknown;
+  /** Idioma de la app: 'es' o 'en'. */
+  locale?: string;
 }
 
 interface VoiceBody extends MessageBody {
@@ -65,6 +69,8 @@ interface AdoptBody {
   search_id?: string | null;
   quantity?: number | null;
   place_order?: boolean;
+  /** Idioma de la app: 'es' o 'en'. */
+  locale?: string;
 }
 
 export async function assistantRoutes(app: FastifyInstance): Promise<void> {
@@ -74,20 +80,23 @@ export async function assistantRoutes(app: FastifyInstance): Promise<void> {
   const voiceLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
 
   app.post<{ Body: MessageBody }>('/assistant/message', async (request, reply) => {
+    const language = requestLanguage(request);
+    const text = errorCopy[language];
+
     const user = await authenticate(request);
-    if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+    if (!user) return reply.code(401).send({ error: text.sessionInvalid });
 
     const limit = chatLimiter.check(user.id);
     if (!limit.allowed) {
       reply.header('Retry-After', String(limit.retryAfterSeconds));
-      return reply.code(429).send({ error: 'Vas muy rápido. Espera un momento.' });
+      return reply.code(429).send({ error: text.assistantRateLimited });
     }
 
     const storeId = request.body?.store_id;
     const messages = request.body?.messages;
-    if (!storeId) return reply.code(400).send({ error: 'Falta store_id.' });
+    if (!storeId) return reply.code(400).send({ error: text.storeIdMissing });
     if (!Array.isArray(messages) || messages.length === 0) {
-      return reply.code(400).send({ error: 'Falta el mensaje.' });
+      return reply.code(400).send({ error: text.messageMissing });
     }
 
     try {
@@ -95,6 +104,7 @@ export async function assistantRoutes(app: FastifyInstance): Promise<void> {
       const result = await assistantChat({
         store,
         history: messages,
+        language,
         userId: user.id,
         lastMarket: parseLastMarket(request.body.last_market),
       });
@@ -106,7 +116,7 @@ export async function assistantRoutes(app: FastifyInstance): Promise<void> {
       });
     } catch (error) {
       request.log.error(error);
-      return reply.code(500).send({ error: 'El asistente no pudo responder.' });
+      return reply.code(500).send({ error: text.assistantFailed });
     }
   });
 
@@ -154,6 +164,7 @@ export async function assistantRoutes(app: FastifyInstance): Promise<void> {
           store,
           history,
           voice: true,
+          language: (body.locale ?? body.language)?.toLowerCase().startsWith('en') ? 'en' : 'es',
           userId: user.id,
           lastMarket: parseLastMarket(body.last_market),
         });
@@ -192,17 +203,22 @@ export async function assistantRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post<{ Body: AdoptBody }>('/assistant/adopt', async (request, reply) => {
+    const language = requestLanguage(request);
+    const text = errorCopy[language];
+
     const user = await authenticate(request);
-    if (!user) return reply.code(401).send({ error: 'Sesión no válida.' });
+    if (!user) return reply.code(401).send({ error: text.sessionInvalid });
 
     const limit = adoptLimiter.check(user.id);
     if (!limit.allowed) {
       reply.header('Retry-After', String(limit.retryAfterSeconds));
-      return reply.code(429).send({ error: 'Espera un momento antes de repetir.' });
+      return reply.code(429).send({ error: text.assistantRetryLater });
     }
 
     const { store_id: storeId, offer_id: offerId } = request.body ?? {};
-    if (!storeId || !offerId) return reply.code(400).send({ error: 'Faltan store_id u offer_id.' });
+    if (!storeId || !offerId) {
+      return reply.code(400).send({ error: text.offerIdsMissing });
+    }
 
     try {
       const store = await getStoreForOwner(storeId, user.id);
@@ -213,12 +229,13 @@ export async function assistantRoutes(app: FastifyInstance): Promise<void> {
         searchId: request.body.search_id ?? null,
         quantity: typeof request.body.quantity === 'number' ? request.body.quantity : null,
         placeOrder: request.body.place_order === true,
+        language,
       });
       return reply.send(result);
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({
-        error: error instanceof Error ? error.message : 'No se pudo añadir el producto.',
+        error: error instanceof Error ? error.message : text.catalogErrors,
       });
     }
   });

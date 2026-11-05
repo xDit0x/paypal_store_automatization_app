@@ -7,10 +7,10 @@ class SupabaseAgentDatasource {
 
   SupabaseAgentDatasource(this._client, this._dio);
 
-  Future<Map<String, dynamic>> run(String storeId) async {
+  Future<Map<String, dynamic>> run(String storeId, {String? locale}) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/agent/run',
-      data: {'store_id': storeId},
+      data: {'store_id': storeId, 'locale': locale},
     );
     return response.data ?? const {};
   }

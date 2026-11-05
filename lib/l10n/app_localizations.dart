@@ -94,8 +94,8 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
-    Locale('es'),
     Locale('en'),
+    Locale('es'),
   ];
 
   /// No description provided for @appName.
@@ -224,6 +224,18 @@ abstract class AppLocalizations {
   /// **'Añadir una unidad'**
   String get actionAddOneUnit;
 
+  /// No description provided for @actionDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get actionDelete;
+
+  /// No description provided for @actionRestore.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperar'**
+  String get actionRestore;
+
   /// No description provided for @semanticsBackTo.
   ///
   /// In es, this message translates to:
@@ -331,6 +343,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Presupuesto de {month}'**
   String homeBudgetOfMonth(String month);
+
+  /// No description provided for @budgetRingSemantics.
+  ///
+  /// In es, this message translates to:
+  /// **'{percent} % del presupuesto usado'**
+  String budgetRingSemantics(int percent);
 
   /// No description provided for @homeRemaining.
   ///
@@ -488,6 +506,12 @@ abstract class AppLocalizations {
   /// **'Tramitar pedido'**
   String get catalogOrderButton;
 
+  /// No description provided for @catalogSupplierHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Proveedor'**
+  String get catalogSupplierHint;
+
   /// No description provided for @catalogOrderCreated.
   ///
   /// In es, this message translates to:
@@ -511,6 +535,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'En camino'**
   String get stockFilterTransit;
+
+  /// No description provided for @stockFilterOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Agotados'**
+  String get stockFilterOut;
+
+  /// No description provided for @stockFilterDeleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminados'**
+  String get stockFilterDeleted;
 
   /// No description provided for @stockEmptyTitle.
   ///
@@ -578,11 +614,35 @@ abstract class AppLocalizations {
   /// **'{name}: {stock} {unit}.'**
   String stockUpdatedMessage(String name, int stock, String unit);
 
+  /// No description provided for @stockRestored.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperado'**
+  String get stockRestored;
+
+  /// No description provided for @stockRestoredMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Producto {name} recuperado!'**
+  String stockRestoredMessage(String name);
+
   /// No description provided for @stockEditorUid.
   ///
   /// In es, this message translates to:
-  /// **'{uid} · mín. {min} {unit}'**
-  String stockEditorUid(String uid, int min, String unit);
+  /// **'{uid} · {unit}'**
+  String stockEditorUid(String uid, String unit);
+
+  /// No description provided for @stockThresholdLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Aviso de bajo mínimo'**
+  String get stockThresholdLabel;
+
+  /// No description provided for @stockThresholdHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Se avisa cuando queden {min} {unit} o menos.'**
+  String stockThresholdHelp(int min, String unit);
 
   /// No description provided for @ordersTitle.
   ///
@@ -733,6 +793,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'A cobrar'**
   String get deliveryToCapture;
+
+  /// No description provided for @deliveryAlreadyPaid.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya pagado (no se cobra nada más)'**
+  String get deliveryAlreadyPaid;
 
   /// No description provided for @deliveryConfirm.
   ///
@@ -977,7 +1043,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderApproveHint.
   ///
   /// In es, this message translates to:
-  /// **'Al aprobar, el servidor paga a {supplier} y genera la factura.'**
+  /// **'Al aprobar, autorizas el pago en PayPal: el dinero queda retenido hasta que confirmes la entrega (albarán).'**
   String orderApproveHint(String supplier);
 
   /// No description provided for @orderSpendAfterPayment.
@@ -1004,17 +1070,17 @@ abstract class AppLocalizations {
   /// **'Este pedido'**
   String get orderLegendThisOrder;
 
-  /// No description provided for @orderPaymentSent.
+  /// No description provided for @orderPaymentAuthorizeTitle.
   ///
   /// In es, this message translates to:
-  /// **'Pago enviado'**
-  String get orderPaymentSent;
+  /// **'Continúa en PayPal'**
+  String get orderPaymentAuthorizeTitle;
 
-  /// No description provided for @orderPaymentSentMessage.
+  /// No description provided for @orderPaymentAuthorizeMessage.
   ///
   /// In es, this message translates to:
-  /// **'{amount} enviados a {supplier} con PayPal.'**
-  String orderPaymentSentMessage(String amount, String supplier);
+  /// **'{amount} para {supplier}: autoriza el pago en PayPal. El dinero queda retenido hasta que confirmes la entrega.'**
+  String orderPaymentAuthorizeMessage(String amount, String supplier);
 
   /// No description provided for @orderPaymentFailed.
   ///
@@ -1225,6 +1291,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Revisa el stock ahora'**
   String get assistantChipReview;
+
+  /// No description provided for @assistantBudgetUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'He actualizado tus límites de gasto. Ya se aplican al agente.'**
+  String get assistantBudgetUpdated;
 
   /// No description provided for @assistantChipPending.
   ///
@@ -1440,6 +1512,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'English'**
   String get rulesLanguageEnglish;
+
+  /// No description provided for @supplierFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'Proveedor'**
+  String get supplierFallback;
+
+  /// No description provided for @productFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'Producto'**
+  String get productFallback;
+
+  /// No description provided for @unitFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'unidad'**
+  String get unitFallback;
 
   /// No description provided for @rulesSounds.
   ///
@@ -1752,6 +1842,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Quise pedir, pero tus reglas de gasto lo bloquearon.'**
   String get decisionBlocked;
+
+  /// No description provided for @decisionBlockedReason.
+  ///
+  /// In es, this message translates to:
+  /// **'No creé el pedido porque {reason}.'**
+  String decisionBlockedReason(String reason);
 
   /// No description provided for @decisionFailed.
   ///
@@ -2107,6 +2203,12 @@ abstract class AppLocalizations {
   /// **'No se pudo actualizar el stock'**
   String get errorStockUpdateFailed;
 
+  /// No description provided for @errorStockThresholdUpdateFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo actualizar el mínimo'**
+  String get errorStockThresholdUpdateFailed;
+
   /// No description provided for @errorProductMissing.
   ///
   /// In es, this message translates to:
@@ -2130,6 +2232,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'El stock no puede ser negativo.'**
   String get errorStockNegative;
+
+  /// No description provided for @errorProductDeleteFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo eliminar el producto'**
+  String get errorProductDeleteFailed;
+
+  /// No description provided for @errorProductRestoreFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo recuperar el producto'**
+  String get errorProductRestoreFailed;
 
   /// No description provided for @errorAgentUnreachable.
   ///
@@ -2329,6 +2443,18 @@ abstract class AppLocalizations {
   /// **'Elegir este distribuidor'**
   String get marketChoose;
 
+  /// No description provided for @marketDemoBadge.
+  ///
+  /// In es, this message translates to:
+  /// **'Demo'**
+  String get marketDemoBadge;
+
+  /// No description provided for @marketDemoNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Directorio de demostración: los distribuidores y sus precios son ficticios.'**
+  String get marketDemoNotice;
+
   /// No description provided for @marketWebTitle.
   ///
   /// In es, this message translates to:
@@ -2368,13 +2494,13 @@ abstract class AppLocalizations {
   /// No description provided for @marketAdoptOrderNow.
   ///
   /// In es, this message translates to:
-  /// **'Hacer el primer pedido ahora'**
+  /// **'Crear el primer pedido'**
   String get marketAdoptOrderNow;
 
   /// No description provided for @marketAdoptOrderHint.
   ///
   /// In es, this message translates to:
-  /// **'Se paga con PayPal (unos {total}) si cumple tus reglas de gasto.'**
+  /// **'Pedido de unos {total}: lo apruebas y pagas con PayPal, y el stock sube cuando registres la entrega.'**
   String marketAdoptOrderHint(String total);
 
   /// No description provided for @marketAdoptConfirm.
@@ -2386,19 +2512,13 @@ abstract class AppLocalizations {
   /// No description provided for @marketAdoptDone.
   ///
   /// In es, this message translates to:
-  /// **'**{product}** ya está en tu stock, de **{supplier}**.'**
+  /// **'**{product}** ya está en tu catálogo, de **{supplier}**.'**
   String marketAdoptDone(String product, String supplier);
-
-  /// No description provided for @marketAdoptPaid.
-  ///
-  /// In es, this message translates to:
-  /// **'Primer pedido pagado con PayPal: **{total}**.'**
-  String marketAdoptPaid(String total);
 
   /// No description provided for @marketAdoptOrderCreated.
   ///
   /// In es, this message translates to:
-  /// **'Primer pedido creado por **{total}**. Lo verás en Pedidos.'**
+  /// **'Primer pedido creado por **{total}**. Apruébalo en Pedidos: el stock sube cuando registres el albarán.'**
   String marketAdoptOrderCreated(String total);
 
   /// No description provided for @marketAdoptBlocked.

@@ -73,6 +73,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionAddOneUnit => 'Add one unit';
 
   @override
+  String get actionDelete => 'Delete';
+
+  @override
+  String get actionRestore => 'Restore';
+
+  @override
   String semanticsBackTo(String label) {
     return 'Back to $label';
   }
@@ -128,6 +134,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String homeBudgetOfMonth(String month) {
     return '$month budget';
+  }
+
+  @override
+  String budgetRingSemantics(int percent) {
+    return '$percent% of the budget used';
   }
 
   @override
@@ -231,6 +242,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogOrderButton => 'Place order';
 
   @override
+  String get catalogSupplierHint => 'Supplier';
+
+  @override
   String get catalogOrderCreated =>
       'Order created. Approve it to pay and add the stock.';
 
@@ -242,6 +256,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stockFilterTransit => 'On the way';
+
+  @override
+  String get stockFilterOut => 'Out of stock';
+
+  @override
+  String get stockFilterDeleted => 'Deleted';
 
   @override
   String get stockEmptyTitle => 'No products yet';
@@ -291,8 +311,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String stockEditorUid(String uid, int min, String unit) {
-    return '$uid · min. $min $unit';
+  String get stockRestored => 'Restored';
+
+  @override
+  String stockRestoredMessage(String name) {
+    return 'Product $name restored!';
+  }
+
+  @override
+  String stockEditorUid(String uid, String unit) {
+    return '$uid · $unit';
+  }
+
+  @override
+  String get stockThresholdLabel => 'Low stock alert';
+
+  @override
+  String stockThresholdHelp(int min, String unit) {
+    return 'Alerts you when $min $unit or fewer are left.';
   }
 
   @override
@@ -386,6 +422,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deliveryToCapture => 'To capture';
+
+  @override
+  String get deliveryAlreadyPaid => 'Already paid (nothing else to charge)';
 
   @override
   String get deliveryConfirm => 'Confirm delivery and capture payment';
@@ -523,7 +562,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String orderApproveHint(String supplier) {
-    return 'On approval, the server pays $supplier and issues the invoice.';
+    return 'When you approve, you authorize the payment in PayPal: the money is held until you confirm the delivery note.';
   }
 
   @override
@@ -543,11 +582,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderLegendThisOrder => 'This order';
 
   @override
-  String get orderPaymentSent => 'Payment sent';
+  String get orderPaymentAuthorizeTitle => 'Continue in PayPal';
 
   @override
-  String orderPaymentSentMessage(String amount, String supplier) {
-    return '$amount sent to $supplier with PayPal.';
+  String orderPaymentAuthorizeMessage(String amount, String supplier) {
+    return '$amount for $supplier: authorize the payment in PayPal. The money is held until you confirm the delivery.';
   }
 
   @override
@@ -681,6 +720,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantChipReview => 'Review the stock now';
 
   @override
+  String get assistantBudgetUpdated =>
+      'I updated your spending limits. The agent already uses them.';
+
+  @override
   String get assistantChipPending => 'What do I need to approve?';
 
   @override
@@ -805,6 +848,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rulesLanguageEnglish => 'English';
+
+  @override
+  String get supplierFallback => 'Supplier';
+
+  @override
+  String get productFallback => 'Product';
+
+  @override
+  String get unitFallback => 'unit';
 
   @override
   String get rulesSounds => 'Sounds';
@@ -975,6 +1027,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get decisionBlocked =>
       'I wanted to order, but your spending rules blocked it.';
+
+  @override
+  String decisionBlockedReason(String reason) {
+    return 'I didn\'t create the order because $reason.';
+  }
 
   @override
   String get decisionFailed => 'The review failed. Try again in a moment.';
@@ -1181,6 +1238,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorStockUpdateFailed => 'Could not update the stock';
 
   @override
+  String get errorStockThresholdUpdateFailed =>
+      'Could not update the low stock alert';
+
+  @override
   String get errorProductMissing => 'The product is missing.';
 
   @override
@@ -1193,6 +1254,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorStockNegative => 'Stock cannot be negative.';
+
+  @override
+  String get errorProductDeleteFailed => 'Could not delete the product';
+
+  @override
+  String get errorProductRestoreFailed => 'Could not restore the product';
 
   @override
   String get errorAgentUnreachable => 'The agent did not respond';
@@ -1310,6 +1377,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get marketChoose => 'Choose this distributor';
 
   @override
+  String get marketDemoBadge => 'Demo';
+
+  @override
+  String get marketDemoNotice =>
+      'Demo directory: the distributors and their prices are fictional.';
+
+  @override
   String get marketWebTitle => 'Also on the web';
 
   @override
@@ -1332,11 +1406,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get marketAdoptQuantity => 'Units per month';
 
   @override
-  String get marketAdoptOrderNow => 'Place the first order now';
+  String get marketAdoptOrderNow => 'Create the first order';
 
   @override
   String marketAdoptOrderHint(String total) {
-    return 'Paid with PayPal (about $total) if it fits your spending rules.';
+    return 'Order of about $total: you approve it and pay with PayPal, and the stock goes up when you record the delivery.';
   }
 
   @override
@@ -1344,17 +1418,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String marketAdoptDone(String product, String supplier) {
-    return '**$product** is now in your stock, from **$supplier**.';
-  }
-
-  @override
-  String marketAdoptPaid(String total) {
-    return 'First order paid with PayPal: **$total**.';
+    return '**$product** is now in your catalogue, from **$supplier**.';
   }
 
   @override
   String marketAdoptOrderCreated(String total) {
-    return 'First order created for **$total**. You\'ll find it in Orders.';
+    return 'First order created for **$total**. Approve it in Orders: the stock goes up when you record the delivery note.';
   }
 
   @override

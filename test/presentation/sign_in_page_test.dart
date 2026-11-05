@@ -14,6 +14,7 @@ import 'package:store_automatization_app/domain/usecases/auth/sign_up_usecase.da
 import 'package:store_automatization_app/domain/usecases/auth/watch_auth_usecase.dart';
 import 'package:store_automatization_app/l10n/app_localizations.dart';
 import 'package:store_automatization_app/presentation/blocs/auth/auth_cubit.dart';
+import 'package:store_automatization_app/presentation/blocs/locale/locale_cubit.dart';
 import 'package:store_automatization_app/presentation/pages/auth/sign_in_page.dart';
 import 'package:store_automatization_app/preview/preview_repositories.dart';
 
@@ -53,16 +54,21 @@ AuthCubit _authCubit() {
   );
 }
 
-Widget _signIn({Locale locale = const Locale('es')}) => ScreenUtilInit(
+Widget _signIn({Locale? locale}) => ScreenUtilInit(
   designSize: const Size(375, 812),
-  builder: (_, _) => BlocProvider.value(
-    value: _authCubit(),
-    child: MaterialApp(
-      theme: ThemeData.light(),
-      locale: locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const SignInPage(),
+  builder: (_, _) => MultiBlocProvider(
+    providers: [
+      BlocProvider.value(value: _authCubit()),
+      BlocProvider(create: (_) => LocaleCubit()),
+    ],
+    child: BlocBuilder<LocaleCubit, Locale?>(
+      builder: (context, selected) => MaterialApp(
+        theme: ThemeData.light(),
+        locale: locale ?? selected ?? const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const SignInPage(),
+      ),
     ),
   ),
 );
@@ -87,7 +93,7 @@ void main() {
 
     expect(_paintedAssets(tester), contains(AppAssets.logo));
     expect(find.text('Stocky'), findsOneWidget);
-    expect(find.text('Pedidos automáticos con IA + PayPal'), findsOneWidget);
+    expect(find.text('Automatic orders with AI + PayPal'), findsOneWidget);
   });
 
   testWidgets('el inicio de sesión traduce la marca al inglés', (tester) async {
@@ -96,5 +102,22 @@ void main() {
 
     expect(_paintedAssets(tester), contains(AppAssets.logo));
     expect(find.text('Automatic orders with AI + PayPal'), findsOneWidget);
+  });
+
+  testWidgets('el login permite elegir español o inglés', (tester) async {
+    await tester.pumpWidget(_signIn());
+    await tester.pumpAndSettle();
+
+    // Arranca en inglés y el selector está en la propia pantalla de acceso.
+    expect(find.text('Automatic orders with AI + PayPal'), findsOneWidget);
+    expect(find.text('ES'), findsOneWidget);
+    expect(find.text('EN'), findsOneWidget);
+
+    await tester.tap(find.text('ES'));
+    await tester.pumpAndSettle();
+
+    // Al cambiar, toda la pantalla pasa a español.
+    expect(find.text('Pedidos automáticos con IA + PayPal'), findsOneWidget);
+    expect(find.text('Iniciar sesión'), findsOneWidget);
   });
 }

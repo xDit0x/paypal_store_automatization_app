@@ -9,7 +9,7 @@ class ProductModel {
       id: map['id'] as String,
       uid: map['uid'] as String,
       supplierId: map['supplier_id'] as String,
-      name: map['name'] as String? ?? 'Producto',
+      name: map['name'] as String? ?? '',
       description: map['description'] as String?,
       price: asDouble(map['price']),
       currency: map['currency'] as String? ?? 'EUR',

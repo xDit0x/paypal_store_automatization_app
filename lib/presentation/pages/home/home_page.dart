@@ -11,6 +11,7 @@ import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/pages/order/order_detail_page.dart';
 import 'package:store_automatization_app/presentation/pages/shell/stocky_shell.dart';
+import 'package:store_automatization_app/presentation/widgets/stocky/animated_amount.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/budget_ring.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_common.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
@@ -54,10 +55,7 @@ class HomePage extends StatelessWidget {
               children: [
                 RListRow(
                   title: l10n.homeAllInOrder,
-                  subtitle: Text(
-                    l10n.homeAllInOrderDetail,
-                    style: t.footnote,
-                  ),
+                  subtitle: Text(l10n.homeAllInOrderDetail, style: t.footnote),
                   trailing: Icon(
                     CupertinoIcons.checkmark_seal,
                     color: context.rp.accent,
@@ -109,7 +107,9 @@ class _AgentBadge extends StatelessWidget {
               ),
             const SizedBox(width: 6),
             Text(
-              running ? context.l10n.homeAgentWorking : context.l10n.homeAgentActive,
+              running
+                  ? context.l10n.homeAgentWorking
+                  : context.l10n.homeAgentActive,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -150,41 +150,48 @@ class _BudgetCard extends StatelessWidget {
                   style: t.footnote,
                 ),
                 const SizedBox(height: 4),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text.rich(
-                    TextSpan(
-                      text:
-                          '${l10n.eurosShort(state.spentThisMonth.roundToDouble(), c)} ',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                        color: p.ink,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                      children: [
-                        TextSpan(
-                          text:
-                              '/ ${l10n.eurosShort(state.monthlyLimit.roundToDouble(), c)}',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w400,
-                            color: p.inkSecondary,
-                          ),
+                AnimatedAmount(
+                  value: state.spentThisMonth,
+                  builder: (context, spent) => FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text.rich(
+                      TextSpan(
+                        text: '${l10n.eurosShort(spent.roundToDouble(), c)} ',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                          color: p.ink,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
-                      ],
+                        children: [
+                          TextSpan(
+                            text:
+                                '/ ${l10n.eurosShort(state.monthlyLimit.roundToDouble(), c)}',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w400,
+                              color: p.inkSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  l10n.homeRemaining(l10n.eurosShort(state.remaining, c)),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: p.accent,
+                AnimatedAmount(
+                  value: state.remaining,
+                  builder: (context, remaining) => Text(
+                    l10n.homeRemaining(
+                      l10n.eurosShort(remaining.roundToDouble(), c),
+                    ),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: p.accent,
+                    ),
                   ),
                 ),
               ],
@@ -206,13 +213,14 @@ class _AgentCard extends StatelessWidget {
     final message = await cubit.runAgent();
     if (!context.mounted) return;
     final failed = cubit.lastRunFailed;
+    final blocked = cubit.lastRunBlocked;
     showStockySnack(
       context,
       message,
       title: failed
           ? context.l10n.homeAgentFailed
           : context.l10n.homeStockReview,
-      tone: failed ? RSnackTone.warning : RSnackTone.info,
+      tone: failed || blocked ? RSnackTone.warning : RSnackTone.info,
       actionLabel: context.l10n.ordersTitle,
       onAction: () {
         ShellView.jumpToTab(2);
@@ -246,10 +254,7 @@ class _AgentCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            l10n.homeAgentDescription,
-            style: t.callout,
-          ),
+          Text(l10n.homeAgentDescription, style: t.callout),
           const SizedBox(height: 12),
           SizedBox(
             height: 44,
@@ -374,11 +379,11 @@ class _LowStockRow extends StatelessWidget {
       pill = RPill(l10n.stockStatusLow, tone: RPillTone.warning);
     }
     return RListRow(
-      title: product.name,
+      title: l10n.productName(product.name),
       subtitle: Text(
         l10n.stockUnitsMin(
           product.stock,
-          product.unit,
+          l10n.unit(product.unit),
           product.lowStockThreshold,
         ),
         style: t.footnote,

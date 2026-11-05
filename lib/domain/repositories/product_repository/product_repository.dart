@@ -22,7 +22,21 @@ abstract class ProductRepository {
     String uid,
     int stock,
   );
-  Future<Either<AppError, Unit>> deleteProduct(String uid);
+
+  /// Cambia el mínimo de bajo stock de este producto en esta tienda.
+  Future<Either<AppError, Unit>> updateLowStockThreshold(
+    String storeId,
+    String uid,
+    int threshold,
+  );
+
+  /// Marca el producto como eliminado (`active = false`). El agente de
+  /// reposición deja de tenerlo en cuenta, así que no lo repone.
+  Future<Either<AppError, Unit>> deleteProduct(String storeId, String uid);
+
+  /// Devuelve el producto a la vida (`active = true`): vuelve a aparecer en
+  /// el catálogo y el agente vuelve a considerarlo.
+  Future<Either<AppError, Unit>> restoreProduct(String storeId, String uid);
   Future<Either<AppError, List<CatalogProduct>>> searchCatalog({
     required String storeId,
     String? query,

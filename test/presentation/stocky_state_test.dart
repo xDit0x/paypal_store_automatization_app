@@ -83,6 +83,32 @@ void main() {
     expect(state.uidsInTransit, contains('PRD-1'));
   });
 
+  test('Un pedido con el pago autorizado también está en camino', () {
+    final state = StockyState(
+      orders: [_order(id: 'o1', total: 30, status: OrderStatus.authorized)],
+    );
+    expect(state.uidsInTransit, contains('PRD-1'));
+  });
+
+  test('El pedido con entrega pendiente sale en ambos flujos', () {
+    // El agente paga solo ('paid') y el pago retenido ('authorized'): en los
+    // dos casos la mercancía se confirma con el albarán.
+    final paid = StockyState(
+      orders: [_order(id: 'o1', total: 30, status: OrderStatus.paid)],
+    );
+    expect(paid.latestDelivery?.id, 'o1');
+
+    final authorized = StockyState(
+      orders: [_order(id: 'o2', total: 30, status: OrderStatus.authorized)],
+    );
+    expect(authorized.latestDelivery?.id, 'o2');
+
+    final pending = StockyState(
+      orders: [_order(id: 'o3', total: 30, status: OrderStatus.pendingApproval)],
+    );
+    expect(pending.latestDelivery, isNull);
+  });
+
   test('Motivo corto según las reglas', () {
     final l10n = lookupAppLocalizations(const Locale('es'));
     final state = StockyState(rules: rules, spentThisMonth: 100);

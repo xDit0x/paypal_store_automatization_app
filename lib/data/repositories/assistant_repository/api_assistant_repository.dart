@@ -32,12 +32,14 @@ class ApiAssistantRepository implements AssistantRepository {
     required String storeId,
     required List<AssistantTurn> history,
     LastMarket? lastMarket,
+    String? locale,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/assistant/message',
         data: {
           'store_id': storeId,
+          'locale': locale,
           'messages': _turns(history),
           if (lastMarket != null) 'last_market': lastMarket.toJson(),
         },
@@ -99,6 +101,7 @@ class ApiAssistantRepository implements AssistantRepository {
     String? searchId,
     int? quantity,
     required bool placeOrder,
+    String? locale,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -109,6 +112,7 @@ class ApiAssistantRepository implements AssistantRepository {
           'search_id': searchId,
           'quantity': quantity,
           'place_order': placeOrder,
+          'locale': locale,
         },
         options: _slow,
       );

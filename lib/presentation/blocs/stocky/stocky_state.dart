@@ -42,6 +42,10 @@ class StockyState {
   final bool placingOrder;
   final AppError? catalogError;
 
+  /// Texto que se usa cuando un proveedor no tiene nombre (está en el
+  /// idioma activo).
+  final String supplierFallback;
+
   const StockyState({
     this.status = StockyStatus.initial,
     this.error,
@@ -59,6 +63,7 @@ class StockyState {
     this.catalogResults = const [],
     this.placingOrder = false,
     this.catalogError,
+    this.supplierFallback = 'Proveedor',
   });
 
   bool get isLoading =>
@@ -72,8 +77,10 @@ class StockyState {
       ? 0
       : (spentThisMonth / monthlyLimit).clamp(0, 1).toDouble();
 
-  String supplierName(String supplierId) =>
-      suppliers[supplierId]?.name ?? 'Proveedor';
+  String supplierName(String supplierId) {
+    final name = suppliers[supplierId]?.name ?? '';
+    return name.trim().isEmpty ? supplierFallback : name;
+  }
 
   List<Order> get pendingOrders =>
       orders.where((o) => o.status == OrderStatus.pendingApproval).toList();
@@ -85,6 +92,7 @@ class StockyState {
   static const _inTransitStatuses = {
     OrderStatus.approved,
     OrderStatus.paying,
+    OrderStatus.authorized,
     OrderStatus.paid,
     OrderStatus.invoiced,
   };
@@ -107,11 +115,17 @@ class StockyState {
       ? p.stock.toDouble()
       : p.stock / p.lowStockThreshold;
 
-  /// Pedido más reciente pagado y aún no cerrado: el que se comprueba
-  /// con el albarán.
+  /// Pedido más reciente con el dinero comprometido y aún sin entrega: el
+  /// que se comprueba con el albarán.
+  ///
+  /// - 'authorized': el dinero está retenido en PayPal y se cobra al entregar.
+  /// - 'paid'/'invoiced': el agente ya pagó al proveedor; solo falta confirmar
+  ///   lo que ha llegado.
   Order? get latestDelivery {
     for (final o in orders) {
-      if (o.status == OrderStatus.paid || o.status == OrderStatus.invoiced) {
+      if (o.status == OrderStatus.authorized ||
+          o.status == OrderStatus.paid ||
+          o.status == OrderStatus.invoiced) {
         return o;
       }
     }
@@ -159,6 +173,7 @@ class StockyState {
     bool? placingOrder,
     AppError? catalogError,
     bool clearCatalogError = false,
+    String? supplierFallback,
   }) {
     return StockyState(
       status: status ?? this.status,
@@ -179,6 +194,7 @@ class StockyState {
       catalogError: clearCatalogError
           ? null
           : (catalogError ?? this.catalogError),
+      supplierFallback: supplierFallback ?? this.supplierFallback,
     );
   }
 }

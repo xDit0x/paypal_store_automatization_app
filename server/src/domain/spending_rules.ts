@@ -1,3 +1,5 @@
+import type { Reason } from './reasons.js';
+
 export interface SpendingRules {
   maxPerOrder: number;
   monthlyLimit: number;
@@ -7,9 +9,18 @@ export interface SpendingRules {
 
 export type SpendingStatus = 'auto_approved' | 'requires_approval' | 'blocked';
 
+export type SpendingBlockCode =
+  | 'no_amount'
+  | 'supplier_not_allowed'
+  | 'over_max_per_order'
+  | 'over_monthly_limit';
+
 export interface SpendingDecision {
   status: SpendingStatus;
-  reason?: string;
+  /** Motivo estructurado: se redacta en el idioma de la app. */
+  reason?: Reason;
+  /** Código estable del motivo, para poder redactarlo con el importe. */
+  code?: SpendingBlockCode;
 }
 
 export function evaluateSpendingRules(params: {
@@ -17,11 +28,21 @@ export function evaluateSpendingRules(params: {
   orderTotal: number;
   spentThisMonth: number;
   supplierId: string;
+  /** Divisa de la tienda, para poder escribir los importes con ella. */
+  currency?: string;
 }): SpendingDecision {
   const { rules, orderTotal, spentThisMonth, supplierId } = params;
+  const money = (value: number): string =>
+    params.currency
+      ? `${value.toFixed(2)} ${params.currency}`
+      : value.toFixed(2);
 
   if (orderTotal <= 0) {
-    return { status: 'blocked', reason: 'El pedido no tiene importe.' };
+    return {
+      status: 'blocked',
+      code: 'no_amount',
+      reason: { code: 'no_amount' },
+    };
   }
 
   if (
@@ -30,21 +51,36 @@ export function evaluateSpendingRules(params: {
   ) {
     return {
       status: 'blocked',
-      reason: 'El proveedor no está en la lista de proveedores permitidos.',
+      code: 'supplier_not_allowed',
+      reason: { code: 'supplier_not_allowed' },
     };
   }
 
   if (orderTotal > rules.maxPerOrder) {
     return {
       status: 'blocked',
-      reason: `El pedido supera el máximo por pedido (${rules.maxPerOrder.toFixed(2)}).`,
+      code: 'over_max_per_order',
+      reason: {
+        code: 'over_max_per_order',
+        params: {
+          total: money(orderTotal),
+          limit: money(rules.maxPerOrder),
+        },
+      },
     };
   }
 
   if (spentThisMonth + orderTotal > rules.monthlyLimit) {
     return {
       status: 'blocked',
-      reason: `El pedido supera el límite mensual (${rules.monthlyLimit.toFixed(2)}).`,
+      code: 'over_monthly_limit',
+      reason: {
+        code: 'over_monthly_limit',
+        params: {
+          total: money(spentThisMonth + orderTotal),
+          limit: money(rules.monthlyLimit),
+        },
+      },
     };
   }
 
@@ -53,8 +89,11 @@ export function evaluateSpendingRules(params: {
       status: 'requires_approval',
       reason:
         rules.requireApprovalAbove <= 0
-          ? 'Me preguntas por cualquier pedido.'
-          : `El pedido supera el umbral de aprobación automática (${rules.requireApprovalAbove.toFixed(2)}).`,
+          ? { code: 'needs_approval' }
+          : {
+              code: 'approval_threshold',
+              params: { amount: money(rules.requireApprovalAbove) },
+            },
     };
   }
 

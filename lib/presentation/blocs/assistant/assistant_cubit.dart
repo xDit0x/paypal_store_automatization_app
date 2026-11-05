@@ -42,6 +42,7 @@ class AssistantState {
     this.sending = false,
     this.adoptingOfferId,
     this.speakReplies = false,
+    this.draft = '',
   });
 
   final List<AssistantEntry> entries;
@@ -51,18 +52,24 @@ class AssistantState {
   /// Leer siempre las respuestas en voz alta (aunque se escriba).
   final bool speakReplies;
 
+  /// Lo que el dueño ha escrito pero todavía no ha enviado. Vive aquí (y no
+  /// en la pantalla) para que no se pierda al cambiar de pestaña.
+  final String draft;
+
   AssistantState copyWith({
     List<AssistantEntry>? entries,
     bool? sending,
     String? adoptingOfferId,
     bool clearAdopting = false,
     bool? speakReplies,
+    String? draft,
   }) =>
       AssistantState(
         entries: entries ?? this.entries,
         sending: sending ?? this.sending,
         adoptingOfferId: clearAdopting ? null : adoptingOfferId ?? this.adoptingOfferId,
         speakReplies: speakReplies ?? this.speakReplies,
+        draft: draft ?? this.draft,
       );
 }
 
@@ -73,6 +80,13 @@ class AssistantCubit extends Cubit<AssistantState> {
         super(const AssistantState());
 
   final AssistantRepository _repository;
+
+  /// Guarda lo que se está escribiendo sin enviarlo. Al cambiar de pestaña
+  /// la pantalla se reconstruye, así que el borrador vive en el cubit.
+  void setDraft(String text) {
+    if (state.draft == text) return;
+    emit(state.copyWith(draft: text));
+  }
 
   /// Turnos que se mandan al servidor (sin errores, los últimos 20).
   List<AssistantTurn> get _history => state.entries
@@ -87,19 +101,32 @@ class AssistantCubit extends Cubit<AssistantState> {
 
   /// Envía un mensaje. Devuelve la respuesta (o null si falló) para que la
   /// pantalla decida si la lee en voz alta.
-  Future<AssistantEntry?> send(String storeId, String text, {bool viaVoice = false}) async {
+  Future<AssistantEntry?> send(
+    String storeId,
+    String text, {
+    bool viaVoice = false,
+    /// Idioma de la app para que el asistente conteste en él.
+    String? locale,
+  }) async {
     final clean = text.trim();
     if (clean.isEmpty || state.sending) return null;
 
     emit(state.copyWith(
       sending: true,
+      // El mensaje ya está en la conversación: el borrador se vacía.
+      draft: '',
       entries: [
         ...state.entries,
         AssistantEntry(fromUser: true, text: clean, at: DateTime.now(), viaVoice: viaVoice),
       ],
     ));
 
-    final result = await _repository.send(storeId: storeId, history: _history, lastMarket: lastMarket);
+    final result = await _repository.send(
+      storeId: storeId,
+      history: _history,
+      lastMarket: lastMarket,
+      locale: locale,
+    );
     final entry = result.fold(
       (error) => AssistantEntry(fromUser: false, text: '', at: DateTime.now(), error: error),
       (reply) => _replyEntry(reply, viaVoice: viaVoice),
@@ -183,6 +210,8 @@ class AssistantCubit extends Cubit<AssistantState> {
     required MarketOption option,
     required int? quantity,
     required bool placeOrder,
+    /// Idioma de la app para los mensajes del servidor.
+    String? locale,
   }) async {
     emit(state.copyWith(adoptingOfferId: option.offerId));
     final result = await _repository.adopt(
@@ -191,6 +220,7 @@ class AssistantCubit extends Cubit<AssistantState> {
       searchId: research.searchId,
       quantity: quantity,
       placeOrder: placeOrder,
+      locale: locale,
     );
     if (!isClosed) emit(state.copyWith(clearAdopting: true));
     return result;

@@ -74,6 +74,11 @@ class _SignInPageState extends State<SignInPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const Align(
+                      alignment: Alignment.centerRight,
+                      child: RLanguageToggle(),
+                    ),
+                    const SizedBox(height: 14),
                     const Center(child: RBrandMark()),
                     const SizedBox(height: 18),
                     Text(

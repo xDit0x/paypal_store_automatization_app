@@ -322,8 +322,6 @@ class PreviewAuthRepository implements AuthRepository {
       const Right(unit);
 }
 
-
-
 class PreviewStoreRepository implements StoreRepository {
   PreviewStoreRepository(this.db);
   final PreviewDb db;
@@ -467,7 +465,43 @@ class PreviewProductRepository implements ProductRepository {
   }
 
   @override
-  Future<Either<AppError, Unit>> deleteProduct(String uid) async => const Right(unit);
+  Future<Either<AppError, Unit>> updateLowStockThreshold(
+    String storeId,
+    String uid,
+    int threshold,
+  ) async {
+    final index = db.products.indexWhere((p) => p.uid == uid);
+    if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
+    if (threshold < 0) {
+      return const Left(AppError(AppErrorCode.stockNegative));
+    }
+    db.products[index] = db.products[index].copyWith(
+      lowStockThreshold: threshold,
+    );
+    return const Right(unit);
+  }
+
+  @override
+  Future<Either<AppError, Unit>> deleteProduct(
+    String storeId,
+    String uid,
+  ) async {
+    final index = db.products.indexWhere((p) => p.uid == uid);
+    if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
+    db.products[index] = db.products[index].copyWith(active: false, stock: 0);
+    return const Right(unit);
+  }
+
+  @override
+  Future<Either<AppError, Unit>> restoreProduct(
+    String storeId,
+    String uid,
+  ) async {
+    final index = db.products.indexWhere((p) => p.uid == uid);
+    if (index < 0) return const Left(AppError(AppErrorCode.productMissing));
+    db.products[index] = db.products[index].copyWith(active: true);
+    return const Right(unit);
+  }
 }
 
 class PreviewOrderRepository implements OrderRepository {
@@ -475,6 +509,9 @@ class PreviewOrderRepository implements OrderRepository {
   final PreviewDb db;
 
   static const _spentStatuses = {
+    OrderStatus.authorized,
+    OrderStatus.delivered,
+    OrderStatus.partiallyDelivered,
     OrderStatus.paid,
     OrderStatus.invoiced,
     OrderStatus.completed,
@@ -593,7 +630,10 @@ class PreviewAgentRepository implements AgentRepository {
   final PreviewDb db;
 
   @override
-  Future<Either<AppError, AgentRunResult>> run(String storeId) async {
+  Future<Either<AppError, AgentRunResult>> run(
+    String storeId, {
+    String? locale,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 1600));
 
     final pending = db.orders

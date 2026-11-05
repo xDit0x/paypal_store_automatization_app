@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
@@ -104,11 +105,27 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       );
       return;
     }
+
+    // Al aprobar se crea la orden de PayPal: el dueño tiene que autorizarla
+    // en PayPal. El dinero queda retenido hasta que confirme la entrega.
+    final url = await cubit.authorizationUrl(order.id);
+    if (!context.mounted) return;
+    if (url != null) {
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!context.mounted) return;
+      }
+    }
+
     HapticFeedback.mediumImpact();
     showStockySnack(
       context,
-      l10n.orderPaymentSentMessage(l10n.euros(total, state.currency), supplier),
-      title: l10n.orderPaymentSent,
+      l10n.orderPaymentAuthorizeMessage(
+        l10n.euros(total, state.currency),
+        supplier,
+      ),
+      title: l10n.orderPaymentAuthorizeTitle,
       tone: RSnackTone.success,
     );
     Navigator.of(context).maybePop();
@@ -325,7 +342,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                             style: t.footnote,
                           ),
                           trailing: RPill(
-                            order.paymentStatus ?? l10n.orderPaymentStatusSent,
+                            order.paymentStatus == 'PAYMENT_FAILED'
+                                ? l10n.orderPaymentFailed
+                                : order.paymentStatus ??
+                                      l10n.orderPaymentStatusSent,
                             tone: RPillTone.info,
                           ),
                         ),

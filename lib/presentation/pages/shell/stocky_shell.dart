@@ -12,10 +12,12 @@ import 'package:store_automatization_app/data/datasources/store_repository/supab
 import 'package:store_automatization_app/data/repositories/assistant_repository/api_assistant_repository.dart';
 import 'package:store_automatization_app/data/repositories/store_repository/supabase_store_changes_repository.dart';
 import 'package:store_automatization_app/domain/repositories/order_repository/order_repository.dart';
+import 'package:store_automatization_app/domain/repositories/product_repository/product_repository.dart';
 import 'package:store_automatization_app/domain/usecases/agent/get_agent_runs_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/agent/run_agent_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_supplier_catalog_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/get_suppliers_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/catalog/update_low_stock_threshold_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/catalog/update_product_stock_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/approve_order_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/create_draft_order_usecase.dart';
@@ -73,8 +75,12 @@ class StockyShell extends StatelessWidget {
     getSuppliers: sl<GetSuppliersUsecase>(),
     getSupplierCatalog: sl<GetSupplierCatalogUsecase>(),
     updateProductStock: sl<UpdateProductStockUsecase>(),
+    updateLowStockThresholdUsecase: sl<UpdateLowStockThresholdUsecase>(),
     searchCatalogUsecase: sl<SearchCatalogUsecase>(),
     createDraftOrder: sl<CreateDraftOrderUsecase>(),
+    // Para eliminar y restaurar productos: el catálogo solo se escribe desde
+    // el servidor, y el agente de reposición tiene que enterarse.
+    productRepository: sl<ProductRepository>(),
     getAgentRuns: sl<GetAgentRunsUsecase>(),
     runAgentUsecase: sl<RunAgentUsecase>(),
     // Estos dos casos de uso son nuevos; se crean aquí para no tocar
@@ -121,25 +127,17 @@ final _shellKey = GlobalKey<ShellViewState>();
 class ShellView extends StatefulWidget {
   const ShellView({super.key});
 
-  static void jumpToTab(int index) =>
-      _shellKey.currentState?._goTo(index, animate: false);
+  static void jumpToTab(int index) => _shellKey.currentState?._goTo(index);
 
   @override
   State<ShellView> createState() => ShellViewState();
 }
 
-class ShellViewState extends State<ShellView>
-    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
   late final PageController _pages = PageController(
     initialPage: ShellTabStore.instance.index,
   );
   late int _index = ShellTabStore.instance.index;
-
-  /// Fundido para saltar a una pestaña lejana sin pasar por las de en medio.
-  late final AnimationController _fade = AnimationController(vsync: this, value: 1);
-  int? _jumpFrom;
-  int? _jumpTo;
-  int _jumpToken = 0;
 
   /// Las pestañas del dock, con los textos del idioma activo.
   List<NavItem> _items(AppLocalizations l10n) => [
@@ -183,61 +181,27 @@ class ShellViewState extends State<ShellView>
     WidgetsBinding.instance.removeObserver(this);
     ShellTabStore.instance.indexNotifier.removeListener(_onTabChanged);
     _pages.dispose();
-    _fade.dispose();
     super.dispose();
   }
 
-  void _goTo(int index, {bool animate = true}) {
+  void _goTo(int index) {
     if (index == _index) return;
-    final from = _index;
     _index = index;
     ShellTabStore.instance.index = index;
-    if (!animate) {
-      _pages.jumpToPage(index);
-    } else if ((index - from).abs() > 1) {
-      _crossFadeTo(from, index);
-    } else {
-      _pages.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 480),
-        curve: Curves.easeInOutCubic,
-      );
-    }
-  }
-
-  /// La pantalla actual se desvanece, la píldora del dock viaja hasta la
-  /// pestaña elegida y la nueva aparece: no se ven las pantallas de en medio.
-  Future<void> _crossFadeTo(int from, int index) async {
-    final token = ++_jumpToken;
-    HapticFeedback.selectionClick();
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _jumpFrom = from;
-      _jumpTo = index;
-    });
-    _fade.animateTo(0, duration: const Duration(milliseconds: 130), curve: Curves.easeOut);
-    await _pages.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 380),
-      curve: Curves.easeInOutCubic,
-    );
-    if (!mounted || token != _jumpToken) return;
-    setState(() {
-      _jumpFrom = null;
-      _jumpTo = null;
-    });
-    await _fade.animateTo(1, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic);
+    // Salto directo: el contenido no pasa por las pestañas intermedias
+    // (si lo hiciera, `onPageChanged` avisaría de cada una y el dock
+    // acabaría en la página equivocada). El efecto de "pasar uno a uno"
+    // lo hace la píldora de la barra con su cascada.
+    _pages.jumpToPage(index);
   }
 
   void _dragTo(int index) {
     if (index == _index) return;
     _index = index;
     ShellTabStore.instance.index = index;
-    _pages.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-    );
+    // También salto directo: durante el arrastre la píldora ya va marcando
+    // el recorrido y el contenido no debe pasar por páginas intermedias.
+    _pages.jumpToPage(index);
   }
 
   @override
@@ -253,33 +217,26 @@ class ShellViewState extends State<ShellView>
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            FadeTransition(
-              opacity: _fade,
-              child: PageView(
+            PageView(
               controller: _pages,
               onPageChanged: (i) {
-                // Durante un salto lejano no se cuentan las pestañas de en medio.
-                if (_jumpTo != null) return;
                 HapticFeedback.selectionClick();
                 FocusScope.of(context).unfocus();
-                ShellTabStore.instance.index = i;
-                setState(() => _index = i);
+                final rounded = i.round();
+                if (rounded != _index && (i - rounded).abs() < 0.1) {
+                  // Primero `_index`: así `_onTabChanged` ve que ya está
+                  // sincronizado y no vuelve a saltar el visor.
+                  setState(() => _index = rounded);
+                  ShellTabStore.instance.index = rounded;
+                }
               },
-              children: [
-                for (final (i, page) in const [
-                  HomePage(),
-                  StockPage(),
-                  OrdersPage(),
-                  RulesPage(),
-                  AssistantPage(),
-                ].indexed)
-                  // En un salto lejano, las pantallas de en medio no se pintan.
-                  Opacity(
-                    opacity: _jumpTo == null || i == _jumpTo || i == _jumpFrom ? 1 : 0,
-                    child: page,
-                  ),
+              children: const [
+                HomePage(),
+                StockPage(),
+                OrdersPage(),
+                RulesPage(),
+                AssistantPage(),
               ],
-            ),
             ),
             Positioned(
               left: 14,
