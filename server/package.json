@@ -22,7 +22,8 @@
     "inspect:stock": "tsx src/scripts/inspect-stock.ts",
     "approve:order": "tsx src/scripts/approve-order.ts",
     "reset:demo": "tsx src/scripts/reset-demo.ts",
-    "job:restock": "tsx src/scripts/run-scheduled-restock.ts"
+    "job:restock": "tsx src/scripts/run-scheduled-restock.ts",
+    "voice:samples": "tsx src/scripts/voice-samples.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",

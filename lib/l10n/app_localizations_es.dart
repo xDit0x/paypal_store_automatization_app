@@ -1448,4 +1448,43 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get marketVoiceNoSpeech =>
       'No te he oído. Toca el micrófono y habla cerca del dispositivo.';
+
+  @override
+  String get voiceTitle => 'Conversación';
+
+  @override
+  String get voiceClose => 'Cerrar';
+
+  @override
+  String get voiceStarting => 'Preparando el micrófono…';
+
+  @override
+  String get voiceListening => 'Te escucho…';
+
+  @override
+  String get voiceThinking => 'Pensando…';
+
+  @override
+  String get voiceSpeaking => 'Hablando…';
+
+  @override
+  String get voicePaused => 'En pausa';
+
+  @override
+  String get voiceHintListening => 'Habla con normalidad · toca para enviar ya';
+
+  @override
+  String get voiceHintSpeaking => 'Toca para interrumpir';
+
+  @override
+  String get voiceHintPaused => 'Toca para seguir hablando';
+
+  @override
+  String get voiceSeeOptions => 'Ver las opciones en el chat';
+
+  @override
+  String get voicePause => 'Pausar';
+
+  @override
+  String get voiceResume => 'Seguir';
 }

@@ -2538,6 +2538,84 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No te he oído. Toca el micrófono y habla cerca del dispositivo.'**
   String get marketVoiceNoSpeech;
+
+  /// No description provided for @voiceTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Conversación'**
+  String get voiceTitle;
+
+  /// No description provided for @voiceClose.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar'**
+  String get voiceClose;
+
+  /// No description provided for @voiceStarting.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparando el micrófono…'**
+  String get voiceStarting;
+
+  /// No description provided for @voiceListening.
+  ///
+  /// In es, this message translates to:
+  /// **'Te escucho…'**
+  String get voiceListening;
+
+  /// No description provided for @voiceThinking.
+  ///
+  /// In es, this message translates to:
+  /// **'Pensando…'**
+  String get voiceThinking;
+
+  /// No description provided for @voiceSpeaking.
+  ///
+  /// In es, this message translates to:
+  /// **'Hablando…'**
+  String get voiceSpeaking;
+
+  /// No description provided for @voicePaused.
+  ///
+  /// In es, this message translates to:
+  /// **'En pausa'**
+  String get voicePaused;
+
+  /// No description provided for @voiceHintListening.
+  ///
+  /// In es, this message translates to:
+  /// **'Habla con normalidad · toca para enviar ya'**
+  String get voiceHintListening;
+
+  /// No description provided for @voiceHintSpeaking.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca para interrumpir'**
+  String get voiceHintSpeaking;
+
+  /// No description provided for @voiceHintPaused.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca para seguir hablando'**
+  String get voiceHintPaused;
+
+  /// No description provided for @voiceSeeOptions.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver las opciones en el chat'**
+  String get voiceSeeOptions;
+
+  /// No description provided for @voicePause.
+  ///
+  /// In es, this message translates to:
+  /// **'Pausar'**
+  String get voicePause;
+
+  /// No description provided for @voiceResume.
+  ///
+  /// In es, this message translates to:
+  /// **'Seguir'**
+  String get voiceResume;
 }
 
 class _AppLocalizationsDelegate

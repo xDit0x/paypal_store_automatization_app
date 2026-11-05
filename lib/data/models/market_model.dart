@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:store_automatization_app/domain/entities/market.dart';
 
 /// Lectura de las respuestas JSON de /assistant/message y /assistant/adopt.
@@ -71,7 +74,21 @@ class MarketModel {
         text: '${m['reply'] ?? ''}',
         quickReplies: _l(m['quick_replies']).map((q) => '$q').where((q) => q.isNotEmpty).toList(),
         market: m['market'] is Map ? research(_m(m['market'])) : null,
+        adopted: m['adopted'] is Map ? adopt(_m(m['adopted'])) : null,
       );
+
+  static VoiceReply voice(Map<String, dynamic> m) {
+    final audio = _s(m['audio_base64']);
+    Uint8List? bytes;
+    if (audio != null) {
+      try {
+        bytes = base64Decode(audio);
+      } catch (_) {
+        bytes = null;
+      }
+    }
+    return VoiceReply(transcript: '${m['transcript'] ?? ''}'.trim(), reply: reply(m), audio: bytes);
+  }
 
   static AdoptResult adopt(Map<String, dynamic> m) {
     final order = m['order'] is Map ? _m(m['order']) : null;
