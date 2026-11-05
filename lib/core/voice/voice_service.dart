@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 import 'package:store_automatization_app/core/voice/voice_activity.dart';
@@ -135,13 +137,23 @@ class VoiceService {
   }
 
   /// Reproduce el MP3 de ElevenLabs. Termina cuando acaba o se interrumpe.
-  Future<void> playMp3(Uint8List bytes) async {
+  /// Devuelve false si no se pudo reproducir.
+  Future<bool> playMp3(Uint8List bytes) async {
     await stopSpeaking();
     final done = Completer<void>();
     _playing = done;
-    final sub = _player.onPlayerComplete.listen((_) {
-      if (!done.isCompleted) done.complete();
-    });
+    var failed = false;
+    File? file;
+    final sub = _player.onPlayerComplete.listen(
+      (_) {
+        if (!done.isCompleted) done.complete();
+      },
+      onError: (Object error) {
+        debugPrint('[voice] reproductor: $error');
+        failed = true;
+        if (!done.isCompleted) done.complete();
+      },
+    );
     try {
       // Tras grabar, iOS puede dejar el audio en el auricular: se fuerza
       // el altavoz.
@@ -150,16 +162,31 @@ class VoiceService {
       );
     } catch (_) {}
     try {
-      await _player.play(
-        kIsWeb ? UrlSource('data:audio/mpeg;base64,${base64Encode(bytes)}') : BytesSource(bytes),
-      );
+      final Source source;
+      if (kIsWeb) {
+        source = UrlSource('data:audio/mpeg;base64,${base64Encode(bytes)}');
+      } else {
+        // iOS necesita la extensión para reconocer el formato del archivo.
+        final dir = await getTemporaryDirectory();
+        final stamp = DateTime.now().microsecondsSinceEpoch;
+        file = File('${dir.path}/stocky_voice_$stamp.mp3');
+        await file.writeAsBytes(bytes, flush: true);
+        source = DeviceFileSource(file.path, mimeType: 'audio/mpeg');
+      }
+      await _player.play(source);
       await done.future;
     } catch (error) {
       debugPrint('[voice] reproducir: $error');
+      // Si el dueño lo interrumpió, no cuenta como fallo.
+      if (identical(_playing, done)) failed = true;
     } finally {
       await sub.cancel();
       if (identical(_playing, done)) _playing = null;
+      try {
+        await file?.delete();
+      } catch (_) {}
     }
+    return !failed;
   }
 
   /// Voz del dispositivo (la mejor que tenga instalada).

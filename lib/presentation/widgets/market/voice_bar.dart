@@ -69,9 +69,14 @@ class VoiceConversation extends ChangeNotifier {
     try {
       while (_active && !_disposed) {
         _set(VoicePhase.listening);
-        final wav = await _voice.listen(onLevel: (l) => level.value = l);
+        final wav = await _voice.listen(
+          onLevel: (l) {
+            if (!_disposed) level.value = l;
+          },
+        );
+        if (_disposed) break;
         level.value = 0;
-        if (!_active || _disposed) break;
+        if (!_active) break;
         if (wav == null) {
           // No habló en un rato: pausa hasta que toque la barra.
           _set(VoicePhase.paused);
@@ -115,9 +120,9 @@ class VoiceConversation extends ChangeNotifier {
   Future<void> _say(String text, Uint8List? audio) async {
     if (text.trim().isEmpty) return;
     _set(VoicePhase.speaking);
-    if (audio != null) {
-      await _voice.playMp3(audio);
-    } else {
+    final played = audio != null && await _voice.playMp3(audio);
+    // Sin audio, o si no se pudo reproducir: voz del dispositivo.
+    if (!played && _active && !_disposed) {
       await _voice.speakDevice(text, _lang);
     }
   }

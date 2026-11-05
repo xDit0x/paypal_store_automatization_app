@@ -171,9 +171,8 @@ class _AssistantPageState extends State<AssistantPage> {
   Future<void> _say(String text) async {
     final audio = await context.read<AssistantCubit>().voiceFor(text);
     if (!mounted) return;
-    if (audio != null) {
-      await VoiceService.instance.playMp3(audio);
-    } else {
+    final played = audio != null && await VoiceService.instance.playMp3(audio);
+    if (!played && mounted) {
       await VoiceService.instance.speakDevice(text, _lang);
     }
   }
