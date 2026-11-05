@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,11 +26,28 @@ class _FakeRepo implements AssistantRepository {
   Future<Either<AppError, AssistantReply>> send({
     required String storeId,
     required List<AssistantTurn> history,
+    LastMarket? lastMarket,
   }) async {
     sent.add(history);
     if (fail) return const Left(AppError(AppErrorCode.agentUnreachable));
     return const Right(AssistantReply(text: '¿Dónde busco?', quickReplies: ['España', 'Europa']));
   }
+
+  @override
+  Future<Either<AppError, VoiceReply>> voice({
+    required String storeId,
+    required List<AssistantTurn> history,
+    required Uint8List wav,
+    required String languageCode,
+    LastMarket? lastMarket,
+  }) async =>
+      const Right(VoiceReply(
+        transcript: 'el primero',
+        reply: AssistantReply(text: '¿Confirmo el pedido?', quickReplies: ['Sí, hazlo', 'No']),
+      ));
+
+  @override
+  Future<Uint8List?> speak(String text) async => null;
 
   @override
   Future<Either<AppError, AdoptResult>> adopt({
@@ -99,6 +118,16 @@ void main() {
     repo.fail = false;
     await cubit.send('store', 'Europa');
     expect(repo.sent.last.length, 4);
+    await cubit.close();
+  });
+
+  test('modo conversación: añade lo que se entendió y la respuesta', () async {
+    final cubit = AssistantCubit(repository: _FakeRepo());
+    final result = await cubit.sendVoice('store', Uint8List(4000), 'es');
+    expect(result.isRight(), isTrue);
+    expect(cubit.state.entries.map((e) => e.text), ['el primero', '¿Confirmo el pedido?']);
+    expect(cubit.state.entries.first.fromUser, isTrue);
+    expect(cubit.state.sending, isFalse);
     await cubit.close();
   });
 }

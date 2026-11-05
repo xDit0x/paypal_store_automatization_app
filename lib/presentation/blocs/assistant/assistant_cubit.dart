@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -15,6 +17,7 @@ class AssistantEntry {
     this.market,
     this.error,
     this.viaVoice = false,
+    this.adopted,
   });
 
   final bool fromUser;
@@ -28,6 +31,9 @@ class AssistantEntry {
 
   /// El dueño lo dijo por voz: la respuesta se lee en voz alta.
   final bool viaVoice;
+
+  /// Distribuidor añadido en esta respuesta (elegido hablando).
+  final AdoptResult? adopted;
 }
 
 class AssistantState {
@@ -93,22 +99,73 @@ class AssistantCubit extends Cubit<AssistantState> {
       ],
     ));
 
-    final result = await _repository.send(storeId: storeId, history: _history);
+    final result = await _repository.send(storeId: storeId, history: _history, lastMarket: lastMarket);
     final entry = result.fold(
       (error) => AssistantEntry(fromUser: false, text: '', at: DateTime.now(), error: error),
-      (reply) => AssistantEntry(
+      (reply) => _replyEntry(reply, viaVoice: viaVoice),
+    );
+    if (isClosed) return null;
+    emit(state.copyWith(sending: false, entries: [...state.entries, entry]));
+    return entry.error == null ? entry : null;
+  }
+
+  AssistantEntry _replyEntry(AssistantReply reply, {required bool viaVoice}) => AssistantEntry(
         fromUser: false,
         text: reply.text,
         at: DateTime.now(),
         quickReplies: reply.quickReplies,
         market: reply.market,
         viaVoice: viaVoice,
-      ),
-    );
-    if (isClosed) return null;
-    emit(state.copyWith(sending: false, entries: [...state.entries, entry]));
-    return entry.error == null ? entry : null;
+        adopted: reply.adopted,
+      );
+
+  /// Las últimas opciones del estudio de mercado (para "me quedo con el primero").
+  LastMarket? get lastMarket {
+    for (final entry in state.entries.reversed) {
+      final market = entry.market;
+      if (market != null && market.options.isNotEmpty) {
+        return LastMarket(
+          searchId: market.searchId,
+          monthlyQuantity: market.monthlyQuantity,
+          options: market.options,
+        );
+      }
+    }
+    return null;
   }
+
+  /// Modo conversación: manda lo que dijo el dueño (audio) y añade al chat
+  /// lo que se entendió y la respuesta. Devuelve la respuesta con su voz.
+  Future<Either<AppError, VoiceReply>> sendVoice(String storeId, Uint8List wav, String languageCode) async {
+    emit(state.copyWith(sending: true));
+    final result = await _repository.voice(
+      storeId: storeId,
+      history: _history,
+      wav: wav,
+      languageCode: languageCode,
+      lastMarket: lastMarket,
+    );
+    if (isClosed) return result;
+    result.fold(
+      (_) => emit(state.copyWith(sending: false)),
+      (voice) {
+        if (voice.transcript.isEmpty) {
+          emit(state.copyWith(sending: false));
+          return;
+        }
+        final now = DateTime.now();
+        emit(state.copyWith(sending: false, entries: [
+          ...state.entries,
+          AssistantEntry(fromUser: true, text: voice.transcript, at: now, viaVoice: true),
+          if (voice.reply.text.isNotEmpty) _replyEntry(voice.reply, viaVoice: true),
+        ]));
+      },
+    );
+    return result;
+  }
+
+  /// MP3 con voz natural para un texto (null: usar la del dispositivo).
+  Future<Uint8List?> voiceFor(String text) => _repository.speak(text);
 
   /// Añade una respuesta local (resumen tras añadir un distribuidor).
   void addNote(String text) {

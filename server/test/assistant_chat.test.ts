@@ -69,3 +69,46 @@ test('herramienta desconocida no rompe el chat', async () => {
   const second = provider.seen[1]!;
   assert.match(second[second.length - 1]!.content, /desconocida/);
 });
+
+test('elige un distribuidor por voz solo con confirmación', async () => {
+  const lastMarket = {
+    searchId: 's1',
+    monthlyQuantity: 40,
+    options: [{ offerId: 'o1', distributorName: 'Horta Verda', unitLandedEur: 1.45, orderQty: 48, totalEur: 69.6 }],
+  };
+  const calls: string[] = [];
+  const adopt = async (input: { offerId: string; placeOrder: boolean }) => {
+    calls.push(`${input.offerId}:${input.placeOrder}`);
+    return {
+      supplierId: 'sup', supplierName: 'Horta Verda', productUid: 'mkt-x', productName: 'Avena',
+      unitPrice: 1.45, currency: 'EUR',
+      order: { id: 'ord', qty: 48, total: 69.6, status: 'completed', paid: true, reason: null, warnings: [] },
+    };
+  };
+  const call = (confirmed: boolean) => ({
+    content: null,
+    toolCalls: [{ id: 'c', type: 'function' as const, function: {
+      name: 'adopt_offer',
+      arguments: JSON.stringify({ option_number: 1, place_order: true, owner_confirmed: confirmed }),
+    } }],
+  });
+
+  // Sin confirmación no se añade nada.
+  const first = fake([call(false), { content: '¿Confirmas?', toolCalls: [] }]);
+  const r1 = await assistantChat({
+    store, history: [{ role: 'user', content: 'el primero' }], provider: first, products: [],
+    userId: 'u1', lastMarket, adopt: adopt as never,
+  });
+  assert.equal(r1.adopted, null);
+  assert.equal(calls.length, 0);
+
+  // Con confirmación, se añade y se paga.
+  const second = fake([call(true), { content: 'Hecho.', toolCalls: [] }]);
+  const r2 = await assistantChat({
+    store, history: [{ role: 'user', content: 'sí, hazlo' }], provider: second, products: [],
+    userId: 'u1', lastMarket, adopt: adopt as never, voice: true,
+  });
+  assert.equal(r2.adopted?.order?.paid, true);
+  assert.deepEqual(calls, ['o1:true']);
+  assert.match(second.seen[0]![0]!.content, /MODO CONVERSACIÓN/);
+});

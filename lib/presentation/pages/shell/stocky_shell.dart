@@ -128,11 +128,18 @@ class ShellView extends StatefulWidget {
   State<ShellView> createState() => ShellViewState();
 }
 
-class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
+class ShellViewState extends State<ShellView>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late final PageController _pages = PageController(
     initialPage: ShellTabStore.instance.index,
   );
   late int _index = ShellTabStore.instance.index;
+
+  /// Fundido para saltar a una pestaña lejana sin pasar por las de en medio.
+  late final AnimationController _fade = AnimationController(vsync: this, value: 1);
+  int? _jumpFrom;
+  int? _jumpTo;
+  int _jumpToken = 0;
 
   /// Las pestañas del dock, con los textos del idioma activo.
   List<NavItem> _items(AppLocalizations l10n) => [
@@ -176,22 +183,50 @@ class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     ShellTabStore.instance.indexNotifier.removeListener(_onTabChanged);
     _pages.dispose();
+    _fade.dispose();
     super.dispose();
   }
 
   void _goTo(int index, {bool animate = true}) {
     if (index == _index) return;
+    final from = _index;
     _index = index;
     ShellTabStore.instance.index = index;
-    if (animate) {
+    if (!animate) {
+      _pages.jumpToPage(index);
+    } else if ((index - from).abs() > 1) {
+      _crossFadeTo(from, index);
+    } else {
       _pages.animateToPage(
         index,
         duration: const Duration(milliseconds: 480),
         curve: Curves.easeInOutCubic,
       );
-    } else {
-      _pages.jumpToPage(index);
     }
+  }
+
+  /// La pantalla actual se desvanece, la píldora del dock viaja hasta la
+  /// pestaña elegida y la nueva aparece: no se ven las pantallas de en medio.
+  Future<void> _crossFadeTo(int from, int index) async {
+    final token = ++_jumpToken;
+    HapticFeedback.selectionClick();
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _jumpFrom = from;
+      _jumpTo = index;
+    });
+    _fade.animateTo(0, duration: const Duration(milliseconds: 130), curve: Curves.easeOut);
+    await _pages.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeInOutCubic,
+    );
+    if (!mounted || token != _jumpToken) return;
+    setState(() {
+      _jumpFrom = null;
+      _jumpTo = null;
+    });
+    await _fade.animateTo(1, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic);
   }
 
   void _dragTo(int index) {
@@ -218,21 +253,33 @@ class ShellViewState extends State<ShellView> with WidgetsBindingObserver {
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            PageView(
+            FadeTransition(
+              opacity: _fade,
+              child: PageView(
               controller: _pages,
               onPageChanged: (i) {
+                // Durante un salto lejano no se cuentan las pestañas de en medio.
+                if (_jumpTo != null) return;
                 HapticFeedback.selectionClick();
                 FocusScope.of(context).unfocus();
                 ShellTabStore.instance.index = i;
                 setState(() => _index = i);
               },
-              children: const [
-                HomePage(),
-                StockPage(),
-                OrdersPage(),
-                RulesPage(),
-                AssistantPage(),
+              children: [
+                for (final (i, page) in const [
+                  HomePage(),
+                  StockPage(),
+                  OrdersPage(),
+                  RulesPage(),
+                  AssistantPage(),
+                ].indexed)
+                  // En un salto lejano, las pantallas de en medio no se pintan.
+                  Opacity(
+                    opacity: _jumpTo == null || i == _jumpTo || i == _jumpFrom ? 1 : 0,
+                    child: page,
+                  ),
               ],
+            ),
             ),
             Positioned(
               left: 14,

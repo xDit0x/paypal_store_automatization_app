@@ -662,5 +662,18 @@
   "marketAdoptOrderCreated": "First order created for **{total}**. You'll find it in Orders.",
   "marketAdoptBlocked": "I didn't place the order: {reason}",
   "marketAdoptSuccessTitle": "Product added",
-  "marketVoiceNoSpeech": "I didn't hear you. Tap the microphone and speak close to the device."
+  "marketVoiceNoSpeech": "I didn't hear you. Tap the microphone and speak close to the device.",
+  "voiceTitle": "Conversation",
+  "voiceClose": "Close",
+  "voiceStarting": "Getting the microphone ready…",
+  "voiceListening": "Listening…",
+  "voiceThinking": "Thinking…",
+  "voiceSpeaking": "Speaking…",
+  "voicePaused": "Paused",
+  "voiceHintListening": "Just talk · tap to send now",
+  "voiceHintSpeaking": "Tap to interrupt",
+  "voiceHintPaused": "Tap to keep talking",
+  "voiceSeeOptions": "See the options in the chat",
+  "voicePause": "Pause",
+  "voiceResume": "Resume"
 }

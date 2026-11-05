@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 
 import 'package:store_automatization_app/domain/entities/app_error.dart';
@@ -40,6 +42,7 @@ class PreviewAssistantRepository implements AssistantRepository {
   Future<Either<AppError, AssistantReply>> send({
     required String storeId,
     required List<AssistantTurn> history,
+    LastMarket? lastMarket,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 700));
     final users = history.where((t) => t.fromUser).length;
@@ -65,6 +68,29 @@ class PreviewAssistantRepository implements AssistantRepository {
       ),
     ));
   }
+
+  // En la vista previa no hay servidor: se simula lo que "dijo" el dueño.
+  static const _spoken = ['Quiero vender leche de avena', 'Europa', 'Unas cuarenta al mes'];
+
+  @override
+  Future<Either<AppError, VoiceReply>> voice({
+    required String storeId,
+    required List<AssistantTurn> history,
+    required Uint8List wav,
+    required String languageCode,
+    LastMarket? lastMarket,
+  }) async {
+    final turn = history.where((t) => t.fromUser).length;
+    final said = _spoken[turn.clamp(0, _spoken.length - 1).toInt()];
+    final result = await send(
+      storeId: storeId,
+      history: [...history, AssistantTurn(fromUser: true, text: said)],
+    );
+    return result.map((reply) => VoiceReply(transcript: said, reply: reply));
+  }
+
+  @override
+  Future<Uint8List?> speak(String text) async => null;
 
   @override
   Future<Either<AppError, AdoptResult>> adopt({

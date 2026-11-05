@@ -6,6 +6,7 @@ import {
   runMarketResearch,
   type MarketResearchResult,
 } from '../market/market_research.js';
+import { adoptMarketOffer, type AdoptOfferResult } from '../market/adopt_offer.js';
 import { parseRegion } from '../market/market_math.js';
 import { getSpentThisMonth } from '../orders/spent_this_month.js';
 import type { StoreContext } from '../stores/store_service.js';
@@ -19,14 +20,43 @@ export interface AssistantReply {
   reply: string;
   quickReplies: string[];
   market: MarketResearchResult | null;
+  /** Si el dueño eligió un distribuidor en la conversación. */
+  adopted: AdoptOfferResult | null;
+}
+
+/** Las opciones que el dueño tiene delante (para "me quedo con el primero"). */
+export interface LastMarketContext {
+  searchId: string | null;
+  monthlyQuantity: number | null;
+  options: { offerId: string; distributorName: string; unitLandedEur: number; orderQty: number; totalEur: number }[];
 }
 
 const MAX_TURNS = 20;
 const MAX_CHARS = 2000;
 const MAX_STEPS = 5;
 
-function buildTools(productKeys: string[]): AiToolDefinition[] {
+const ADOPT_TOOL: AiToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'adopt_offer',
+    description:
+      'Añade a la tienda el distribuidor que el dueño eligió de las opciones que tiene delante y, si lo pide, hace el primer pedido pagado con PayPal (respetando sus reglas de gasto). Solo después de que el dueño lo confirme de forma explícita.',
+    parameters: {
+      type: 'object',
+      properties: {
+        option_number: { type: 'integer', minimum: 1, maximum: 3, description: 'Número de la opción (1, 2 o 3).' },
+        place_order: { type: 'boolean', description: 'true si el dueño quiere hacer ya el primer pedido.' },
+        quantity: { type: 'number', description: 'Unidades al mes, si el dueño lo dijo.' },
+        owner_confirmed: { type: 'boolean', description: 'true solo si el dueño acaba de confirmar con un sí claro.' },
+      },
+      required: ['option_number', 'place_order', 'owner_confirmed'],
+    },
+  },
+};
+
+function buildTools(productKeys: string[], canAdopt: boolean): AiToolDefinition[] {
   return [
+  ...(canAdopt ? [ADOPT_TOOL] : []),
   {
     type: 'function',
     function: {
@@ -77,7 +107,11 @@ function buildTools(productKeys: string[]): AiToolDefinition[] {
   ];
 }
 
-function systemPrompt(store: StoreContext, products: { key: string; name: string }[]): string {
+function systemPrompt(
+  store: StoreContext,
+  products: { key: string; name: string }[],
+  options: { voice: boolean; lastMarket: LastMarketContext | null },
+): string {
   const catalogue = products.length
     ? products.map((p) => `- ${p.key}: ${p.name}`).join('\n')
     : '(vacío)';
@@ -101,6 +135,24 @@ function systemPrompt(store: StoreContext, products: { key: string; name: string
     'Haz una sola pregunta cada vez. No inventes precios ni distribuidores: usa solo lo que devuelven las herramientas.',
     'Para preguntas sobre el stock o el gasto usa get_store_summary.',
     'Usa **negrita** solo para nombres de distribuidor e importes.',
+    ...(options.lastMarket && options.lastMarket.options.length > 0
+      ? [
+          '',
+          'Opciones que el dueño tiene ahora en pantalla:',
+          ...options.lastMarket.options.map(
+            (o, i) =>
+              `${i + 1}. ${o.distributorName}: ${o.unitLandedEur.toFixed(2)} EUR por unidad, pedido de ${o.orderQty} uds, total ${o.totalEur.toFixed(2)} EUR`,
+          ),
+          'Si el dueño elige una ("el primero", "el de Valencia", "el más rápido"): resume en una frase qué vas a hacer (distribuidor, unidades e importe aproximado, y si se paga ya con PayPal) y pide confirmación con ask_user (opciones "Sí, hazlo" y "No"). Solo cuando diga que sí, llama a adopt_offer con owner_confirmed=true.',
+          'Tras adopt_offer, cuenta el resultado en una frase. Si el pedido quedó bloqueado por las reglas, explica el motivo.',
+        ]
+      : []),
+    ...(options.voice
+      ? [
+          '',
+          'MODO CONVERSACIÓN POR VOZ: tu respuesta se leerá en voz alta. Habla como una persona: una o dos frases cortas, sin listas, sin markdown, sin símbolos. Di los importes con palabras naturales ("un euro con cuarenta y cinco"). Tras un estudio de mercado menciona solo la mejor opción y una alternativa, y termina preguntando si la añades.',
+        ]
+      : []),
   ].join('\n');
 }
 
@@ -156,22 +208,34 @@ export async function assistantChat(params: {
   provider?: AiProvider;
   /** Para tests: catálogo sin leer Supabase. */
   products?: { key: string; name: string }[];
+  /** Respuesta pensada para leerse en voz alta. */
+  voice?: boolean;
+  lastMarket?: LastMarketContext | null;
+  userId?: string;
+  /** Para tests: sustituye el alta real del distribuidor. */
+  adopt?: typeof adoptMarketOffer;
 }): Promise<AssistantReply> {
   const provider = params.provider ?? new GroqProvider();
   const products = params.products ?? (await listMarketProducts());
-  const tools = buildTools(products.map((p) => p.key));
+  const lastMarket = params.lastMarket?.options.length ? params.lastMarket : null;
+  const canAdopt = Boolean(lastMarket && params.userId);
+  const tools = buildTools(products.map((p) => p.key), canAdopt);
   const messages: AiMessage[] = [
-    { role: 'system', content: systemPrompt(params.store, products) },
+    {
+      role: 'system',
+      content: systemPrompt(params.store, products, { voice: params.voice === true, lastMarket }),
+    },
     ...sanitize(params.history),
   ];
 
   let market: MarketResearchResult | null = null;
+  let adopted: AdoptOfferResult | null = null;
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const result = await provider.chat(messages, tools);
 
     if (result.toolCalls.length === 0) {
-      return { reply: (result.content ?? '').trim() || '¿En qué te ayudo?', quickReplies: [], market };
+      return { reply: (result.content ?? '').trim() || '¿En qué te ayudo?', quickReplies: [], market, adopted };
     }
 
     messages.push({ role: 'assistant', content: result.content ?? '', toolCalls: result.toolCalls });
@@ -187,6 +251,7 @@ export async function assistantChat(params: {
           reply: String(args.question ?? result.content ?? '').trim() || '¿Me das más detalles?',
           quickReplies: options,
           market,
+          adopted,
         };
       }
 
@@ -202,6 +267,39 @@ export async function assistantChat(params: {
             maxUnitPriceEur: positive(args.max_unit_price_eur),
           });
           output = compact(market);
+        } else if (call.function.name === 'adopt_offer') {
+          const number = Math.round(Number(args.option_number));
+          const option = lastMarket?.options[number - 1];
+          if (!canAdopt || !lastMarket || !option) {
+            output = { error: 'Esa opción no existe. Pregunta al dueño cuál de las opciones quiere.' };
+          } else if (args.owner_confirmed !== true) {
+            output = { error: 'Falta la confirmación del dueño. Pregúntale antes con ask_user.' };
+          } else if (adopted) {
+            output = { error: 'Ya se añadió un distribuidor en este mensaje.' };
+          } else {
+            adopted = await (params.adopt ?? adoptMarketOffer)({
+              store: params.store,
+              userId: params.userId!,
+              offerId: option.offerId,
+              searchId: lastMarket.searchId,
+              quantity: positive(args.quantity) ?? lastMarket.monthlyQuantity,
+              placeOrder: args.place_order === true,
+            });
+            output = {
+              added: true,
+              supplier: adopted.supplierName,
+              product: adopted.productName,
+              order: adopted.order
+                ? {
+                    qty: adopted.order.qty,
+                    total: adopted.order.total,
+                    paid_with_paypal: adopted.order.paid,
+                    status: adopted.order.status,
+                    reason: adopted.order.reason,
+                  }
+                : null,
+            };
+          }
         } else if (call.function.name === 'get_store_summary') {
           const [low, spent] = await Promise.all([
             getLowStockProducts({ storeId: params.store.id }),
@@ -232,5 +330,6 @@ export async function assistantChat(params: {
     reply: market ? 'Aquí tienes las mejores opciones que he encontrado.' : 'No he podido terminar. ¿Lo intentamos otra vez?',
     quickReplies: [],
     market,
+    adopted,
   };
 }

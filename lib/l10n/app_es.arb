@@ -675,5 +675,18 @@
   "marketAdoptBlocked": "No hice el pedido: {reason}",
   "@marketAdoptBlocked": {"placeholders": {"reason": {"type": "String"}}},
   "marketAdoptSuccessTitle": "Producto añadido",
-  "marketVoiceNoSpeech": "No te he oído. Toca el micrófono y habla cerca del dispositivo."
+  "marketVoiceNoSpeech": "No te he oído. Toca el micrófono y habla cerca del dispositivo.",
+  "voiceTitle": "Conversación",
+  "voiceClose": "Cerrar",
+  "voiceStarting": "Preparando el micrófono…",
+  "voiceListening": "Te escucho…",
+  "voiceThinking": "Pensando…",
+  "voiceSpeaking": "Hablando…",
+  "voicePaused": "En pausa",
+  "voiceHintListening": "Habla con normalidad · toca para enviar ya",
+  "voiceHintSpeaking": "Toca para interrumpir",
+  "voiceHintPaused": "Toca para seguir hablando",
+  "voiceSeeOptions": "Ver las opciones en el chat",
+  "voicePause": "Pausar",
+  "voiceResume": "Seguir"
 }

@@ -15,6 +15,7 @@ import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
 import 'package:store_automatization_app/presentation/widgets/market/adopt_sheet.dart';
 import 'package:store_automatization_app/presentation/widgets/market/market_results.dart';
+import 'package:store_automatization_app/presentation/widgets/market/voice_bar.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/carousel_nav_bar.dart';
 import 'package:store_automatization_app/presentation/widgets/stocky/stocky_ui.dart';
 
@@ -41,12 +42,14 @@ class _Item {
 class _AssistantPageState extends State<AssistantPage> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
-  bool _listening = false;
-  bool _voiceSent = false;
+
+  /// Conversación por voz en curso (la barra azul sustituye a la caja de texto).
+  VoiceConversation? _voiceSession;
 
   @override
   void dispose() {
-    VoiceService.instance.stopListening();
+    _voiceSession?.removeListener(_scrollToEnd);
+    _voiceSession?.dispose();
     VoiceService.instance.stopSpeaking();
     _input.dispose();
     _scroll.dispose();
@@ -72,7 +75,7 @@ class _AssistantPageState extends State<AssistantPage> {
     final message = await context.read<StockyCubit>().runAgent(fromChat: true);
     StockySounds.instance.play(RSound.message);
     if (mounted && context.read<AssistantCubit>().state.speakReplies) {
-      VoiceService.instance.speak(message, _lang);
+      _say(message);
     }
     _scrollToEnd();
   }
@@ -116,61 +119,55 @@ class _AssistantPageState extends State<AssistantPage> {
     _scrollToEnd();
     final reply = await assistant.send(store.id, text, viaVoice: viaVoice);
     if (!mounted) return;
+    // Eligió un distribuidor escribiendo ("me quedo con el primero").
+    if (reply?.adopted != null) context.read<StockyCubit>().load();
     StockySounds.instance.play(RSound.message);
     if (reply != null && (viaVoice || assistant.state.speakReplies)) {
-      VoiceService.instance.speak(reply.text, _lang);
+      _say(reply.text);
     }
     _scrollToEnd();
   }
 
   void _send() => _sendText(_input.text);
 
-  Future<void> _toggleMic() async {
-    final voice = VoiceService.instance;
-    if (_listening) {
-      await voice.stopListening();
-      if (mounted) setState(() => _listening = false);
-      return;
-    }
-
-    _voiceSent = false;
-    setState(() => _listening = true);
-    final ok = await voice.listen(
-      languageCode: _lang,
-      onText: (text, isFinal) {
-        if (!mounted) return;
-        _input.text = text;
-        _input.selection = TextSelection.collapsed(offset: text.length);
-        if (isFinal && !_voiceSent && text.trim().isNotEmpty) {
-          _voiceSent = true;
-          setState(() => _listening = false);
-          _sendText(text, viaVoice: true);
-        }
-      },
-      onDone: () {
-        if (mounted && _listening) setState(() => _listening = false);
-      },
-      onError: (error) {
-        if (!mounted) return;
-        setState(() => _listening = false);
-        _voiceError(error);
-      },
-    );
-    if (!ok && mounted) {
-      setState(() => _listening = false);
-      _voiceError(voice.lastError);
+  /// Lee un texto con la voz natural (ElevenLabs) o, si no hay, con la del
+  /// dispositivo.
+  Future<void> _say(String text) async {
+    final audio = await context.read<AssistantCubit>().voiceFor(text);
+    if (!mounted) return;
+    if (audio != null) {
+      await VoiceService.instance.playMp3(audio);
+    } else {
+      await VoiceService.instance.speakDevice(text, _lang);
     }
   }
 
-  /// Explica por qué no funcionó el micrófono.
-  void _voiceError(String? code) {
-    final l10n = context.l10n;
-    final message = switch (code) {
-      'error_no_match' || 'error_speech_timeout' => l10n.marketVoiceNoSpeech,
-      null => l10n.marketVoiceUnavailable,
-      _ => '${l10n.marketVoiceUnavailable} ($code)',
-    };
-    showStockySnack(context, message, tone: RSnackTone.warning);
+  Future<void> _openConversation() async {
+    final store = context.read<StockyCubit>().state.store;
+    if (store == null || _voiceSession != null) return;
+    FocusScope.of(context).unfocus();
+    StockySounds.instance.play(RSound.tap);
+    final stocky = context.read<StockyCubit>();
+    final session = VoiceConversation(
+      storeId: store.id,
+      assistant: context.read<AssistantCubit>(),
+      l10n: context.l10n,
+      onAdopted: (_) {
+        StockySounds.instance.play(RSound.success);
+        stocky.load();
+      },
+    )..addListener(_scrollToEnd);
+    setState(() => _voiceSession = session);
+    await VoiceService.instance.stopSpeaking();
+    await session.start();
+  }
+
+  void _closeConversation() {
+    final session = _voiceSession;
+    if (session == null) return;
+    session.removeListener(_scrollToEnd);
+    session.dispose();
+    setState(() => _voiceSession = null);
   }
 
   Future<void> _choose(MarketResearch research, MarketOption option) async {
@@ -210,7 +207,7 @@ class _AssistantPageState extends State<AssistantPage> {
           title: l10n.marketAdoptSuccessTitle,
           tone: order != null && order.blocked ? RSnackTone.warning : RSnackTone.success,
         );
-        if (assistant.state.speakReplies) VoiceService.instance.speak(note, _lang);
+        if (assistant.state.speakReplies) _say(note);
         stocky.load();
         _scrollToEnd();
       },
@@ -315,7 +312,9 @@ class _AssistantPageState extends State<AssistantPage> {
                         _Chip(
                           label: reply,
                           highlighted: true,
-                          onTap: () => _sendText(reply, viaVoice: lastUserVoice),
+                          onTap: () => _voiceSession != null
+                              ? _voiceSession!.reply(reply)
+                              : _sendText(reply, viaVoice: lastUserVoice),
                         ),
                         const SizedBox(width: 8),
                       ],
@@ -342,12 +341,15 @@ class _AssistantPageState extends State<AssistantPage> {
             ),
           ),
           const SizedBox(height: 12),
+          if (_voiceSession != null)
+            VoiceBar(session: _voiceSession!, onClose: _closeConversation)
+          else
           Container(
             padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
             decoration: BoxDecoration(
               color: p.surface,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _listening ? p.accent : p.border, width: _listening ? 1.5 : 1),
+              border: Border.all(color: p.border),
             ),
             child: Row(
               children: [
@@ -359,16 +361,15 @@ class _AssistantPageState extends State<AssistantPage> {
                     style: t.body,
                     decoration: stockyPlainInput(
                       context,
-                      _listening ? l10n.marketListening : l10n.assistantInputHint,
+                      l10n.assistantInputHint,
                     ),
                   ),
                 ),
                 RRoundIconButton(
-                  icon: _listening ? CupertinoIcons.stop_fill : CupertinoIcons.mic_fill,
-                  label: _listening ? l10n.marketMicStop : l10n.marketMicStart,
+                  icon: CupertinoIcons.waveform,
+                  label: l10n.voiceTitle,
                   size: 40,
-                  filled: _listening,
-                  onTap: busy && !_listening ? null : _toggleMic,
+                  onTap: busy ? null : _openConversation,
                 ),
                 const SizedBox(width: 6),
                 RRoundIconButton(

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 
@@ -28,22 +31,64 @@ class ApiAssistantRepository implements AssistantRepository {
   Future<Either<AppError, AssistantReply>> send({
     required String storeId,
     required List<AssistantTurn> history,
+    LastMarket? lastMarket,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/assistant/message',
         data: {
           'store_id': storeId,
-          'messages': [
-            for (final turn in history)
-              {'role': turn.fromUser ? 'user' : 'assistant', 'content': turn.text},
-          ],
+          'messages': _turns(history),
+          if (lastMarket != null) 'last_market': lastMarket.toJson(),
         },
         options: _slow,
       );
       return Right(MarketModel.reply(response.data ?? const {}));
     } catch (error) {
       return Left(_error(error));
+    }
+  }
+
+  static List<Map<String, String>> _turns(List<AssistantTurn> history) => [
+        for (final turn in history)
+          {'role': turn.fromUser ? 'user' : 'assistant', 'content': turn.text},
+      ];
+
+  @override
+  Future<Either<AppError, VoiceReply>> voice({
+    required String storeId,
+    required List<AssistantTurn> history,
+    required Uint8List wav,
+    required String languageCode,
+    LastMarket? lastMarket,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/assistant/voice',
+        data: {
+          'store_id': storeId,
+          'messages': _turns(history),
+          'audio_base64': base64Encode(wav),
+          'mime_type': 'audio/wav',
+          'language': languageCode,
+          if (lastMarket != null) 'last_market': lastMarket.toJson(),
+        },
+        options: _slow,
+      );
+      return Right(MarketModel.voice(response.data ?? const {}));
+    } catch (error) {
+      return Left(_error(error));
+    }
+  }
+
+  @override
+  Future<Uint8List?> speak(String text) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>('/assistant/speak', data: {'text': text});
+      final audio = response.data?['audio_base64'];
+      return audio is String && audio.isNotEmpty ? base64Decode(audio) : null;
+    } catch (_) {
+      return null;
     }
   }
 

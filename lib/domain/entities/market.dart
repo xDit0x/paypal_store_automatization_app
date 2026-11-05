@@ -2,6 +2,8 @@
 /// (precio + envío + aranceles + cambio de moneda) puesto en la tienda.
 library;
 
+import 'dart:typed_data';
+
 enum MarketTag { cheapest, fastest, bestRated }
 
 class MarketOption {
@@ -111,11 +113,26 @@ class MarketResearch {
 }
 
 class AssistantReply {
-  const AssistantReply({required this.text, this.quickReplies = const [], this.market});
+  const AssistantReply({required this.text, this.quickReplies = const [], this.market, this.adopted});
 
   final String text;
   final List<String> quickReplies;
   final MarketResearch? market;
+
+  /// El dueño eligió un distribuidor en la conversación ("me quedo con el primero").
+  final AdoptResult? adopted;
+}
+
+/// Respuesta del modo conversación: lo que se entendió, la respuesta y su voz.
+class VoiceReply {
+  const VoiceReply({required this.transcript, required this.reply, this.audio});
+
+  /// Lo que dijo el dueño (Whisper). Vacío si solo había silencio o ruido.
+  final String transcript;
+  final AssistantReply reply;
+
+  /// MP3 de ElevenLabs. Null: se usa la voz del dispositivo.
+  final Uint8List? audio;
 }
 
 class AdoptedOrder {
@@ -166,4 +183,28 @@ class AssistantTurn {
 
   final bool fromUser;
   final String text;
+}
+
+/// Opciones que el dueño tiene delante, para elegir por voz.
+class LastMarket {
+  const LastMarket({required this.searchId, required this.monthlyQuantity, required this.options});
+
+  final String? searchId;
+  final int? monthlyQuantity;
+  final List<MarketOption> options;
+
+  Map<String, dynamic> toJson() => {
+        'searchId': searchId,
+        'monthlyQuantity': monthlyQuantity,
+        'options': [
+          for (final o in options)
+            {
+              'offerId': o.offerId,
+              'distributorName': o.distributorName,
+              'unitLandedEur': o.unitLandedEur,
+              'orderQty': o.orderQty,
+              'totalEur': o.totalEur,
+            },
+        ],
+      };
 }
