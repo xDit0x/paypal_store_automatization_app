@@ -52,6 +52,33 @@ void main() {
     expect(vad.hadSpeech, isFalse);
   });
 
+  test('la voz con bajones también cuenta', () {
+    final vad = VoiceActivity();
+    for (var i = 0; i < 4; i++) {
+      vad.feed(_chunk(30));
+    }
+    final events = <VadEvent>[];
+    for (var i = 0; i < 6; i++) {
+      events.add(vad.feed(_chunk(i.isEven ? 3000 : 30)));
+    }
+    expect(events, contains(VadEvent.speechStarted));
+  });
+
+  test('el eco durante la calibración no deja sordo el turno', () {
+    final vad = VoiceActivity();
+    for (var i = 0; i < 4; i++) {
+      vad.feed(_chunk(3000)); // eco de la voz del asistente
+    }
+    for (var i = 0; i < 15; i++) {
+      vad.feed(_chunk(20));
+    }
+    final events = <VadEvent>[];
+    for (var i = 0; i < 3; i++) {
+      events.add(vad.feed(_chunk(1000)));
+    }
+    expect(events, contains(VadEvent.speechStarted));
+  });
+
   test('WAV válido para Whisper', () {
     final wav = buildWav(Uint8List(3200));
     expect(String.fromCharCodes(wav.sublist(0, 4)), 'RIFF');

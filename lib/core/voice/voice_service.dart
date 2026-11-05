@@ -100,6 +100,7 @@ class VoiceService {
             case VadEvent.maxLength:
               finish(keep: true);
             case VadEvent.noSpeechTimeout:
+              debugPrint('[voice] sin voz: pico=${vad.peakLevel.round()} umbral=${vad.threshold.round()}');
               finish(keep: false);
             case VadEvent.none:
               break;

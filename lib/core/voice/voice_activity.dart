@@ -12,11 +12,12 @@ class VoiceActivity {
   VoiceActivity({
     this.sampleRate = 16000,
     this.calibration = const Duration(milliseconds: 350),
-    this.minSpeech = const Duration(milliseconds: 220),
+    this.minSpeech = const Duration(milliseconds: 160),
     this.silenceToEnd = const Duration(milliseconds: 1100),
     this.noSpeechTimeout = const Duration(seconds: 9),
     this.maxUtterance = const Duration(seconds: 30),
-    this.minThreshold = 420,
+    this.minThreshold = 250,
+    this.maxNoiseFloor = 700,
   });
 
   final int sampleRate;
@@ -29,19 +30,25 @@ class VoiceActivity {
   /// Umbral mínimo de volumen (RMS en unidades de 16 bits).
   final double minThreshold;
 
+  /// Tope del ruido medido: si el dueño habla o queda eco de la voz durante
+  /// la calibración, el umbral no se dispara.
+  final double maxNoiseFloor;
+
   Duration _elapsed = Duration.zero;
   Duration _voiced = Duration.zero;
   Duration _silence = Duration.zero;
   double _noiseSum = 0;
   int _noiseCount = 0;
+  double _floor = 0;
+  double _peak = 0;
   bool _speaking = false;
 
   bool get hadSpeech => _speaking;
 
-  double get threshold {
-    final floor = _noiseCount == 0 ? 0.0 : _noiseSum / _noiseCount;
-    return math.max(minThreshold, floor * 2.6);
-  }
+  /// Volumen más alto oído en este turno (para diagnóstico).
+  double get peakLevel => _peak;
+
+  double get threshold => math.max(minThreshold, _floor * 2.6);
 
   Duration durationOf(int bytes) =>
       Duration(microseconds: (bytes ~/ 2) * 1000000 ~/ sampleRate);
@@ -50,17 +57,27 @@ class VoiceActivity {
     final length = durationOf(chunk.length);
     final level = rms(chunk);
     _elapsed += length;
+    _peak = math.max(_peak, level);
 
     // Los primeros milisegundos sirven para medir el ruido de fondo.
     if (_elapsed <= calibration && !_speaking) {
       _noiseSum += level;
       _noiseCount++;
+      _floor = math.min(_noiseSum / _noiseCount, maxNoiseFloor);
       return VadEvent.none;
     }
 
     final loud = level > threshold;
     if (!_speaking) {
-      _voiced = loud ? _voiced + length : Duration.zero;
+      // Mientras no habla, el ruido medido puede bajar si era demasiado alto.
+      if (!loud && level < _floor) _floor = _floor * 0.9 + level * 0.1;
+      // La voz sube y baja: un bajón resta tiempo, pero no reinicia la cuenta.
+      if (loud) {
+        _voiced += length;
+      } else {
+        final rest = _voiced - length ~/ 2;
+        _voiced = rest.isNegative ? Duration.zero : rest;
+      }
       if (_voiced >= minSpeech) {
         _speaking = true;
         _silence = Duration.zero;
