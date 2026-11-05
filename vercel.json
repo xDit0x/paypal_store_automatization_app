@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "cd server && npm ci --include=dev --no-audit --no-fund && npm run build",
+  "installCommand": "npm install --no-audit --no-fund",
+  "outputDirectory": "build/web",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" }
+  ],
+  "functions": {
+    "api/index.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}

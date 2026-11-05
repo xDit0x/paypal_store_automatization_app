@@ -1,0 +1,15 @@
+# No subas artefactos pesados ni secretos.
+node_modules
+**/node_modules
+.dart_tool
+.git
+.gitignore
+.idea
+.vscode
+server/dist
+server/coverage
+server/voice-samples
+*.log
+npm-debug.log*
+
+# La web compilada (build/web) SÍ se sube: es el frontend de producción.

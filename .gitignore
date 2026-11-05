@@ -63,3 +63,4 @@ npm-debug.log*
 # Audios de prueba de voces (npm run voice:samples)
 server/voice-samples/
 server/build/
+.vercel
