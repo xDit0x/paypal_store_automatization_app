@@ -24,6 +24,7 @@ import 'package:store_automatization_app/domain/usecases/orders/create_draft_ord
 import 'package:store_automatization_app/domain/usecases/orders/get_orders_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/get_spent_this_month_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/reject_order_usecase.dart';
+import 'package:store_automatization_app/domain/usecases/orders/authorization_url_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/orders/review_order_amount_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/get_spending_rules_usecase.dart';
 import 'package:store_automatization_app/domain/usecases/settings/update_spending_rules_usecase.dart';
@@ -88,6 +89,9 @@ class StockyShell extends StatelessWidget {
     approveOrder: ApproveOrderUsecase(repository: sl<OrderRepository>()),
     rejectOrder: RejectOrderUsecase(repository: sl<OrderRepository>()),
     reviewOrderAmountUsecase: ReviewOrderAmountUsecase(
+      repository: sl<OrderRepository>(),
+    ),
+    authorizationUrlUsecase: AuthorizationUrlUsecase(
       repository: sl<OrderRepository>(),
     ),
     // Tiempo real: la app se actualiza sola cuando cambian pedidos o stock.
