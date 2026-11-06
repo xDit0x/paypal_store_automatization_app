@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -292,7 +291,7 @@ class StockySounds {
       _webPlayer ??= AudioPlayer();
       await _webPlayer!.stop();
       await _webPlayer!.play(
-        UrlSource('data:audio/wav;base64,${base64Encode(bytes)}'),
+        BytesSource(bytes, mimeType: 'audio/wav'),
       );
     } catch (error) {
       debugPrint('No se pudo reproducir \$sound en web: \$error');
