@@ -294,7 +294,7 @@ class StockySounds {
         BytesSource(bytes, mimeType: 'audio/wav'),
       );
     } catch (error) {
-      debugPrint('No se pudo reproducir \$sound en web: \$error');
+      debugPrint('No se pudo reproducir $sound en web: $error');
     }
   }
 
