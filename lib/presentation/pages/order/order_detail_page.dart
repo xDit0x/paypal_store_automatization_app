@@ -120,11 +120,31 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         if (kIsWeb) {
           // En web, navegar directamente con dart:html (sin popup blocker).
           // El usuario vuelve con el botón "atrás" del navegador.
+          showStockySnack(
+            context,
+            'Abriendo PayPal: $url',
+            title: 'PayPal',
+            tone: RSnackTone.info,
+          );
           web_nav.navigateToUrl(url);
         } else {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
+      } else {
+        showStockySnack(
+          context,
+          'URL de PayPal inválida: $url',
+          title: 'Error',
+          tone: RSnackTone.warning,
+        );
       }
+    } else {
+      showStockySnack(
+        context,
+        'No se pudo obtener la URL de PayPal.',
+        title: 'Error',
+        tone: RSnackTone.warning,
+      );
     }
 
     if (!context.mounted) return;
