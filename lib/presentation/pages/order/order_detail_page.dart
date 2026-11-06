@@ -9,6 +9,9 @@ import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
 import 'package:store_automatization_app/core/configs/theme/stocky_palette.dart';
+import 'package:store_automatization_app/core/web/web_navigate.dart'
+    if (dart.library.io) 'package:store_automatization_app/core/web/web_navigate_stub.dart'
+    as web_nav;
 import 'package:store_automatization_app/domain/entities/order.dart';
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_cubit.dart';
 import 'package:store_automatization_app/presentation/blocs/stocky/stocky_state.dart';
@@ -115,9 +118,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       final uri = Uri.tryParse(url);
       if (uri != null) {
         if (kIsWeb) {
-          // En web, abrir PayPal en la misma pestaña (sin popup blocker).
+          // En web, navegar directamente con dart:html (sin popup blocker).
           // El usuario vuelve con el botón "atrás" del navegador.
-          await launchUrl(uri, mode: LaunchMode.platformDefault);
+          web_nav.navigateToUrl(url);
         } else {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
