@@ -136,6 +136,93 @@ python3 -m http.server 8080 --bind 127.0.0.1 --directory build/web
 > **desde el propio build**, en vez de `gstatic.com`. Es imprescindible en
 > redes sin acceso a Google Fonts.
 
+### Emulador o dispositivo físico (Android / iOS)
+
+La app y el backend son los mismos que en web; solo cambia cómo apunta la app
+al backend y cómo se empaqueta.
+
+#### 1. Prepara `dart_defines.json` para el dispositivo
+
+El backend corre en tu máquina (o en Vercel). El dispositivo no puede usar
+`localhost` del host, así que ajusta `AGENT_API_URL`:
+
+| Dónde corre la app | Valor de `AGENT_API_URL` |
+|---|---|
+| Emulador Android | `http://10.0.2.2:3000` (alias del host en el emulador) |
+| Simulador iOS / macOS | `http://localhost:3000` |
+| Dispositivo físico (misma red Wi-Fi) | `http://TU_IP_LAN:3000` (ej. `http://192.168.18.134:3000`) |
+| Producción (Vercel) | `/api` o `https://stocky-app-theta.vercel.app/api` |
+
+Ejemplo para emulador Android (`dart_defines.json`):
+
+```json
+{
+  "SUPABASE_URL": "https://tu-proyecto.supabase.co",
+  "SUPABASE_ANON_KEY": "tu-anon-key",
+  "AGENT_API_URL": "http://10.0.2.2:3000"
+}
+```
+
+> 🔒 **Seguridad**: `dart_defines.json` está en `.gitignore`. **Nunca** lo
+> subas al repositorio ni lo compartas: contiene la `anon key`. Pásalo por
+> un canal seguro (o usa `--dart-define` individual en la terminal).
+
+#### 2. Arranca el backend en el host
+
+```bash
+cd server && npm run dev   # http://localhost:3000
+```
+
+El backend escucha en `0.0.0.0:3000` (configurado en `src/index.ts`), así que
+es accesible desde el emulador y desde la red local.
+
+#### 3. Lanza la app en el emulador
+
+```bash
+# Listar dispositivos disponibles
+flutter devices
+
+# Emulador Android (asegúrate de que esté arrancado)
+flutter run -d emulator-5554 \
+  --dart-define-from-file=dart_defines.json
+
+# Simulador iOS
+flutter run -d "iPhone 15" \
+  --dart-define-from-file=dart_defines.json
+```
+
+> En móvil, el escaneo de UID por QR/código de barras usa la cámara real del
+> dispositivo; en el emulador la cámara es virtual y el escaneo puede no
+> funcionar. Para probar esa parte usa un dispositivo físico.
+
+#### 4. Empaquetar la APK (para entregar al jurado)
+
+```bash
+flutter build apk --release \
+  --dart-define-from-file=dart_defines.json
+
+# La APK queda en:
+# build/app/outputs/flutter-apk/app-release.apk
+```
+
+Súbela como **release de GitHub** (no la subas al repositorio: `build/` está
+en `.gitignore`). Los revisores la instalan con:
+```
+adb install app-release.apk
+```
+o abriéndola directamente en el móvil.
+
+#### 5. Notas de seguridad para el emulador
+
+- La `anon key` de Supabase es pública por diseño y va en el binario de la
+  app; la protección real la hace **RLS** en Postgres. Aun así, no publiques
+  `dart_defines.json` ni el `.env` del backend.
+- Si usas un dispositivo físico en una red compartida, recuerda que el backend
+  queda expuesto en el puerto 3000 de tu máquina mientras `npm run dev` esté
+  corriendo. Ciérralo cuando termines de probar.
+- Para producción, apunta `AGENT_API_URL` a `https://stocky-app-theta.vercel.app/api`
+  (o a tu dominio propio) y no dejes el backend local expuesto.
+
 ---
 
 ## 🧠 Cómo funciona el agente
