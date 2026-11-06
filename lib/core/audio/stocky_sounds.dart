@@ -3,7 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'web_audio.dart' if (dart.library.io) 'web_audio_stub.dart' as web_audio;
 
 /// Sonidos de interfaz de Stocky.
 ///
@@ -168,7 +168,7 @@ class StockySounds {
 
   final Map<RSound, AudioSource> _sources = {};
   final Map<RSound, Uint8List> _wavCache = {};
-  AudioPlayer? _webPlayer;
+
 
   bool _enabled = true;
   bool _ready = false;
@@ -288,11 +288,7 @@ class StockySounds {
       _lastTap = now;
     }
     try {
-      _webPlayer ??= AudioPlayer();
-      await _webPlayer!.stop();
-      await _webPlayer!.play(
-        BytesSource(bytes, mimeType: 'audio/wav'),
-      );
+      await web_audio.playWavBytesWeb(bytes, _master);
     } catch (error) {
       debugPrint('No se pudo reproducir $sound en web: $error');
     }
@@ -301,9 +297,8 @@ class StockySounds {
   /// Corta todo lo que esté sonando (al desactivar los sonidos o al salir).
   void stopAll() {
     if (kIsWeb) {
-      try {
-        _webPlayer?.stop();
-      } catch (_) {}
+      // En web cada sonido se reproduce una vez y termina solo; no hay un
+      // reproductor persistente que parar.
       return;
     }
     if (!SoLoud.instance.isInitialized) return;
