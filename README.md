@@ -34,13 +34,13 @@ It participates in the [PayPal AI Hackathon](https://devpost.com/) using the
 
 1. **Sign in** with the account above (the app is in Spanish and English; you
    can switch languages on the login screen itself).
-2. Open the **Assistant** tab and tap the suggestion **"Revisa el stock ahora"**
+2. Open the **Assistant** tab and tap the suggestion **"Review stock now"**
    (or type "check my stock"). The agent reads the store's real catalog,
    decides what to restock and **creates the order** — with the AI choosing the
    product and the supplier.
 3. Open the **Orders** tab: you'll see the order created by the agent, marked
-   **"Lo preparó el agente"**, with the detail of what it decided.
-4. Tap **"Aprobar y pagar con PayPal"**. If the amount exceeds your spending
+   **"Prepared by the agent"**, with the detail of what it decided.
+4. Tap **"Approve and pay with PayPal"**. If the amount exceeds your spending
    rules, the agent explains it and **leaves the order pending**: you decide.
 5. **PayPal Sandbox** opens for authorization. Once authorized, the app returns
    to PayPal, confirms the status and reflects it in the order.

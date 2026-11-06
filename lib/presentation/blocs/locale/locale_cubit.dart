@@ -27,7 +27,12 @@ class LocaleCubit extends HydratedCubit<Locale?> {
   ];
 
   /// El idioma que se está usando ahora mismo.
-  Locale get effectiveLocale => state ?? deviceLocale();
+  ///
+  /// Por defecto la app carga en **inglés**; el dueño puede cambiarlo a
+  /// español desde el login o desde la pestaña Reglas. Si el estado es `null`
+  /// ("Auto"), se usa el inglés en lugar del idioma del dispositivo para que
+  /// la primera carga sea siempre en inglés.
+  Locale get effectiveLocale => state ?? const Locale('en');
 
   /// Los textos del idioma activo.
   AppLocalizations get l10n => l10nFor(effectiveLocale);
