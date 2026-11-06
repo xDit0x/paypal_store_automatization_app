@@ -22,11 +22,15 @@ import 'package:store_automatization_app/presentation/pages/auth_gate.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Sin audio (navegador sin permisos, plataforma rara) la app sigue.
-  try {
-    await SoLoud.instance.init();
-  } catch (error) {
-    debugPrint('No se pudo inicializar el audio: $error');
+  // En web SoLoud no está disponible (su motor WASM no carga en el navegador);
+  // los sonidos de interfaz se reproducen con audioplayers. En nativo se usa
+  // SoLoud.
+  if (!kIsWeb) {
+    try {
+      await SoLoud.instance.init();
+    } catch (error) {
+      debugPrint('No se pudo inicializar el audio: $error');
+    }
   }
 
   HydratedBloc.storage = await HydratedStorage.build(

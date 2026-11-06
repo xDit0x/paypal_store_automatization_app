@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 /// Sonidos de interfaz de Stocky.
 ///
@@ -166,6 +168,8 @@ class StockySounds {
   };
 
   final Map<RSound, AudioSource> _sources = {};
+  final Map<RSound, Uint8List> _wavCache = {};
+  AudioPlayer? _webPlayer;
 
   bool _enabled = true;
   bool _ready = false;
@@ -185,7 +189,24 @@ class StockySounds {
   /// Sintetiza y carga los sonidos. Se llama una vez al arrancar: son cuatro
   /// buffers diminutos y así el primer toque no paga la síntesis.
   Future<void> warmUp() async {
-    if (_ready || !SoLoud.instance.isInitialized) return;
+    if (_ready) return;
+
+    if (kIsWeb) {
+      // En web SoLoud no está disponible: se pre-renderizan los WAV y se
+      // reproducen con audioplayers (compatible con el navegador).
+      _ready = true;
+      try {
+        for (final MapEntry(key: sound, value: preset) in _presets.entries) {
+          _wavCache[sound] = _render(preset);
+        }
+      } catch (error) {
+        debugPrint('No se pudieron preparar los sonidos (web): $error');
+        _ready = false;
+      }
+      return;
+    }
+
+    if (!SoLoud.instance.isInitialized) return;
     _ready = true;
 
     try {
@@ -208,6 +229,18 @@ class StockySounds {
   /// Nunca lanza: un fallo de audio no puede tumbar la pulsación de un botón.
   void play(RSound sound) {
     if (!_enabled) return;
+
+    if (kIsWeb) {
+      // En web se reproduce con audioplayers (SoLoud no está disponible).
+      if (!_ready) {
+        unawaited(_retryWarmUp());
+        return;
+      }
+      final bytes = _wavCache[sound];
+      if (bytes == null) return;
+      unawaited(_playWeb(sound, bytes));
+      return;
+    }
 
     // En web el motor puede arrancar antes de que el navegador deje sonar
     // (política de autoplay). El primer toque del usuario es el permiso: se
@@ -247,8 +280,33 @@ class StockySounds {
     }
   }
 
+  Future<void> _playWeb(RSound sound, Uint8List bytes) async {
+    // Debounce para el tap, igual que en nativo.
+    if (sound == RSound.tap) {
+      final now = DateTime.now();
+      final last = _lastTap;
+      if (last != null && now.difference(last) < _tapGap) return;
+      _lastTap = now;
+    }
+    try {
+      _webPlayer ??= AudioPlayer();
+      await _webPlayer!.stop();
+      await _webPlayer!.play(
+        UrlSource('data:audio/wav;base64,${base64Encode(bytes)}'),
+      );
+    } catch (error) {
+      debugPrint('No se pudo reproducir \$sound en web: \$error');
+    }
+  }
+
   /// Corta todo lo que esté sonando (al desactivar los sonidos o al salir).
   void stopAll() {
+    if (kIsWeb) {
+      try {
+        _webPlayer?.stop();
+      } catch (_) {}
+      return;
+    }
     if (!SoLoud.instance.isInitialized) return;
     try {
       SoLoud.instance.stopAll();
