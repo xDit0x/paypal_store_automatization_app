@@ -1,8 +1,13 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import 'package:store_automatization_app/core/web/web_window.dart'
+    if (dart.library.io) 'package:store_automatization_app/core/web/web_window_stub.dart'
+    as web_window;
 
 import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
@@ -85,10 +90,18 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       if (proceed != true || !context.mounted) return;
     }
 
+    // En web, abrir la ventana de PayPal de forma sincrona (antes de cualquier
+    // await) para que el navegador no la bloquee por falta de gesto de usuario.
+    final blankWindow = kIsWeb ? web_window.openBlankWindowSync() : null;
+
     final total = review?.total ?? order.total;
     final error = await cubit.approve(order.id);
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      web_window.closeWindow(blankWindow);
+      return;
+    }
     if (error != null) {
+      web_window.closeWindow(blankWindow);
       await showCupertinoDialog<void>(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
@@ -109,13 +122,24 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     // Al aprobar se crea la orden de PayPal: el dueño tiene que autorizarla
     // en PayPal. El dinero queda retenido hasta que confirme la entrega.
     final url = await cubit.authorizationUrl(order.id);
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      web_window.closeWindow(blankWindow);
+      return;
+    }
     if (url != null) {
       final uri = Uri.tryParse(url);
       if (uri != null) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (kIsWeb) {
+          web_window.navigateWindow(blankWindow, url);
+        } else {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
         if (!context.mounted) return;
+      } else {
+        web_window.closeWindow(blankWindow);
       }
+    } else {
+      web_window.closeWindow(blankWindow);
     }
 
     HapticFeedback.mediumImpact();
