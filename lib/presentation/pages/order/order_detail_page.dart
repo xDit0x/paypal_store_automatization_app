@@ -115,34 +115,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       final uri = Uri.tryParse(url);
       if (uri != null) {
         if (kIsWeb) {
-          // En web, mostrar siempre un diálogo con botón "Open PayPal".
-          // El clic del usuario es un gesto directo, así launchUrl funciona
-          // sin que el navegador lo bloquee.
-          await showDialog<void>(
-            context: context,
-            barrierDismissible: false,
-            builder: (ctx) => AlertDialog(
-              title: Text(l10n.orderPaymentAuthorizeTitle),
-              content: Text(l10n.orderPaymentAuthorizeMessage(
-                l10n.euros(total, state.currency),
-                supplier,
-              )),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(l10n.actionCancel),
-                ),
-                FilledButton(
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  },
-                  child: Text(l10n.orderPaypalOpen),
-                ),
-              ],
-            ),
-          );
-          if (!context.mounted) return;
+          // En web, abrir PayPal en la misma pestaña (sin popup blocker).
+          // El usuario vuelve con el botón "atrás" del navegador.
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
         } else {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
