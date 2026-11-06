@@ -118,26 +118,26 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           // En web, mostrar siempre un diálogo con botón "Open PayPal".
           // El clic del usuario es un gesto directo, así launchUrl funciona
           // sin que el navegador lo bloquee.
-          await showCupertinoDialog<void>(
+          await showDialog<void>(
             context: context,
-            builder: (ctx) => CupertinoAlertDialog(
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
               title: Text(l10n.orderPaymentAuthorizeTitle),
               content: Text(l10n.orderPaymentAuthorizeMessage(
                 l10n.euros(total, state.currency),
                 supplier,
               )),
               actions: [
-                CupertinoDialogAction(
-                  isDefaultAction: true,
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(l10n.actionCancel),
+                ),
+                FilledButton(
                   onPressed: () async {
                     Navigator.pop(ctx);
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   },
                   child: Text(l10n.orderPaypalOpen),
-                ),
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(l10n.actionCancel),
                 ),
               ],
             ),
