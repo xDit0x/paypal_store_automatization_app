@@ -1,5 +1,324 @@
 # Restock
 
+**Automatic restocking for stores: an AI agent checks stock, prepares orders to
+your suppliers and pays them with PayPal, always within the spending rules you
+set.**
+
+The app is branded **Stocky** in the UI. It participates in the
+[PayPal AI Hackathon](https://devpost.com/) using the **PayPal** API (Sandbox)
+and a **Groq** AI model.
+
+| Layer | Technology | What it provides |
+|---|---|---|
+| **App** | Flutter (web, Android, iOS) | A single codebase for the jury and the APK. Reads Supabase with the `anon key` and **RLS**: each user only sees their own store. |
+| **Backend** | TypeScript + Fastify (Node 22) | The **only** component that moves money. Stores the secrets (PayPal, AI, `service_role`), recalculates each order from the catalog and re-checks your spending rules before paying. |
+| **Data** | Supabase (Postgres + Auth + Realtime) | Schema and RLS policies in `supabase/migrations/`. |
+| **AI** | Groq (`groq-sdk`) with swappable adapter | The agent uses *tool calling* against the real catalog. Switching models is changing an environment variable. |
+| **Payments** | PayPal Orders + Payouts + Invoicing (Sandbox) | Buyer authorization, supplier payout and official invoice. |
+| **Deploy** | Vercel (web + Functions) + Supabase | One domain for frontend and API: `https://stocky-app-theta.vercel.app`. |
+
+---
+
+## 🚀 Try it in 30 seconds (no install)
+
+**Demo URL:** <https://stocky-app-theta.vercel.app>
+
+| | |
+|---|---|
+| **User** | `demo@restock.dev` |
+| **Password** | `Restock2026!` |
+
+> The demo uses **PayPal Sandbox**: no real money moves. Payments are visible at
+> <https://sandbox.paypal.com>.
+
+### Suggested walkthrough for the jury
+
+1. **Sign in** with the account above (the app is in Spanish and English; you
+   can switch languages on the login screen itself).
+2. Open the **Assistant** tab and tap the suggestion **"Revisa el stock ahora"**
+   (or type "check my stock"). The agent reads the store's real catalog,
+   decides what to restock and **creates the order** — with the AI choosing the
+   product and the supplier.
+3. Open the **Orders** tab: you'll see the order created by the agent, marked
+   **"Lo preparó el agente"**, with the detail of what it decided.
+4. Tap **"Aprobar y pagar con PayPal"**. If the amount exceeds your spending
+   rules, the agent explains it and **leaves the order pending**: you decide.
+5. **PayPal Sandbox** opens for authorization. Once authorized, the app returns
+   to PayPal, confirms the status and reflects it in the order.
+6. On delivery you can register the delivery note (photo or manual) and the app
+   computes what's left to charge. The **invoice** is generated and sent by email.
+
+You can also ask the agent things like *"how much have I spent?"* or
+*"what do I have pending approval?"*, and use **voice** (dictation with Whisper
+on the server and text-to-speech).
+
+---
+
+## 🖥️ Run it locally
+
+### Requirements
+
+- Flutter 3.47.7 (stable)
+- Node.js 22
+- A Supabase project and a PayPal Sandbox account
+
+### 1. Dependencies
+
+```bash
+git clone https://github.com/xDit0x/paypal_store_automatization_app.git
+cd paypal_store_automatization_app
+flutter pub get
+cd server && npm ci && cd ..
+```
+
+### 2. Environment variables
+
+```bash
+cp .env.example .env                 # Flutter -> dart_defines.json
+cp server/.env.example server/.env   # backend
+```
+
+Fill `server/.env` with your keys (**never committed**, they're in `.gitignore`):
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...        # backend only
+GROQ_API_KEY=gsk_...                 # https://console.groq.com
+PAYPAL_CLIENT_ID=...                 # https://developer.paypal.com (sandbox)
+PAYPAL_CLIENT_SECRET=...
+PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com
+RESEND_API_KEY=...                   # optional: invoice emails
+ALLOWED_ORIGINS=http://localhost:3000
+```
+
+And `dart_defines.json` for the app:
+
+```json
+{
+  "SUPABASE_URL": "https://your-project.supabase.co",
+  "SUPABASE_ANON_KEY": "...",
+  "AGENT_API_URL": "http://localhost:3000"
+}
+```
+
+### 3. Database
+
+Apply the files in `supabase/migrations/` in the Supabase **SQL Editor**, then
+`supabase/seed.sql` (suppliers, catalog with UID, sample data).
+
+```bash
+cd server
+npm run demo:user      # creates the demo account
+npm run reset:demo -- --yes   # (optional) leaves the demo in a clean state
+```
+
+### 4. Backend and app
+
+```bash
+# Terminal 1 — backend at http://localhost:3000
+cd server && npm run dev
+
+# Terminal 2 — app
+flutter run --dart-define-from-file=dart_defines.json
+```
+
+### 5. Publish the web app (optional)
+
+```bash
+flutter build web --no-web-resources-cdn \
+  --dart-define-from-file=dart_defines.json
+
+python3 -m http.server 8080 --bind 127.0.0.1 --directory build/web
+```
+
+> `--no-web-resources-cdn` forces Flutter to serve CanvasKit and fonts **from
+> the build itself** instead of `gstatic.com`. Essential on networks without
+> access to Google Fonts.
+
+### Emulator or physical device (Android / iOS)
+
+The app and backend are the same as on web; only how the app points at the
+backend and how it's packaged change.
+
+#### 1. Prepare `dart_defines.json` for the device
+
+The backend runs on your machine (or on Vercel). The device can't use the
+host's `localhost`, so adjust `AGENT_API_URL`:
+
+| Where the app runs | `AGENT_API_URL` value |
+|---|---|
+| Android emulator | `http://10.0.2.2:3000` (host alias in the emulator) |
+| iOS / macOS simulator | `http://localhost:3000` |
+| Physical device (same Wi-Fi) | `http://YOUR_LAN_IP:3000` (e.g. `http://192.168.18.134:3000`) |
+| Production (Vercel) | `/api` or `https://stocky-app-theta.vercel.app/api` |
+
+Example for the Android emulator (`dart_defines.json`):
+
+```json
+{
+  "SUPABASE_URL": "https://your-project.supabase.co",
+  "SUPABASE_ANON_KEY": "your-anon-key",
+  "AGENT_API_URL": "http://10.0.2.2:3000"
+}
+```
+
+> 🔒 **Security**: `dart_defines.json` is in `.gitignore`. **Never** commit it
+> or share it: it contains the `anon key`. Pass it through a secure channel (or
+> use individual `--dart-define` flags in the terminal).
+
+#### 2. Start the backend on the host
+
+```bash
+cd server && npm run dev   # http://localhost:3000
+```
+
+The backend listens on `0.0.0.0:3000` (configured in `src/index.ts`), so it's
+reachable from the emulator and the local network.
+
+#### 3. Launch the app on the emulator
+
+```bash
+# List available devices
+flutter devices
+
+# Android emulator (make sure it's booted)
+flutter run -d emulator-5554 \
+  --dart-define-from-file=dart_defines.json
+
+# iOS simulator
+flutter run -d "iPhone 15" \
+  --dart-define-from-file=dart_defines.json
+```
+
+> On mobile, UID scanning by QR/barcode uses the real device camera; in the
+> emulator the camera is virtual and scanning may not work. Test that part on a
+> physical device.
+
+#### 4. Package the APK (to deliver to the jury)
+
+```bash
+flutter build apk --release \
+  --dart-define-from-file=dart_defines.json
+
+# The APK ends up at:
+# build/app/outputs/flutter-apk/app-release.apk
+```
+
+Upload it as a **GitHub release** (don't commit it: `build/` is in
+`.gitignore`). Reviewers install it with:
+```
+adb install app-release.apk
+```
+or by opening it directly on the phone.
+
+#### 5. Security notes for the emulator
+
+- The Supabase `anon key` is public by design and ships inside the app binary;
+  the real protection is **RLS** in Postgres. Even so, never publish
+  `dart_defines.json` or the backend `.env`.
+- If you use a physical device on a shared network, remember the backend is
+  exposed on port 3000 of your machine while `npm run dev` is running. Stop it
+  when you finish testing.
+- For production, point `AGENT_API_URL` at `https://stocky-app-theta.vercel.app/api`
+  (or your own domain) and don't leave the local backend exposed.
+
+---
+
+## 🧠 How the agent works
+
+The agent **proposes**; the code **validates**. Today the model exposes a single
+tool — `create_restock_order(supplier_id, items[])` — and all validation
+(prices, stock, spending rules, idempotency) happens in the backend, which reads
+the real catalog from Supabase.
+
+Guardrails:
+
+- **Prices and stock** come from Supabase, never from the model.
+- Per-order limit, monthly limit and allowed-supplier list.
+- **Mandatory approval** above the configured threshold.
+- `idempotencyKey` on every payment: no double charges.
+- Every run is recorded (`agent_runs`) with model, tools and decision.
+- If the model fails or returns invalid data, it falls back to a deterministic flow.
+
+### Backend API
+
+| Method | Route | Use |
+|---|---|---|
+| `POST` | `/agent/run` | Runs the agent for a store |
+| `POST` | `/orders/:id/approve` | Approves and triggers payment |
+| `POST` | `/orders/:id/reject` | Rejects the order |
+| `GET` | `/orders/:id/status` | Payment and invoice status |
+| `GET` | `/orders/:id/amount` | Amount recalculated from the catalog |
+| `GET` | `/orders/:id/approve-url` | PayPal authorization link |
+| `POST` | `/orders/:id/confirm-auth` | Confirmation after authorizing on PayPal |
+| `POST` | `/orders/:id/capture` | Capture after confirming delivery |
+| `POST` | `/orders/:id/refund` | Refund |
+| `GET` | `/assistant/message` | Conversation with the assistant |
+| `GET` | `/health` | Health check |
+
+> Catalog reads and `draft` orders go straight to Supabase (RLS). **Actions that
+> move money always go through the backend** with `service_role`.
+
+---
+
+## 🔐 Security
+
+- The client (Flutter) uses **only** the Supabase `anon key` and RLS: each user
+  only sees and touches their own store's data.
+- `SUPABASE_SERVICE_ROLE_KEY`, `PAYPAL_CLIENT_SECRET` and `GROQ_API_KEY` live
+  **only** in the backend (Vercel environment variables). They are not compiled
+  into the web app and are not pushed to the repository.
+- Verification of the **Supabase JWT** on every protected endpoint and
+  **PayPal signature** verification on webhooks.
+- **CSP** in `web/index.html` (`default-src 'self'`), per-IP and per-user
+  **rate limiting**, and **idempotency** on payments and invoices.
+- CI runs `flutter analyze`, `flutter test`, `tsc`, the server tests and a
+  secret scan with **gitleaks** on every push.
+
+See `SECURITY.md` for the vulnerability disclosure policy and repo rules.
+
+---
+
+## 🚀 Deploy
+
+The repository already includes the **Vercel** configuration (`vercel.json`,
+`api/index.ts` and `.vercelignore`):
+
+- **Backend**: a Function in `api/index.ts` that reuses the Fastify server
+  (`server/src`) and routes `/api/*` to the server routes.
+- **Frontend**: the `build/web` build is served as static assets on the same
+  domain, so the app calls `/api` (same origin, no CORS).
+
+```bash
+npm i -g vercel
+vercel --prod
+```
+
+Environment variables required in Vercel (Production): `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `PAYPAL_CLIENT_ID`,
+`PAYPAL_CLIENT_SECRET`, `PAYPAL_BASE_URL`, `RESEND_API_KEY`, `NODE_ENV`,
+`ALLOWED_ORIGINS`, `PUBLIC_BASE_URL`, `APP_URL`.
+
+---
+
+## 🧪 Tests
+
+```bash
+flutter test              # app tests
+cd server && npm test     # backend tests
+cd server && npm run typecheck
+```
+
+## 📄 License
+
+MIT. See `LICENSE`.
+
+---
+
+---
+
+# Restock (Español)
+
 **Reposición automática para tiendas: un agente de IA revisa el stock, prepara
 pedidos a tus proveedores y los paga con PayPal, siempre dentro de las reglas
 de gasto que tú marcas.**
@@ -105,7 +424,7 @@ Y `dart_defines.json` para la app:
 ### 3. Base de datos
 
 Aplica los ficheros de `supabase/migrations/` en el **SQL Editor** de Supabase y
-luego `supabase/seed.sql` (proveedores, catálogo con UID y datos de ejemplo).
+luego `supabase/seed.sql` (proveedores, catálogo con UID, datos de ejemplo).
 
 ```bash
 cd server
@@ -254,7 +573,6 @@ Guardrails:
 | `POST` | `/orders/:id/confirm-auth` | Confirmación tras autorizar en PayPal |
 | `POST` | `/orders/:id/capture` | Captura tras confirmar la entrega |
 | `POST` | `/orders/:id/refund` | Reembolso |
-| `POST` | `/orders/:id/reject` | Rechaza el pedido |
 | `GET` | `/assistant/message` | Conversación con el asistente |
 | `GET` | `/health` | Health check |
 
