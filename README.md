@@ -196,12 +196,15 @@ flutter run -d "iPhone 15" \
 #### 4. Package the APK (to deliver to the jury)
 
 ```bash
-flutter build apk --release \
-  --dart-define-from-file=dart_defines.json
+flutter build apk --release
 
 # The APK ends up at:
 # build/app/outputs/flutter-apk/app-release.apk
 ```
+
+The app already includes the default values for Supabase and the Vercel
+backend, so **no `--dart-define` is needed**: the APK works right after
+installing it.
 
 Upload it as a **GitHub release** (don't commit it: `build/` is in
 `.gitignore`). Reviewers install it with:
@@ -209,6 +212,9 @@ Upload it as a **GitHub release** (don't commit it: `build/` is in
 adb install app-release.apk
 ```
 or by opening it directly on the phone.
+
+When opening the app, they'll see the **login screen**. The demo credentials
+are in the "Try it in 30 seconds" section (above).
 
 #### 5. Security notes for the emulator
 
@@ -515,12 +521,15 @@ flutter run -d "iPhone 15" \
 #### 4. Empaquetar la APK (para entregar al jurado)
 
 ```bash
-flutter build apk --release \
-  --dart-define-from-file=dart_defines.json
+flutter build apk --release
 
 # La APK queda en:
 # build/app/outputs/flutter-apk/app-release.apk
 ```
+
+La app ya incluye los valores por defecto de Supabase y del backend de Vercel,
+así que **no hace falta pasar `--dart-define`**: la APK funciona directamente
+al instalarla.
 
 Súbela como **release de GitHub** (no la subas al repositorio: `build/` está
 en `.gitignore`). Los revisores la instalan con:
@@ -528,6 +537,9 @@ en `.gitignore`). Los revisores la instalan con:
 adb install app-release.apk
 ```
 o abriéndola directamente en el móvil.
+
+Al abrir la app, verán la **pantalla de login**. Las credenciales de la demo
+están en la sección "Probarlo en 30 segundos" (arriba).
 
 #### 5. Notas de seguridad para el emulador
 
