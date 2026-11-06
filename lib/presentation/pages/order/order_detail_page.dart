@@ -130,7 +130,38 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       final uri = Uri.tryParse(url);
       if (uri != null) {
         if (kIsWeb) {
-          web_window.navigateWindow(blankWindow, url);
+          if (blankWindow != null) {
+            web_window.navigateWindow(blankWindow, url);
+          } else {
+            // El navegador bloqueó la ventana emergente: mostrar un botón
+            // para que el usuario abra PayPal manualmente (nuevo gesto).
+            if (!context.mounted) return;
+            await showCupertinoDialog<void>(
+              context: context,
+              builder: (ctx) => CupertinoAlertDialog(
+                title: Text(l10n.orderPaymentAuthorizeTitle),
+                content: Text(l10n.orderPaymentAuthorizeMessage(
+                  l10n.euros(total, state.currency),
+                  supplier,
+                )),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    },
+                    child: Text(l10n.orderPaypalOpen),
+                  ),
+                  CupertinoDialogAction(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(l10n.actionCancel),
+                  ),
+                ],
+              ),
+            );
+            if (!context.mounted) return;
+          }
         } else {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
