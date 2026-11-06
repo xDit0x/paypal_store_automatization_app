@@ -1,12 +1,11 @@
-# Restock
+# Stocky
 
 **Automatic restocking for stores: an AI agent checks stock, prepares orders to
 your suppliers and pays them with PayPal, always within the spending rules you
 set.**
 
-The app is branded **Stocky** in the UI. It participates in the
-[PayPal AI Hackathon](https://devpost.com/) using the **PayPal** API (Sandbox)
-and a **Groq** AI model.
+It participates in the [PayPal AI Hackathon](https://devpost.com/) using the
+**PayPal** API (Sandbox) and a **Groq** AI model.
 
 | Layer | Technology | What it provides |
 |---|---|---|
@@ -317,15 +316,14 @@ MIT. See `LICENSE`.
 
 ---
 
-# Restock (Español)
+# Stocky (Español)
 
 **Reposición automática para tiendas: un agente de IA revisa el stock, prepara
 pedidos a tus proveedores y los paga con PayPal, siempre dentro de las reglas
 de gasto que tú marcas.**
 
-La app se muestra como **Stocky** en la interfaz. Participa en el
-[PayPal AI Hackathon](https://devpost.com/) con la API de **PayPal** (Sandbox)
-y un modelo de IA de **Groq**.
+Participa en el [PayPal AI Hackathon](https://devpost.com/) con la API de
+**PayPal** (Sandbox) y un modelo de IA de **Groq**.
 
 | Capa | Tecnología | Qué aporta |
 |---|---|---|
