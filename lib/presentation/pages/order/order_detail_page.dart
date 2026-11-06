@@ -5,10 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:store_automatization_app/core/web/web_window.dart'
-    if (dart.library.io) 'package:store_automatization_app/core/web/web_window_stub.dart'
-    as web_window;
-
 import 'package:store_automatization_app/common/helpers/stocky_format.dart';
 import 'package:store_automatization_app/core/configs/l10n/app_error_l10n.dart';
 import 'package:store_automatization_app/core/configs/l10n/l10n.dart';
@@ -90,18 +86,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       if (proceed != true || !context.mounted) return;
     }
 
-    // En web, abrir la ventana de PayPal de forma sincrona (antes de cualquier
-    // await) para que el navegador no la bloquee por falta de gesto de usuario.
-    final blankWindow = kIsWeb ? web_window.openBlankWindowSync() : null;
-
     final total = review?.total ?? order.total;
     final error = await cubit.approve(order.id);
-    if (!context.mounted) {
-      web_window.closeWindow(blankWindow);
-      return;
-    }
+    if (!context.mounted) return;
     if (error != null) {
-      web_window.closeWindow(blankWindow);
       await showCupertinoDialog<void>(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
@@ -122,57 +110,46 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     // Al aprobar se crea la orden de PayPal: el dueño tiene que autorizarla
     // en PayPal. El dinero queda retenido hasta que confirme la entrega.
     final url = await cubit.authorizationUrl(order.id);
-    if (!context.mounted) {
-      web_window.closeWindow(blankWindow);
-      return;
-    }
+    if (!context.mounted) return;
     if (url != null) {
       final uri = Uri.tryParse(url);
       if (uri != null) {
         if (kIsWeb) {
-          if (blankWindow != null) {
-            web_window.navigateWindow(blankWindow, url);
-          } else {
-            // El navegador bloqueó la ventana emergente: mostrar un botón
-            // para que el usuario abra PayPal manualmente (nuevo gesto).
-            if (!context.mounted) return;
-            await showCupertinoDialog<void>(
-              context: context,
-              builder: (ctx) => CupertinoAlertDialog(
-                title: Text(l10n.orderPaymentAuthorizeTitle),
-                content: Text(l10n.orderPaymentAuthorizeMessage(
-                  l10n.euros(total, state.currency),
-                  supplier,
-                )),
-                actions: [
-                  CupertinoDialogAction(
-                    isDefaultAction: true,
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    },
-                    child: Text(l10n.orderPaypalOpen),
-                  ),
-                  CupertinoDialogAction(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(l10n.actionCancel),
-                  ),
-                ],
-              ),
-            );
-            if (!context.mounted) return;
-          }
+          // En web, mostrar siempre un diálogo con botón "Open PayPal".
+          // El clic del usuario es un gesto directo, así launchUrl funciona
+          // sin que el navegador lo bloquee.
+          await showCupertinoDialog<void>(
+            context: context,
+            builder: (ctx) => CupertinoAlertDialog(
+              title: Text(l10n.orderPaymentAuthorizeTitle),
+              content: Text(l10n.orderPaymentAuthorizeMessage(
+                l10n.euros(total, state.currency),
+                supplier,
+              )),
+              actions: [
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                  child: Text(l10n.orderPaypalOpen),
+                ),
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(l10n.actionCancel),
+                ),
+              ],
+            ),
+          );
+          if (!context.mounted) return;
         } else {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
-        if (!context.mounted) return;
-      } else {
-        web_window.closeWindow(blankWindow);
       }
-    } else {
-      web_window.closeWindow(blankWindow);
     }
 
+    if (!context.mounted) return;
     HapticFeedback.mediumImpact();
     showStockySnack(
       context,
