@@ -53,6 +53,50 @@ on the server and text-to-speech).
 
 ---
 
+## ✨ Features
+
+### Account & access
+- **Authentication:** sign in, sign up, password reset, and resend confirmation email (Supabase Auth).
+- **Session handling:** secure session-based access; protected backend actions require a valid user token (JWT).
+- **Demo mode for reviewers:** login screen with demo credentials (`demo@restock.dev` / `Restock2026!`), no auto-login in production builds.
+
+### AI assistant & automation
+- **Stocky assistant chat:** conversational assistant for store operations (e.g., check stock, ask about spending, pending approvals).
+- **“Review stock now” flow:** agent reviews real store/catalog data and helps create or prepare restock decisions.
+- **Tool-based agent (backend):** Fastify backend runs the agent with structured tool calls against real data.
+- **Spending-aware decisions:** orders are evaluated against spending rules/budget limits (e.g., max per order, monthly limit, approval threshold).
+- **Voice (integrations):** voice input/transcription (Whisper via Groq integration) and text-to-speech responses (ElevenLabs integration when configured).
+
+### Inventory, catalog & suppliers
+- **Inventory/stock management:** view products, stock levels, and low-stock thresholds.
+- **Stock updates:** edit stock and low-stock thresholds.
+- **Deleted products:** view removed/inactive products and restore them.
+- **Catalog & suppliers:** browse catalog/supplier-related product data used for restocking decisions.
+
+### Orders & payments (PayPal Sandbox)
+- **Order management:** list and view order details, statuses, and agent-prepared orders.
+- **Human-in-the-loop approval:** owner reviews orders before payment actions.
+- **PayPal Sandbox integration:** approve/pay flow using PayPal Orders API v2 (Sandbox) — generates approval/authorization URL and handles the return/confirmation flow (no real money).
+- **Authorization confirmation:** after approving in PayPal, return to Stocky and confirm authorization (`/paypal/return` handling + in-app confirmation).
+- **Delivery check:** register delivery/received items to support partial deliveries and amount reconciliation.
+- **Amount review/reconciliation:** backend recalculates/guards order amounts against current catalog/rules before money-moving steps.
+- **Invoices:** invoice generation and email delivery support (server-side flow).
+
+### Settings & experience
+- **Spending rules:** configure and review store purchasing limits/policies.
+- **Localization:** English and Spanish UI (language can be switched).
+- **Theme & preferences:** light/dark/system theme and UI sound preferences.
+- **Cross-platform app:** Flutter app targeting web, Android, and iOS from one codebase.
+- **Web deployment:** production web app served on Vercel with API routes proxied to the Fastify backend (`/api/*`, PayPal return handling).
+
+### Security & data
+- **Supabase (Postgres + Auth + Realtime):** data storage, authentication, and realtime-capable architecture.
+- **Row Level Security (RLS):** database access scoped by store ownership/policies; additional RLS hardening via migrations/triggers.
+- **Backend-only secrets:** PayPal/AI/service-role and other private keys stay on the server/Vercel env vars; the client uses only public Supabase config.
+- **Server-side money controls:** money-moving actions are handled by the backend, with validation/rate limiting and order amount checks.
+
+---
+
 ## 🖥️ Run it locally
 
 ### Requirements
@@ -374,6 +418,50 @@ Participa en el [PayPal AI Hackathon](https://devpost.com/) con la API de
 También puedes escribirle al agente cosas como *"¿cuánto llevo gastado?"* o
 *"¿qué tengo por aprobar?"*, y usar la **voz** (dictado con Whisper en el
 servidor y lectura en voz alta).
+
+---
+
+## ✨ Funcionalidades
+
+### Cuenta y acceso
+- **Autenticación:** inicio de sesión, registro, restablecimiento de contraseña y reenvío de email de confirmación (Supabase Auth).
+- **Gestión de sesión:** acceso seguro basado en sesión; las acciones protegidas del backend requieren un token de usuario válido (JWT).
+- **Modo demo para revisores:** pantalla de login con credenciales demo (`demo@restock.dev` / `Restock2026!`), sin auto-login en builds de producción.
+
+### Asistente IA y automatización
+- **Chat con el asistente Stocky:** asistente conversacional para operaciones de tienda (p. ej., revisar stock, gasto, pedidos pendientes).
+- **Flujo “Review stock now”:** el agente revisa datos reales de tienda/catálogo y ayuda a crear o preparar decisiones de reposición.
+- **Agente basado en herramientas (backend):** el backend Fastify ejecuta el agente con llamadas a herramientas estructuradas sobre datos reales.
+- **Decisiones con control de gasto:** los pedidos se evalúan según reglas de gasto/presupuesto (máximo por pedido, límite mensual, umbral de aprobación).
+- **Voz (integraciones):** entrada/transcripción de voz (Whisper vía integración con Groq) y respuestas en voz alta (integración con ElevenLabs cuando está configurada).
+
+### Inventario, catálogo y proveedores
+- **Gestión de inventario/stock:** visualización de productos, niveles de stock y umbrales de stock bajo.
+- **Actualización de stock:** edición de stock y umbrales de stock bajo.
+- **Productos eliminados:** consulta de productos eliminados/inactivos y restauración.
+- **Catálogo y proveedores:** navegación de datos de catálogo/proveedores usados en las decisiones de reposición.
+
+### Pedidos y pagos (PayPal Sandbox)
+- **Gestión de pedidos:** listado y detalle de pedidos, estados y pedidos preparados por el agente.
+- **Aprobación humana:** el dueño revisa los pedidos antes de ejecutar acciones de pago.
+- **Integración con PayPal Sandbox:** flujo de aprobar/pagar usando PayPal Orders API v2 (Sandbox): genera URL de aprobación/autorización y gestiona el retorno/confirmación (sin dinero real).
+- **Confirmación de autorización:** tras autorizar en PayPal, vuelta a Stocky y confirmación de la autorización (manejo de `/paypal/return` + confirmación en la app).
+- **Control de entrega:** registro de entrega/productos recibidos para soportar entregas parciales y conciliación de importes.
+- **Revisión/conciliación de importes:** el backend recalcula y protege los importes del pedido frente al catálogo/reglas vigentes antes de mover dinero.
+- **Facturas:** generación de facturas y soporte de envío por email (flujo en servidor).
+
+### Ajustes y experiencia
+- **Reglas de gasto:** configuración y revisión de límites/políticas de compra de la tienda.
+- **Localización:** interfaz en inglés y español (idioma conmutable).
+- **Tema y preferencias:** tema claro/oscuro/sistema y preferencias de sonidos de UI.
+- **App multiplataforma:** app Flutter para web, Android e iOS con una sola base de código.
+- **Despliegue web:** app web en producción servida en Vercel con rutas API hacia el backend Fastify (`/api/*`, manejo de retorno de PayPal).
+
+### Seguridad y datos
+- **Supabase (Postgres + Auth + Realtime):** almacenamiento de datos, autenticación y arquitectura preparada para realtime.
+- **Row Level Security (RLS):** acceso a datos acotado por propiedad de tienda/policies; refuerzo adicional de RLS mediante migraciones/triggers.
+- **Secretos solo en backend:** claves privadas de PayPal/IA/service_role y otros secretos permanecen en el servidor/variables de entorno de Vercel; el cliente usa solo configuración pública de Supabase.
+- **Controles de dinero en servidor:** las acciones que mueven dinero las gestiona el backend, con validación, rate limiting y comprobaciones de importes.
 
 ---
 
