@@ -257,9 +257,9 @@ class _StockPageState extends State<StockPage> {
                 data: Theme.of(context)
                     .copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
-                  title: const Text(
-                    'Eliminados',
-                    style: TextStyle(color: Colors.red),
+                  title: Text(
+                    l10n.stockFilterDeleted,
+                    style: const TextStyle(color: Colors.red),
                   ),
                   leading: const Icon(Icons.delete_outline, color: Colors.red),
                   initiallyExpanded: true,
