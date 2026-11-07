@@ -11,6 +11,7 @@ import {
 import { previewOrderAmount } from '../../../application/orders/guard_order_amount.js';
 import { errorCopy } from '../../../application/i18n/errors.js';
 import { describeReason } from '../../../application/i18n/reasons.js';
+import { env } from '../../../config/env.js';
 import { ReasonError } from '../../../domain/reasons.js';
 import { supabaseAdmin } from '../../../infrastructure/supabase/supabase_client.js';
 import { authenticate } from '../auth.js';
@@ -126,16 +127,43 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         },
       }[language];
 
-      const html = (title: string, message: string, ok: boolean) =>
-        `<!doctype html><html lang="${language}"><head><meta charset="utf-8">` +
-        `<meta name="viewport" content="width=device-width,initial-scale=1">` +
-        `<title>${title}</title></head>` +
-        `<body style="font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:48px 24px;background:#f6f6f8">` +
-        `<div style="font-size:48px">${ok ? '✅' : '⚠️'}</div>` +
-        `<h1 style="font-size:22px">${title}</h1>` +
-        `<p style="color:#555;line-height:1.5">${message}</p>` +
-        `<p style="color:#888;font-size:13px">${page.back}</p>` +
-        `</body></html>`;
+      const appReturnUrl =
+        env.appUrl || env.publicBaseUrl || 'https://stocky-app-theta.vercel.app';
+      const buttonLabel = language === 'es' ? 'Volver a Stocky' : 'Back to Stocky';
+      const redirectNote =
+        language === 'es'
+          ? 'Volviendo a Stocky en unos segundos...'
+          : 'Returning to Stocky in a few seconds...';
+
+      const html = (
+        title: string,
+        message: string,
+        ok: boolean,
+        redirect = false,
+      ) => {
+        const auto =
+          redirect && ok
+            ? `<meta http-equiv="refresh" content="3;url=${appReturnUrl}">` +
+              `<script>setTimeout(function(){window.location.href=${JSON.stringify(appReturnUrl)};},3000);</script>`
+            : '';
+        const note =
+          redirect && ok
+            ? `<p style="color:#888;font-size:13px">${redirectNote}</p>`
+            : `<p style="color:#888;font-size:13px">${page.back}</p>`;
+        return (
+          `<!doctype html><html lang="${language}"><head><meta charset="utf-8">` +
+          `<meta name="viewport" content="width=device-width,initial-scale=1">` +
+          auto +
+          `<title>${title}</title></head>` +
+          `<body style="font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:48px 24px;background:#f6f6f8">` +
+          `<div style="font-size:48px">${ok ? '✅' : '⚠️'}</div>` +
+          `<h1 style="font-size:22px">${title}</h1>` +
+          `<p style="color:#555;line-height:1.5">${message}</p>` +
+          `<p style="margin:24px 0"><a href="${appReturnUrl}" style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:600">${buttonLabel}</a></p>` +
+          note +
+          `</body></html>`
+        );
+      };
 
       if (!orderId) {
         return reply
@@ -164,7 +192,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
 
         return reply
           .type('text/html; charset=utf-8')
-          .send(html(page.okTitle, page.okMessage, true));
+          .send(html(page.okTitle, page.okMessage, true, true));
       } catch (error) {
         request.log.error(error);
         return reply
