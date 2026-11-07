@@ -65,7 +65,18 @@ on the server and text-to-speech).
 - **“Review stock now” flow:** agent reviews real store/catalog data and helps create or prepare restock decisions.
 - **Tool-based agent (backend):** Fastify backend runs the agent with structured tool calls against real data.
 - **Spending-aware decisions:** orders are evaluated against spending rules/budget limits (e.g., max per order, monthly limit, approval threshold).
-- **Voice (integrations):** voice input/transcription (Whisper via Groq integration) and text-to-speech responses (ElevenLabs integration when configured).
+
+#### Purchasing assistant (find new suppliers)
+- **Describe a product, get the best suppliers:** the owner describes a new product by text or voice. The AI asks for the product, the monthly quantity, and the region (Spain, Europe, or worldwide).
+- **Real landed cost comparison:** a `market_research` tool compares **28 distributors across more than 10 countries** by real landed cost: unit price + shipping + tariffs + currency conversion (using ECB exchange rates). The top 3 options are shown as cards.
+- **One tap (or one sentence) to adopt:** choosing an option adds the supplier and the product to the store and can place the first order paid with PayPal, always within the spending rules. By voice, the `adopt_offer` tool only runs after an explicit “yes” from the owner.
+- **Also on the internet:** the Tavily Search API finds real distributors on the web and shows them as extra options (without verified pricing).
+
+#### Hands-free voice conversation
+- **Talk to Stocky like a phone call:** a compact blue bar replaces the text box. It listens, detects when you stop talking, thinks, answers out loud, and listens again. You can tap to send now, interrupt, or resume.
+- **Speech-to-text:** Whisper `whisper-large-v3-turbo` via Groq.
+- **Natural voice:** ElevenLabs Flash v2.5 in Spanish and English, with the device voice as fallback.
+- **Chat continuity:** everything said appears in the chat as normal messages.
 
 ### Inventory, catalog & suppliers
 - **Inventory/stock management:** view products, stock levels, and low-stock thresholds.
@@ -433,7 +444,18 @@ servidor y lectura en voz alta).
 - **Flujo “Review stock now”:** el agente revisa datos reales de tienda/catálogo y ayuda a crear o preparar decisiones de reposición.
 - **Agente basado en herramientas (backend):** el backend Fastify ejecuta el agente con llamadas a herramientas estructuradas sobre datos reales.
 - **Decisiones con control de gasto:** los pedidos se evalúan según reglas de gasto/presupuesto (máximo por pedido, límite mensual, umbral de aprobación).
-- **Voz (integraciones):** entrada/transcripción de voz (Whisper vía integración con Groq) y respuestas en voz alta (integración con ElevenLabs cuando está configurada).
+
+#### Asistente de compras (encontrar nuevos proveedores)
+- **Describe un producto y obtén los mejores proveedores:** el dueño describe un producto nuevo por texto o voz. La IA pide el producto, la cantidad mensual y la región (España, Europa o mundial).
+- **Comparación del coste real final (“landed cost”):** la herramienta `market_research` compara **28 distribuidores en más de 10 países** por coste real: precio unitario + envío + aranceles + conversión de moneda (tipos de cambio del BCE). Las 3 mejores opciones se muestran como tarjetas.
+- **Adoptar con un toque (o una frase):** al elegir una opción, se añade el proveedor y el producto a la tienda y se puede crear el primer pedido pagado con PayPal, siempre dentro de las reglas de gasto. Por voz, la herramienta `adopt_offer` solo se ejecuta tras un **“sí”** explícito del dueño.
+- **También en internet:** la API de Tavily Search encuentra distribuidores reales en la web y los muestra como opciones adicionales (sin precio verificado).
+
+#### Conversación por voz manos libres
+- **Habla con Stocky como en una llamada:** una barra azul compacta sustituye al cuadro de texto. Escucha, detecta cuándo dejas de hablar, piensa, responde en voz alta y vuelve a escuchar. Puedes tocar para enviar ahora, interrumpir o reanudar.
+- **Voz a texto:** Whisper `whisper-large-v3-turbo` vía Groq.
+- **Voz natural:** ElevenLabs Flash v2.5 en español e inglés, con la voz del dispositivo como alternativa.
+- **Continuidad en el chat:** todo lo que se dice aparece en el chat como mensajes normales.
 
 ### Inventario, catálogo y proveedores
 - **Gestión de inventario/stock:** visualización de productos, niveles de stock y umbrales de stock bajo.
