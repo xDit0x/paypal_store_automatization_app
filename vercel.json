@@ -5,7 +5,7 @@
   "outputDirectory": "build/web",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/paypal/(.*)", "destination": "/api/paypal/$1" }
+    { "source": "/paypal/:path*", "destination": "/api?path=paypal/:path*" }
   ],
   "functions": {
     "api/index.ts": {
